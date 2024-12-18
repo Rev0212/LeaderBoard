@@ -36,6 +36,6 @@ studentSchema.statics.hashPassword = async function (password) {
     return await bcrypt.hash(password, 10);
 };
 
-const studentModel = mongoose.model('Student', studentSchema);
+const studentModel = mongoose.model('student', studentSchema);
 
 module.exports = studentModel;

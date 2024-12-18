@@ -42,12 +42,12 @@ const eventSchema = new mongoose.Schema({
     },
     submittedBy: {
         type: ObjectId,
-        ref: 'Student',
+        ref: 'student',
         required: true
     },
     approvedBy: {
         type: ObjectId,
-        ref: 'Teacher'
+        ref: 'teacher'
     }
 });
 

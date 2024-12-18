@@ -28,6 +28,11 @@ app.use('/event',eventRoutes)
 const adminRoutes = require("./routes/admin.routes")
 app.use('/admin',adminRoutes)
 
+const classRoutes = require('./routes/class.routes')
+app.use('/class',classRoutes)
+
+const leaderboardRoutes = require('./routes/leaderboard.routes')
+app.use('/leaderboard',leaderboardRoutes)
 connectToDb();
 
 module.exports = app;

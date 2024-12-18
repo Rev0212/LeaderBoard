@@ -20,8 +20,8 @@ router.post('/login',[
     teacherController.loginTeacher
 )
 
-//router.get('/profile',authMiddleware.authstudent,userController.getStudentProfile)
+router.get('/profile',authMiddleware.authTeacher,teacherController.getProfile)
 
-// router.get('/logout', authMiddleware.authUser, userController.logoutUser)
+//router.get('/logout', authMiddleware.authTeacher, userController.)
 
 module.exports = router

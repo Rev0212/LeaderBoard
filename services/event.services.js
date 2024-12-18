@@ -26,7 +26,9 @@ const reviewEvent = async (eventId, status, teacherId) => {
             throw new Error('Event not found');
         }
 
+
         event.status = status;
+ 
         event.approvedBy = teacherId;
 
         if (status === 'Approved') {
@@ -40,13 +42,16 @@ const reviewEvent = async (eventId, status, teacherId) => {
         } else {
             event.pointsEarned = 0;
         }
+        
 
-        // Save the updated event in the service layer
+        // Save the updated event
         const updatedEvent = await event.save();
+    
         return updatedEvent;
     } catch (error) {
         throw new Error(`Failed to review event: ${error.message}`);
     }
 };
+
 
 module.exports = { createEvent, reviewEvent };

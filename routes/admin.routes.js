@@ -20,7 +20,7 @@ router.post('/login',[
     adminController.loginadmin
 )
 
-//router.get('/profile', authMiddleware.authadmin, adminController.getadminProfile);
+router.get('/profile', authMiddleware.authAdmin, adminController.getAdminProfile);
 
 
 // router.get('/logout', authMiddleware.authadmin, adminController.logoutadmin)

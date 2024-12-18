@@ -1,5 +1,7 @@
 const eventService = require('../services/event.services');
 const studentModel = require('../models/student.model')
+const teacherModel = require('../models/teacher.model')
+const eventModel = require('../models/event.model')
 
 // Student submits a new event
 const submitEvent = async (req, res) => {
@@ -33,38 +35,56 @@ const reviewEvent = async (req, res) => {
     try {
         const { id } = req.params;
         const { status } = req.body;
-        
+
         // Ensure teacherId exists and is valid
         if (!req.teacher || !req.teacher._id) {
-            throw new Error("Teacher ID is missing or invalid.");
+            throw new Error("Teacher ID is missing .");
         }
 
         const teacherId = req.teacher._id;
-        const updatedEvent = await eventService.reviewEvent(id, status, teacherId);
 
-        console.log("Updated Event:", updatedEvent);
+        // Retrieve the teacher and their classes
+        const teacher = await teacherModel.findById(teacherId);
+        if (!teacher || !teacher.classes || teacher.classes.length === 0) {
+            throw new Error("Teacher or teacher's classes not found.");
+        }
 
-        // Add event ID to student model
-        const studentId = updatedEvent.submittedBy._id;
+        const teacherClassIds = teacher.classes; 
 
-        console.log("Student ID:", studentId);
+        // Fetch the event details to get the student ID
+        const event = await eventModel.findById(id).populate('submittedBy');
+        if (!event) {
+            throw new Error("Event not found.");
+        }
 
-        const eventId = updatedEvent._id;
+        console.log(event)
 
+        const studentId = event.submittedBy._id;
         const student = await studentModel.findById(studentId);
+        
 
         if (!student) {
             throw new Error("Student not found.");
         }
 
-        console.log("Student Data:", student);
+        const studentClassId = student.class; // Assuming `classId` exists in the student model
 
-        // Ensure eventsParticipated is an array before pushing
+        // Check if the teacher's class IDs include the student's class ID
+        if (!teacherClassIds.includes(studentClassId.toString())) {
+            throw new Error("Teacher and student are not in the same class.");
+        }
+
+        // Update the event after confirming the class match
+        const updatedEvent = await eventService.reviewEvent(id, status, teacherId);
+
+        // Update the student's eventsParticipated and totalPoints
         if (!student.eventsParticipated) {
             student.eventsParticipated = [];
         }
 
-        student.eventsParticipated.push(eventId);
+        student.eventsParticipated.push(updatedEvent._id);
+        const oldPoints = student.totalPoints;
+        student.totalPoints = oldPoints + updatedEvent.pointsEarned;
         await student.save();
 
         res.status(200).json({ 
@@ -79,8 +99,5 @@ const reviewEvent = async (req, res) => {
         });
     }
 };
-
-
-
 
 module.exports = { submitEvent, reviewEvent };

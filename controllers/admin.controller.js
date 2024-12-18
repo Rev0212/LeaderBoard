@@ -63,7 +63,7 @@ module.exports.loginadmin = async (req, res, next) => {
     res.status(200).json({ token, admin });
 }
 
-module.exports.getadminProfile = async (req, res, next) => {
+module.exports.getAdminProfile = async (req, res, next) => {
     if (!req.admin) {
         return res.status(404).json({ message: 'admin not found' });
     }
