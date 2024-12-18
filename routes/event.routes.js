@@ -5,12 +5,14 @@ const authMiddleware = require('../middlewares/auth.middlewares');
 const router = express.Router();
 
 // Student submits an event
-router.post('/', authMiddleware.authStudent, eventController.submitEvent);
+router.post('/submit', authMiddleware.authStudent, eventController.submitEvent);
 
 // Teacher reviews an event
 router.patch('/:id/review', authMiddleware.authTeacher, eventController.reviewEvent);
 
 // Fetch event details
-// router.get('/:id', authMiddleware.auth, eventController.getEvent);
+router.get('/',authMiddleware.authTeacher,eventController.getEvents)
+
+
 
 module.exports = router;

@@ -10,7 +10,7 @@ module.exports.registerStudent = async (req, res, next) => {
         return res.status(400).json({ errors: errors.array() });
     }
 
-    const { name, email, password } = req.body;
+    const { name, email, password,registerNo } = req.body;
 
     const isUserAlready = await studentModel.findOne({ email });
 
@@ -24,10 +24,13 @@ module.exports.registerStudent = async (req, res, next) => {
     const student = await studentService.createStudent({
         name,
         email,
-        password: hashedPassword
+        password: hashedPassword,
+        registerNo
     });
 
     const token = student.generateAuthToken();
+    
+    res.cookie('token', token);
 
     res.status(201).json({ token, student});
 }

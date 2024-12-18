@@ -32,6 +32,7 @@ const submitEvent = async (req, res) => {
 
 // Teacher approves or rejects an event
 const reviewEvent = async (req, res) => {
+
     try {
         const { id } = req.params;
         const { status } = req.body;
@@ -100,4 +101,31 @@ const reviewEvent = async (req, res) => {
     }
 };
 
-module.exports = { submitEvent, reviewEvent };
+const getEvents = async (req, res) => {
+    if (!req.teacher) {
+        return res.status(403).json({ message: 'Unauthorized access' });
+    }
+
+    try {
+        const teacher = req.teacher;
+
+        // Find events for students in the teacher's classes
+        const events = await eventModel.find({
+            // Populate the submittedBy field to access student's class
+            submittedBy: { 
+                $in: await studentModel.find({ 
+                    class: { $in: teacher.classes } 
+                }).select('_id') 
+            },
+            status:"Pending"
+        }).populate('submittedBy').populate('approvedBy');
+        const pendingEvents = events.status 
+        res.status(200).json(events);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+
+module.exports = { submitEvent, reviewEvent, getEvents };

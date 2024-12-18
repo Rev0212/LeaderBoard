@@ -27,6 +27,8 @@ module.exports.registerTeacher = async (req, res, next) => {
         password: hashedPassword
     });
 
+    res.cookie('token', token);
+
     const token = teacher.generateAuthToken();
 
     res.status(201).json({ token, teacher });
