@@ -1,7 +1,41 @@
 const studentModel = require('../models/student.model');
 const studentService = require('../services/student.service');
 const { validationResult } = require('express-validator');
+const fs = require('fs');
+const path = require('path');
+const multer = require('multer');
+const StudentBulkService = require('../services/studentsBulk.services');
 
+
+const uploadPath = path.join(__dirname, '../uploads');
+if (!fs.existsSync(uploadPath)) {
+    fs.mkdirSync(uploadPath);
+}
+
+
+module.exports.registerStudentsBulk = async (req, res, next) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'Please upload a CSV file check2' });
+        }
+
+        const studentBulkService = new StudentBulkService();
+        const results = await studentBulkService.processCSV(req.file.path);
+
+        // Clean up the uploaded file
+        fs.unlinkSync(req.file.path);
+
+        res.status(200).json({
+            message: 'Bulk registration completed',
+            successful: results.successful.length,
+            failed: results.failed.length,
+            failedEntries: results.failed,
+            students: results.successful 
+        });
+    } catch (error) {
+        next(error);
+    }
+};
 
 module.exports.registerStudent = async (req, res, next) => {
 

@@ -33,7 +33,7 @@ studentSchema.methods.comparePassword = async function (password) {
 };
 
 // Static Method: Hash Password
-studentSchema.statics.hashPassword = async function (password) {
+studentSchema.statics.hashedPassword = async function (password) {
     return await bcrypt.hash(password, 10);
 };
 

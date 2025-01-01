@@ -3,6 +3,37 @@ const router = express.Router();
 const {body} = require("express-validator")
 const studentController = require('../controllers/student.controller')
 const authMiddleware = require('../middlewares/auth.middlewares')
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+// Ensure uploads directory exists
+const uploadPath = path.join(__dirname, '../uploads');
+if (!fs.existsSync(uploadPath)) {
+    fs.mkdirSync(uploadPath);
+}
+
+// Set storage engine
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, uploadPath);
+    },
+    filename: function (req, file, cb) {
+        cb(null, `teachers-${Date.now()}.csv`);
+    }
+});
+
+const upload = multer({
+    storage,
+    fileFilter: (req, file, cb) => {
+        if (path.extname(file.originalname) !== '.csv') {
+            return cb(new Error('Only .csv files are allowed'));
+        }
+        cb(null, true);
+    }
+});
+
+
 
 router.post('/register',[
     body('email').isEmail().withMessage('Invalid Email'),
@@ -24,5 +55,18 @@ router.get('/profile', authMiddleware.authStudent, studentController.getStudentP
 
 
 // router.get('/logout', authMiddleware.authStudent, StudentController.logoutStudent)
+
+
+router.post('/bulk-register', 
+    (req, res, next) => {
+        upload.single('file')(req, res, (err) => {
+            if (err) {
+                return res.status(400).json({ message: err.message });
+            }
+            next();
+        });
+    },
+    studentController.registerStudentsBulk
+);
 
 module.exports = router
