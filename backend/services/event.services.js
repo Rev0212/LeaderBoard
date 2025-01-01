@@ -39,6 +39,7 @@ const reviewEvent = async (eventId, status, teacherId) => {
                 Participated: 25
             };
             event.pointsEarned = pointsMap[event.positionSecured] || 0;
+            console.log(`${event.pointsEarned} --- check1`);
         } else {
             event.pointsEarned = 0;
         }

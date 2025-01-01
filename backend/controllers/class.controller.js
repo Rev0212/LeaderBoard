@@ -1,4 +1,3 @@
-
 const teacherModel = require('../models/teacher.model');
 const studentModel = require('../models/student.model')
 const classService = require('../services/class.service');
@@ -34,115 +33,12 @@ const createClass = async (req, res) => {
         teacher.classes.push(newClass.id);
         await teacher.save();
 
-        // Send the response after all operations succeed
         res.status(201).json({ message: 'Class created successfully', class: newClass });
     } catch (error) {
         console.error("Error creating class:", error.message);
         res.status(500).json({ error: "An error occurred while creating the class." });
     }
 };
-
-const createClassesFromCSV = async (req, res) => {
-    if (!req.file) {
-        return res.status(400).json({ error: "Please upload a CSV file." });
-    }
-
-    const results = [];
-    const errors = [];
-    const limit = pLimit(10); // Limit concurrency to 10
-    const rows = [];
-
-    try {
-        // Read and parse the CSV file
-        await new Promise((resolve, reject) => {
-            fs.createReadStream(req.file.path)
-                .pipe(csv())
-                .on('data', (row) => rows.push(row))
-                .on('end', resolve)
-                .on('error', reject);
-        });
-
-        // Validate CSV rows and fetch all unique teacher register numbers
-        const uniqueTeacherRegisterNos = Array.from(
-            new Set(rows.map((row) => row.teacherRegisterNo))
-        );
-
-        // Fetch all teachers in a single query
-        const teachers = await teacherModel.find({
-            registerNo: { $in: uniqueTeacherRegisterNos },
-        }).lean();
-
-        const teacherMap = new Map(
-            teachers.map((teacher) => [teacher.registerNo, teacher])
-        );
-
-        // Process rows with controlled concurrency
-        await Promise.all(
-            rows.map((row) =>
-                limit(async () => {
-                    try {
-                        // Validate row data
-                        if (!row.className || !row.teacherRegisterNo) {
-                            throw new Error(`Invalid data in row: ${JSON.stringify(row)}`);
-                        }
-
-                        // Get teacher by register number
-                        const teacher = teacherMap.get(row.teacherRegisterNo);
-                        if (!teacher) {
-                            throw new Error(
-                                `Teacher not found with registration number: ${row.teacherRegisterNo}`
-                            );
-                        }
-
-                        // Create class
-                        const newClass = await classService.createClass(
-                            row.className,
-                            teacher._id
-                        );
-
-                        // Update teacher's classes array
-                        teacher.classes = teacher.classes || [];
-                        teacher.classes.push(newClass._id);
-                        await teacherModel.updateOne(
-                            { _id: teacher._id },
-                            { $set: { classes: teacher.classes } }
-                        );
-
-                        results.push({
-                            className: row.className,
-                            teacherRegisterNo: row.teacherRegisterNo,
-                            classId: newClass._id,
-                        });
-                    } catch (error) {
-                        errors.push(
-                            `Error processing row ${JSON.stringify(row)}: ${error.message}`
-                        );
-                    }
-                })
-            )
-        );
-
-        // Clean up uploaded file
-        fs.unlinkSync(req.file.path);
-
-        res.status(200).json({
-            message: 'CSV processing completed',
-            successCount: results.length,
-            errorCount: errors.length,
-            results,
-            errors,
-        });
-    } catch (error) {
-        // Clean up uploaded file in case of error
-        if (fs.existsSync(req.file.path)) {
-            fs.unlinkSync(req.file.path);
-        }
-
-        console.error("Error processing CSV:", error.message);
-        res.status(500).json({ error: "An error occurred while processing the CSV file." });
-    }
-};
-
 
 const addStudentsToClass = async (req, res) => {
     const { classId, studentIds } = req.body;
@@ -203,10 +99,40 @@ const getClassDetails = async (req, res) => {
     }
 };
 
+const createClassesInBulk = async (req, res) => {
+    const csvFilePath = req.file.path;
+  
+    try {
+      const result = await classService.createClassesInBulk(csvFilePath);
+      res.status(201).json(result);
+    } catch (error) {
+      console.error("Error creating classes in bulk:", error.message);
+      res.status(500).json({ error: "An error occurred while creating classes in bulk." });
+    } finally {
+      fs.unlinkSync(csvFilePath); // Remove the uploaded file after processing
+    }
+  };
+
+const addStudentsToClassInBulk = async (req, res) => {
+    const csvFilePath = req.file.path;
+  
+    try {
+      const result = await classService.addStudentsToClassInBulk(csvFilePath);
+      res.status(201).json(result);
+    } catch (error) {
+      console.error("Error adding students to class in bulk:", error.message);
+      res.status(500).json({ error: "An error occurred while adding students to the class in bulk." });
+    } finally {
+      fs.unlinkSync(csvFilePath); // Remove the uploaded file after processing
+    }
+  };
+
 module.exports = {
     createClass,
     addStudentsToClass,
     changeClassTeacher,
     getClassDetails,
-    createClassesFromCSV,
+    createClassesInBulk,
+    addStudentsToClassInBulk,
+    
 };

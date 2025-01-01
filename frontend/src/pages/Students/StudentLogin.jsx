@@ -40,8 +40,6 @@ const StudentLoginForm = () => {
     // Password validation
     if (!formData.password) {
       newErrors.password = 'Password is required';
-    } else if (!VALIDATION_RULES.PASSWORD_PATTERN.test(formData.password)) {
-      newErrors.password = `Password must contain at least ${VALIDATION_RULES.PASSWORD_MIN_LENGTH} characters, one uppercase letter, one number, and one special character`;
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;

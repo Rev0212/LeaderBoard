@@ -59,8 +59,6 @@ const reviewEvent = async (req, res) => {
             throw new Error("Event not found.");
         }
 
-        console.log(event)
-
         const studentId = event.submittedBy._id;
         const student = await studentModel.findById(studentId);
         
@@ -86,7 +84,9 @@ const reviewEvent = async (req, res) => {
 
         student.eventsParticipated.push(updatedEvent._id);
         const oldPoints = student.totalPoints;
+        console.log(oldPoints);
         student.totalPoints = oldPoints + updatedEvent.pointsEarned;
+        console.log(student.totalPoints);
         await student.save();
 
         res.status(200).json({ 
