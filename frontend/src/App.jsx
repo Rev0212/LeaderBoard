@@ -9,6 +9,7 @@ import TeacherRegistrationForm from './pages/Teachers/RegisterTeacher';
 import TeacherLoginForm from './pages/Teachers/TeacherLogin';
 import TeacherDashboard from './pages/Teachers/TeacherDashboard';
 import EventHistoryTable from './components/EventList'
+import AdminDashboard from './pages/Admin/AdminDashBoard';
 import { Route, Routes } from 'react-router-dom';
 
 
@@ -16,6 +17,7 @@ const App = () => {
   return (
     <Routes>
       <Route path='/events' element={<EventHistoryTable/>}/>
+      <Route path='/admin-dashboard' element={<AdminDashboard/>}/>
       <Route path="/teacher-login" element={<TeacherLoginForm/>}/>
       <Route path="/teacher-register" element={<TeacherRegistrationForm />} />
       <Route path="/teacher-dashboard" element={<TeacherDashboard/>}/>

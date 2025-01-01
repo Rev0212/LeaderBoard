@@ -12,7 +12,8 @@ const EventForm = () => {
     date: '',
     proofUrl: '',
     category: '',
-    positionSecured: ''
+    positionSecured: '',
+    priceMoney: ''
   });
 
   const navigate = useNavigate();
@@ -32,6 +33,7 @@ const EventForm = () => {
     { name: 'date', label: 'Date', type: 'date' },
     { name: 'proofUrl', label: 'Proof URL', type: 'url', placeholder: 'Enter Proof URL' },
     { name: 'category', label: 'Category', type: 'select', options: ['Select a category', 'Hackathon', 'Ideathon', 'Coding', 'Certificate', 'Workshop', 'Conference', 'Others'] },
+    { name: 'priceMoney', label: 'Price Money', type: 'text', placeholder: 'Enter Price Money'},
     { name: 'positionSecured', label: 'Position Secured', type: 'select', options: ['Select position', 'First', 'Second', 'Third', 'Participant', 'None'] }
   ];
 

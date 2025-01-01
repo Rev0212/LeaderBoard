@@ -33,6 +33,12 @@ app.use('/class',classRoutes)
 
 const leaderboardRoutes = require('./routes/leaderboard.routes')
 app.use('/leaderboard',leaderboardRoutes)
+
+const eventReports = require('./routes/eventReports.routes');
+app.use('/reports', eventReports);
+
+
 connectToDb();
+
 
 module.exports = app;

@@ -1,87 +1,89 @@
-const EventReportsService = require('../services/eventReports.services');
+const EventReportsService = require('../services/eventReports.service');
 
 class EventReportsController {
-  // Controller to get total prize money
-  static async getTotalPrizeMoney(req, res) {
+  static async getTotalPrizeMoney(req, res, next) {
     try {
-      const totalPrizeMoney = await EventService.getTotalPrizeMoney();
+      const { filterType = 'monthly' } = req.query; // Default to 'monthly'
+      const totalPrizeMoney = await EventReportsService.getTotalPrizeMoney(filterType);
       res.status(200).json({ totalPrizeMoney });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      next(error);
     }
   }
 
-  // Controller to get total prize money by class
-  static async getTotalPrizeMoneyByClass(req, res) {
+  static async getTotalPrizeMoneyByClass(req, res, next) {
     const { className } = req.params;
+    const { filterType = 'monthly' } = req.query; // Default to 'monthly'
     try {
-      const totalPrizeMoney = await EventService.getTotalPrizeMoneyByClass(className);
+      const totalPrizeMoney = await EventReportsService.getTotalPrizeMoneyByClass(className, filterType);
       res.status(200).json({ totalPrizeMoney });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      next(error);
     }
   }
 
-  // Controller to get top students
-  static async getTopStudents(req, res) {
+  static async getTopStudents(req, res, next) {
+    const { filterType = 'monthly' } = req.query; // Default to 'monthly'
+    const limit = parseInt(req.query.limit, 10) || 10;
     try {
-      const topStudents = await EventService.getTopStudents();
+      const topStudents = await EventReportsService.getTopStudents(limit, filterType);
       res.status(200).json({ topStudents });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      next(error);
     }
   }
 
-  // Controller to get top performers by category
-  static async getTopPerformersByCategory(req, res) {
+  static async getTopPerformersByCategory(req, res, next) {
     const { category } = req.params;
+    const { filterType = 'monthly' } = req.query; // Default to 'monthly'
+    const limit = parseInt(req.query.limit, 10) || 10;
     try {
-      const topPerformers = await EventService.getTopPerformersByCategory(category);
+      const topPerformers = await EventReportsService.getTopPerformersByCategory(category, limit, filterType);
       res.status(200).json({ topPerformers });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      next(error);
     }
   }
 
-  // Controller to get popular categories
-  static async getPopularCategories(req, res) {
+  static async getPopularCategories(req, res, next) {
+    const { filterType = 'monthly' } = req.query; // Default to 'monthly'
+    const limit = parseInt(req.query.limit, 10) || 10;
     try {
-      const popularCategories = await EventService.getPopularCategories();
+      const popularCategories = await EventReportsService.getPopularCategories(limit, filterType);
       res.status(200).json({ popularCategories });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      next(error);
     }
   }
 
-  // Controller to get approval rates
-  static async getApprovalRates(req, res) {
+  static async getApprovalRates(req, res, next) {
+    const { filterType = 'monthly' } = req.query; // Default to 'monthly'
     try {
-      const approvalRates = await EventService.getApprovalRates();
+      const approvalRates = await EventReportsService.getApprovalRates(filterType);
       res.status(200).json({ approvalRates });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      next(error);
     }
   }
 
-  // Controller to get trends
-  static async getTrends(req, res) {
-    const { filterType } = req.params;
+  static async getTrends(req, res, next) {
+    const { filterType = 'monthly' } = req.params; // Default to 'monthly'
     try {
-      const trends = await EventService.getTrends(filterType);
+      const trends = await EventReportsService.getTrends(filterType);
       res.status(200).json({ trends });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      next(error);
     }
   }
 
-  // Controller to get class-wise participation
-  static async getClassWiseParticipation(req, res) {
+  static async getClassWiseParticipation(req, res, next) {
     const { className } = req.params;
+    const { filterType = 'monthly' } = req.query; // Default to 'monthly'
     try {
-      const classWiseParticipation = await EventService.getClassWiseParticipation(className);
+      const classWiseParticipation = await EventReportsService.getClassWiseParticipation(className, filterType);
       res.status(200).json({ classWiseParticipation });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      next(error);
     }
   }
 }

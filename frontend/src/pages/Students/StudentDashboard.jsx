@@ -4,7 +4,9 @@ import { Link } from "react-router-dom";
 import {useNavigate} from "react-router-dom"
 import LeaderboardTable from "../../components/LeaderBoard";
 
+
 const StudentDashboard = () => {
+  
   // Sample data
   const studentData = {
     name: "Alex Johnson",
@@ -16,13 +18,6 @@ const StudentDashboard = () => {
     totalStudents: 156,
     totalPoints:200,
     upcomingEvent: "Coding Challenge",
-    leaderboard: [
-      { name: "Sarah Smith", points: 2500, rank: 1 },
-      { name: "John Doe", points: 2350, rank: 2 },
-      { name: "Emma Wilson", points: 2200, rank: 3 },
-      { name: "Alex Johnson", points: 2100, rank: 4 },
-      { name: "Mike Brown", points: 2000, rank: 5 },
-    ],
   };
 
   const navigate = useNavigate();

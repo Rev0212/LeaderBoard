@@ -1,28 +1,19 @@
-const eventModel = require('../models/event.model');
-const studentModel = require('../models/student.model');
-const mongoose = require('mongoose');
+const Event = require('../models/event.model');
 
 class EventReportsService {
   // Helper function to get match stage based on filter type
   static getMatchStage(filterType) {
-    let matchStage;
+    const now = new Date();
     switch (filterType) {
       case 'monthly':
-        matchStage = { $expr: { $eq: [{ $month: "$date" }, { $month: new Date() }] } };
-        break;
+        return { $expr: { $eq: [{ $month: "$date" }, now.getMonth() + 1] } };
       case 'quarterly':
-        matchStage = { $expr: { $in: [{ $quarter: "$date" }, [1, 2, 3, 4]] } };
-        break;
-      case 'half-yearly':
-        matchStage = { $expr: { $in: [{ $halfYear: "$date" }, [1, 2]] } };
-        break;
+        return { $expr: { $in: [{ $month: "$date" }, [1, 2, 3, 4]] } }; // Example: Adjust quarters based on logic
       case 'yearly':
-        matchStage = { $expr: { $eq: [{ $year: "$date" }, { $year: new Date() }] } };
-        break;
+        return { $expr: { $eq: [{ $year: "$date" }, now.getFullYear()] } };
       default:
-        throw new Error("Invalid filterType");
+        throw new Error('Invalid filterType');
     }
-    return matchStage;
   }
 
   // Get total prize money won
@@ -32,7 +23,7 @@ class EventReportsService {
       { $match: matchStage },
       { $group: { _id: null, totalPrizeMoney: { $sum: "$priceMoney" } } }
     ]);
-    return result[0].totalPrizeMoney;
+    return result[0]?.totalPrizeMoney || 0;
   }
 
   // Get total prize money won by class
@@ -91,12 +82,12 @@ class EventReportsService {
     return result;
   }
 
-  // Get monthly, quarterly, half-yearly, and yearly trends
+  // Get trends
   static async getTrends(filterType) {
     const matchStage = this.getMatchStage(filterType);
     const result = await Event.aggregate([
       { $match: matchStage },
-      { $group: { _id: "$year", count: { $sum: 1 } } }
+      { $group: { _id: { year: { $year: "$date" } }, count: { $sum: 1 } } }
     ]);
     return result;
   }
