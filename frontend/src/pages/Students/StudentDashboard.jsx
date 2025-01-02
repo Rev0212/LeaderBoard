@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Trophy, Calendar, Plus, Medal, User, LogOut, ArrowLeft } from "lucide-react";
+import { Trophy, Calendar, Plus, Medal, User, LogOut, } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import LeaderboardTable from "../../components/LeaderBoard";
@@ -158,9 +158,7 @@ const StudentDashboard = () => {
       </div>
 
       {/* Leaderboard */}
-      <div className="border p-4 rounded-lg shadow">
         <LeaderboardTable />
-      </div>
     </div>
   );
 };

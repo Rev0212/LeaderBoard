@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Bell, CheckCircle } from 'lucide-react';
+import { Bell, CheckCircle, User, ArrowLeft } from 'lucide-react';
 import EventDetailsModal from '../../components/EventDetailModel';
+import TeacherProfile from '../../components/TeacherProfile'; // Import the TeacherProfile component
 
 const TeacherDashboard = () => {
   const [events, setEvents] = useState([]);
+  const [teacherData, setTeacherData] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showProfile, setShowProfile] = useState(false); // State to show profile
 
   const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -27,6 +29,26 @@ const TeacherDashboard = () => {
 
     fetchEvents();
   }, [VITE_BASE_URL]);
+
+  useEffect(() => {
+    const fetchTeacherData = async () => {
+      try {
+        const response = await axios.get(`${VITE_BASE_URL}/teacher/profile`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        setTeacherData(response.data);
+      } catch (error) {
+        console.error("Error fetching teacher data:", error);
+      }
+    };
+
+    fetchTeacherData();
+  }, [VITE_BASE_URL]);
+
+  console.log(teacherData)
 
   const handleCheckNow = (event) => {
     setSelectedEvent(event);
@@ -58,26 +80,45 @@ const TeacherDashboard = () => {
     console.log("Logging out...");
   };
 
+  const handleShowProfile = () => {
+    setShowProfile(true);
+  };
+
+  const handleBackToDashboard = () => {
+    setShowProfile(false);
+  };
+
+  if (showProfile) {
+    return (
+      <TeacherProfile
+        teacherData={teacherData}
+        handleBackToDashboard={handleBackToDashboard}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       {/* Header with Profile and Logout */}
       <div className="mb-8 flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-800">Teacher Dashboard</h1>
         <div className="flex items-center gap-4">
+        <div className="relative">
+            <button
+              onClick={handleShowProfile}
+              className="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg shadow hover:shadow-md transition-shadow"
+            >
+              <User size={20} />
+              Profile
+            </button>
+          </div> 
           <button
             onClick={handleLogout}
             className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
           >
             Logout
           </button>
-          <div className="relative">
-            <button
-              onClick={() => setShowProfileMenu(!showProfileMenu)}
-              className="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg shadow hover:shadow-md transition-shadow"
-            >
-              <span className="text-gray-800">Ms. Anderson</span>
-            </button>
-          </div>
+         
         </div>
       </div>
 
