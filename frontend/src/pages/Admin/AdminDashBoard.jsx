@@ -1,24 +1,19 @@
 import React, { useState } from 'react';
-import { Upload, Users, FileText, Download } from 'lucide-react';
+import { Upload, Users, FileText, Download, UserPlus } from 'lucide-react';
+
+const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('create-class');
   const [classFile, setClassFile] = useState(null);
   const [studentsFile, setStudentsFile] = useState(null);
+  const [teacherFile, setTeacherFile] = useState(null);
+  const [registerStudentFile, setRegisterStudentFile] = useState(null);
 
-  const handleClassFileChange = (event) => {
+  const handleFileChange = (event, setFile) => {
     const file = event.target.files[0];
     if (file && file.type === 'text/csv') {
-      setClassFile(file);
-    } else {
-      alert('Please upload a CSV file');
-    }
-  };
-
-  const handleStudentsFileChange = (event) => {
-    const file = event.target.files[0];
-    if (file && file.type === 'text/csv') {
-      setStudentsFile(file);
+      setFile(file);
     } else {
       alert('Please upload a CSV file');
     }
@@ -30,16 +25,15 @@ const AdminDashboard = () => {
       alert('Please select a CSV file');
       return;
     }
-
     const formData = new FormData();
     formData.append('file', classFile);
 
     try {
       // Replace with your API endpoint
-      // const response = await fetch('/api/upload-class', {
-      //   method: 'POST',
-      //   body: formData
-      // });
+      const response = await fetch(`${VITE_BASE_URL}/class/create-in-bulk`, {
+        method: 'POST',
+         body: formData
+       });
       console.log('Uploading class file:', classFile);
       alert('Class created successfully!');
       setClassFile(null);
@@ -62,10 +56,10 @@ const AdminDashboard = () => {
 
     try {
       // Replace with your API endpoint
-      // const response = await fetch('/api/upload-students', {
-      //   method: 'POST',
-      //   body: formData
-      // });
+       const response = await fetch(`${VITE_BASE_URL}/class/add-students-in-bulk`, {
+         method: 'PUT',
+         body: formData
+       });
       console.log('Uploading students file:', studentsFile);
       alert('Students added successfully!');
       setStudentsFile(null);
@@ -73,6 +67,62 @@ const AdminDashboard = () => {
     } catch (error) {
       console.error('Error uploading file:', error);
       alert('Error adding students');
+    }
+  };
+
+  const handleRegisterTeacher = async (e) => {
+    e.preventDefault();
+    if (!teacherFile) {
+      alert('Please select a CSV file');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', teacherFile);
+
+    try {
+      // Replace with your API endpoint
+      const response = await fetch(`${VITE_BASE_URL}/teacher//bulk-register`, {
+         method: 'POST',
+         body: formData
+       });
+      console.log('Uploading teacher file:', teacherFile);
+      alert('Teacher registered successfully!');
+      setTeacherFile(null);
+      e.target.reset();
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      alert('Error registering teacher');
+    }
+  };
+
+  const handleRegisterStudent = async (e) => {
+    e.preventDefault();
+    if (!registerStudentFile) {
+      alert('Please select a CSV file');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', registerStudentFile);
+
+    try {
+      // Replace with your API endpoint
+       const response = await fetch(`${VITE_BASE_URL}/student/bulk-register`, {
+         method: 'POST',
+         body: formData
+       });
+       const data = await response.json();
+       if (!response.ok) {
+        console.error("API Error:", data.message || response.statusText);
+        alert(`Error registering student: ${data.message || response.statusText}`);
+        return;
+      }alert("Student registered successfully!");
+      setRegisterStudentFile(null);
+      e.target.reset(); }
+      catch (error) {
+      console.error('Error uploading file:', error);
+      alert('Error registering student');
     }
   };
 
@@ -122,6 +172,24 @@ const AdminDashboard = () => {
             Add Students
           </button>
           <button
+            onClick={() => setActiveTab('register-teacher')}
+            className={`w-full p-4 flex items-center gap-2 ${
+              activeTab === 'register-teacher' ? 'bg-blue-50 text-blue-600' : 'text-gray-600'
+            }`}
+          >
+            <UserPlus size={20} />
+            Register Teacher
+          </button>
+          <button
+            onClick={() => setActiveTab('register-student')}
+            className={`w-full p-4 flex items-center gap-2 ${
+              activeTab === 'register-student' ? 'bg-blue-50 text-blue-600' : 'text-gray-600'
+            }`}
+          >
+            <UserPlus size={20} />
+            Register Student
+          </button>
+          <button
             onClick={() => setActiveTab('reports')}
             className={`w-full p-4 flex items-center gap-2 ${
               activeTab === 'reports' ? 'bg-blue-50 text-blue-600' : 'text-gray-600'
@@ -144,7 +212,7 @@ const AdminDashboard = () => {
                 <input
                   type="file"
                   accept=".csv"
-                  onChange={handleClassFileChange}
+                  onChange={(e) => handleFileChange(e, setClassFile)}
                   className="w-full p-2 border rounded"
                 />
                 <p className="text-sm text-gray-500 mt-1">
@@ -170,7 +238,7 @@ const AdminDashboard = () => {
                 <input
                   type="file"
                   accept=".csv"
-                  onChange={handleStudentsFileChange}
+                  onChange={(e) => handleFileChange(e, setStudentsFile)}
                   className="w-full p-2 border rounded"
                 />
                 <p className="text-sm text-gray-500 mt-1">
@@ -182,6 +250,58 @@ const AdminDashboard = () => {
                 className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
               >
                 Upload and Add Students
+              </button>
+            </form>
+          </div>
+        )}
+
+        {activeTab === 'register-teacher' && (
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h2 className="text-2xl font-semibold mb-4">Register Teacher</h2>
+            <form onSubmit={handleRegisterTeacher}>
+              <div className="mb-4">
+                <label className="block text-gray-700 mb-2">Upload Teacher CSV</label>
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={(e) => handleFileChange(e, setTeacherFile)}
+                  className="w-full p-2 border rounded"
+                />
+                <p className="text-sm text-gray-500 mt-1">
+                  Please upload a CSV file with teacher details
+                </p>
+              </div>
+              <button
+                type="submit"
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              >
+                Upload and Register Teacher
+              </button>
+            </form>
+          </div>
+        )}
+
+        {activeTab === 'register-student' && (
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h2 className="text-2xl font-semibold mb-4">Register Student</h2>
+            <form onSubmit={handleRegisterStudent}>
+              <div className="mb-4">
+                <label className="block text-gray-700 mb-2">Upload Student CSV</label>
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={(e) => handleFileChange(e, setRegisterStudentFile)}
+                  className="w-full p-2 border rounded"
+                />
+                <p className="text-sm text-gray-500 mt-1">
+                  Please upload a CSV file with student details
+                </p>
+              </div>
+              <button
+                type="submit"
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              >
+                Upload and Register Student
               </button>
             </form>
           </div>

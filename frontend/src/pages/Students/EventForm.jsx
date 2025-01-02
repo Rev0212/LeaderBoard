@@ -126,7 +126,7 @@ const EventForm = () => {
           category: formData.category,
           positionSecured: formData.positionSecured,
           priceMoney: formData.priceMoney,
-          proofUrl: cloudinaryData.url  // Use the Cloudinary URL instead of the File object
+          proofUrl: cloudinaryData.url  
         };
 
         console.log(formDataToSend);
