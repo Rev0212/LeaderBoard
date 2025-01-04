@@ -31,6 +31,24 @@ class EmailService {
 
         return this.transporter.sendMail(mailOptions);
     }
+
+    async sendStudentEmail(email, name, password) {
+        const mailOptions = {
+            from: process.env.SMTP_FROM,
+            to: email,
+            subject: 'Your Student Account Credentials',
+            html: `
+                <h2>Welcome ${name}!</h2>
+                <p>Your student account has been created successfully.</p>
+                <p>Here are your login credentials:</p>
+                <p><strong>Email:</strong> ${email}</p>
+                <p><strong>Password:</strong> ${password}</p>
+                <p>Please change your password after your first login.</p>
+            `
+        };
+
+        return this.transporter.sendMail(mailOptions);
+    }
 }
 
 module.exports = EmailService

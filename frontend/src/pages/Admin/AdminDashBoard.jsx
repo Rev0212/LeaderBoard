@@ -55,13 +55,22 @@ const AdminDashboard = () => {
     formData.append('file', studentsFile);
 
     try {
-      // Replace with your API endpoint
-       const response = await fetch(`${VITE_BASE_URL}/class/add-students-in-bulk`, {
-         method: 'PUT',
-         body: formData
-       });
-      console.log('Uploading students file:', studentsFile);
-      alert('Students added successfully!');
+      const response = await fetch(`${VITE_BASE_URL}/class/add-students-in-bulk`, {
+        method: 'PUT',
+        body: formData
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        console.error("API Error:", data.message || response.statusText);
+        alert(`Error adding students: ${data.message || response.statusText}`);
+        return;
+      }
+      if (data.errors && data.errors.length > 0) {
+        console.error("Errors:", data.errors);
+        alert(`Errors occurred:\n${data.errors.join('\n')}`);
+      } else {
+        alert('Students added successfully!');
+      }
       setStudentsFile(null);
       e.target.reset();
     } catch (error) {

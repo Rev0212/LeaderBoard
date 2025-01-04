@@ -129,35 +129,43 @@ const createClassesInBulk = async (csvFilePath) => {
 
 const addStudentsToClassInBulk = async (csvFilePath) => {
   const students = [];
+  const errors = [];
 
   return new Promise((resolve, reject) => {
     fs.createReadStream(csvFilePath)
       .pipe(csv())
       .on('data', (row) => {
         const { className, studentRegisterNo, studentName } = row;
-        console.log(className, studentRegisterNo, studentName);
-        students.push({className, studentRegisterNo, studentName });
+        students.push({ className, studentRegisterNo, studentName });
       })
       .on('end', async () => {
         try {
           for (const student of students) {
             const classDetails = await classModel.findOne({ className: student.className });
             if (!classDetails) {
-              throw new Error(`Class with name ${student.className} not found`);
+              errors.push(`Class with name ${student.className} not found`);
+              continue;
             }
 
-            let studentRecord = await studentModel.findOne({ RegisterNo: student.RegisterNo });
+            let studentRecord = await studentModel.findOne({ registerNo: student.studentRegisterNo });
             if (!studentRecord) {
-              reject(new Error(`Student with register number ${student.studentRegisterNo} not found`));
+              errors.push(`Student with register number ${student.studentRegisterNo} not found`);
+              continue;
             } else {
               studentRecord.class = classDetails._id;
               await studentRecord.save();
             }
 
-            classDetails.students.push(studentRecord._id);
-            await classDetails.save();
+            await classModel.findByIdAndUpdate(
+              classDetails._id,
+              { $addToSet: { students: studentRecord._id } },
+              { new: true }
+            );
           }
-          resolve({ message: 'Students added to class successfully' });
+          if (errors.length > 0) {
+            console.error('Errors:', errors);
+          }
+          resolve({ message: 'Students added to class successfully', errors });
         } catch (error) {
           reject(error);
         }
@@ -167,6 +175,7 @@ const addStudentsToClassInBulk = async (csvFilePath) => {
       });
   });
 };
+
 
 module.exports = {
     createClass,

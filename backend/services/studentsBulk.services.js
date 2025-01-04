@@ -49,7 +49,7 @@ class StudentBulkService {
                 });
 
                 //email
-                await this.emailService.sendPasswordEmail(newStudent.email,newStudent.name,password);
+                await this.emailService.sendStudentEmail(newStudent.email,newStudent.name,password);
 
                 results.successful.push({
                     name: student.name,

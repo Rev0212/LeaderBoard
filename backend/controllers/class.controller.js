@@ -114,18 +114,28 @@ const createClassesInBulk = async (req, res) => {
   };
 
 const addStudentsToClassInBulk = async (req, res) => {
-    const csvFilePath = req.file.path;
-  
-    try {
-      const result = await classService.addStudentsToClassInBulk(csvFilePath);
-      res.status(201).json(result);
-    } catch (error) {
-      console.error("Error adding students to class in bulk:", error.message);
-      res.status(500).json({ error: "An error occurred while adding students to the class in bulk." });
-    } finally {
-      fs.unlinkSync(csvFilePath); // Remove the uploaded file after processing
-    }
-  };
+  if (!req.file || !req.file.path) {
+    return res.status(400).json({ error: "CSV file is required." });
+  }
+
+  const csvFilePath = req.file.path;
+
+  try {
+    const result = await classService.addStudentsToClassInBulk(csvFilePath);
+    res.status(201).json(result);
+  } catch (error) {
+    console.error("Error adding students to class in bulk:", error);
+    res.status(500).json({
+      error: "An error occurred while adding students to the class in bulk.",
+    });
+  } finally {
+    fs.unlink(csvFilePath, (err) => {
+      if (err) {
+        console.error("Error deleting the uploaded CSV file:", err.message);
+      }
+    });
+  }
+};
 
 module.exports = {
     createClass,

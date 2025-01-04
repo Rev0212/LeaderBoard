@@ -1,0 +1,383 @@
+// services/eventReportService.js
+const Event = require('../models/event.model');
+const Student = require('../models/student.model');
+const Class = require('../models/class.model');
+const { getDateRange } = require('../utils/dateRangeUtil');
+const { getStudentYearMatch } = require('../utils/studentYearUtil');
+
+class EventReportService {
+
+    async getTotalPriceMoneyByClass(timeFilter, targetYear) {
+        const { startDate, endDate } = getDateRange(timeFilter);
+        console.log(startDate, endDate);
+        const pipeline = [
+            {
+                $match: {
+                    date: { $gte: new Date(startDate), $lte: new Date(endDate) },
+                    status: 'Approved'
+                }
+            },
+            {
+                $lookup: {
+                    from: 'students',
+                    localField: 'submittedBy',
+                    foreignField: '_id',
+                    as: 'student'
+                }
+            },
+            {
+                $unwind: '$student'
+            }
+        ];
+
+        // Add year filter if specified
+        if (targetYear) {
+            pipeline.push({
+                $match: getStudentYearMatch(targetYear)
+            });
+        }
+
+        pipeline.push(
+            {
+                $lookup: {
+                    from: 'classes',
+                    localField: 'student.class',
+                    foreignField: '_id',
+                    as: 'classInfo'
+                }
+            },
+            {
+                $unwind: '$classInfo'
+            },
+            {
+                $group: {
+                    _id: '$classInfo.className',
+                    totalMoney: { $sum: '$priceMoney' }
+                }
+            },
+            {
+                $project: {
+                    className: '$_id',
+                    money: '$totalMoney',
+                    _id: 0
+                }
+            }
+        );
+
+        return await Event.aggregate(pipeline);
+    }
+
+    async getPriceMoneyByStudents(className, timeFilter, targetYear) {
+        const { startDate, endDate } = getDateRange(timeFilter);
+        
+        const pipeline = [
+            {
+                $match: {
+                    date: { $gte: startDate, $lte: endDate },
+                    status: 'Approved'
+                }
+            },
+            {
+                $lookup: {
+                    from: 'students',
+                    localField: 'submittedBy',
+                    foreignField: '_id',
+                    as: 'student'
+                }
+            },
+            {
+                $unwind: '$student'
+            }
+        ];
+
+        // Add year filter if specified
+        if (targetYear) {
+            pipeline.push({
+                $match: getStudentYearMatch(targetYear)
+            });
+        }
+
+        pipeline.push(
+            {
+                $lookup: {
+                    from: 'classes',
+                    localField: 'student.class',
+                    foreignField: '_id',
+                    as: 'classInfo'
+                }
+            },
+            {
+                $unwind: '$classInfo'
+            },
+            {
+                $match: {
+                    'classInfo.className': className
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        studentName: '$student.name',
+                        registerNo: '$student.registerNo'
+                    },
+                    events: {
+                        $push: {
+                            eventName: '$eventName',
+                            category: '$category',
+                            priceMoney: '$priceMoney'
+                        }
+                    },
+                    totalMoney: { $sum: '$priceMoney' }
+                }
+            },
+            {
+                $project: {
+                    studentName: '$_id.studentName',
+                    registerNo: '$_id.registerNo',
+                    events: 1,
+                    totalMoney: 1,
+                    _id: 0
+                }
+            }
+        );
+
+        return await Event.aggregate(pipeline);
+    }
+
+    async getCategoryWiseParticipation(timeFilter, targetYear) {
+        const { startDate, endDate } = getDateRange(timeFilter);
+        
+        const pipeline = [
+            {
+                $match: {
+                    date: { $gte: startDate, $lte: endDate },
+                    status: 'Approved'
+                }
+            },
+            {
+                $lookup: {
+                    from: 'students',
+                    localField: 'submittedBy',
+                    foreignField: '_id',
+                    as: 'student'
+                }
+            },
+            {
+                $unwind: '$student'
+            }
+        ];
+
+        // Add year filter if specified
+        if (targetYear) {
+            pipeline.push({
+                $match: getStudentYearMatch(targetYear)
+            });
+        }
+
+        pipeline.push(
+            {
+                $group: {
+                    _id: {
+                        category: '$category',
+                        year: { $substr: ['$student.registerNo', 2, 2] }
+                    },
+                    students: {
+                        $addToSet: {
+                            name: '$student.name',
+                            registerNo: '$student.registerNo'
+                        }
+                    },
+                    totalEvents: { $sum: 1 }
+                }
+            },
+            {
+                $project: {
+                    category: '$_id.category',
+                    year: '$_id.year',
+                    participationCount: { $size: '$students' },
+                    totalEvents: 1,
+                    students: 1,
+                    _id: 0
+                }
+            },
+            {
+                $sort: { year: 1, participationCount: -1 }
+            }
+        );
+
+        const result = await Event.aggregate(pipeline);
+
+        // Organize by year
+        const yearWiseData = {};
+        result.forEach(item => {
+            const year = `20${item.year}`;
+            if (!yearWiseData[year]) {
+                yearWiseData[year] = [];
+            }
+            yearWiseData[year].push({
+                category: item.category,
+                participationCount: item.participationCount,
+                totalEvents: item.totalEvents,
+                students: item.students
+            });
+        });
+
+        return yearWiseData;
+    }
+
+    async getTopCategories(timeFilter, targetYear) {
+        const { startDate, endDate } = getDateRange(timeFilter);
+        
+        const pipeline = [
+            {
+                $match: {
+                    date: { $gte: startDate, $lte: endDate },
+                    status: 'Approved'
+                }
+            },
+            {
+                $lookup: {
+                    from: 'students',
+                    localField: 'submittedBy',
+                    foreignField: '_id',
+                    as: 'student'
+                }
+            },
+            {
+                $unwind: '$student'
+            }
+        ];
+
+        // Add year filter if specified
+        if (targetYear) {
+            pipeline.push({
+                $match: getStudentYearMatch(targetYear)
+            });
+        }
+
+        pipeline.push(
+            {
+                $group: {
+                    _id: {
+                        category: '$category',
+                        year: { $substr: ['$student.registerNo', 2, 2] }
+                    },
+                    uniqueParticipants: { $addToSet: '$student.registerNo' },
+                    totalPrizeMoney: { $sum: '$priceMoney' },
+                    totalEvents: { $sum: 1 }
+                }
+            },
+            {
+                $project: {
+                    category: '$_id.category',
+                    year: '$_id.year',
+                    participantCount: { $size: '$uniqueParticipants' },
+                    totalPrizeMoney: 1,
+                    totalEvents: 1,
+                    _id: 0
+                }
+            },
+            {
+                $sort: { 
+                    year: 1,
+                    totalPrizeMoney: -1,
+                    participantCount: -1
+                }
+            }
+        );
+
+        return await Event.aggregate(pipeline);
+    }
+
+    async getTopStudents(timeFilter, targetYear) {
+        const { startDate, endDate } = getDateRange(timeFilter);
+        
+        const pipeline = [
+            {
+                $match: {
+                    date: { $gte: startDate, $lte: endDate },
+                    status: 'Approved'
+                }
+            },
+            {
+                $lookup: {
+                    from: 'students',
+                    localField: 'submittedBy',
+                    foreignField: '_id',
+                    as: 'student'
+                }
+            },
+            {
+                $unwind: '$student'
+            }
+        ];
+
+        // Add year filter if specified
+        if (targetYear) {
+            pipeline.push({
+                $match: getStudentYearMatch(targetYear)
+            });
+        }
+
+        pipeline.push(
+            {
+                $group: {
+                    _id: {
+                        name: '$student.name',
+                        registerNo: '$student.registerNo',
+                        year: { $substr: ['$student.registerNo', 2, 2] }
+                    },
+                    totalPoints: { $sum: '$pointsEarned' },
+                    totalPrizeMoney: { $sum: '$priceMoney' },
+                    eventCount: { $sum: 1 },
+                    events: {
+                        $push: {
+                            eventName: '$eventName',
+                            category: '$category',
+                            positionSecured: '$positionSecured',
+                            pointsEarned: '$pointsEarned',
+                            priceMoney: '$priceMoney'
+                        }
+                    }
+                }
+            },
+            {
+                $project: {
+                    name: '$_id.name',
+                    registerNo: '$_id.registerNo',
+                    year: '$_id.year',
+                    totalPoints: 1,
+                    totalPrizeMoney: 1,
+                    eventCount: 1,
+                    events: 1,
+                    _id: 0
+                }
+            },
+            {
+                $sort: {
+                    year: 1,
+                    totalPoints: -1,
+                    totalPrizeMoney: -1
+                }
+            }
+        );
+
+        const students = await Event.aggregate(pipeline);
+
+        // Organize by year and limit to top 50 per year
+        const yearWiseTopStudents = {};
+        students.forEach(student => {
+            const year = `20${student.year}`;
+            if (!yearWiseTopStudents[year]) {
+                yearWiseTopStudents[year] = [];
+            }
+            if (yearWiseTopStudents[year].length < 50) {
+                yearWiseTopStudents[year].push(student);
+            }
+        });
+
+        return yearWiseTopStudents;
+    }
+}
+
+module.exports = new EventReportService();

@@ -29,11 +29,26 @@ class EventReportsService {
   // Get total prize money won by class
   static async getTotalPrizeMoneyByClass(className, filterType) {
     const matchStage = this.getMatchStage(filterType);
-    const result = await Event.aggregate([
-      { $match: { ...matchStage, "submittedBy.class.name": className } },
-      { $group: { _id: "$category", totalPrizeMoney: { $sum: "$priceMoney" } } }
-    ]);
-    return result;
+    
+    try {
+      const result = await Event.aggregate([
+        { 
+          $match: { 
+            ...matchStage, 
+            "submittedBy.class.className": className 
+          }
+        },
+        { 
+          $group: { 
+            _id: "$category", 
+            totalPrizeMoney: { $sum: "$priceMoney" } 
+          } 
+        }
+      ]);
+      return result;
+    } catch (error) {
+      throw new Error(`Error getting total prize money: ${error.message}`);
+    }
   }
 
   // Get top students
@@ -50,9 +65,10 @@ class EventReportsService {
 
   // Get top performers by category
   static async getTopPerformersByCategory(category, limit = 10, filterType) {
+    console.log(category, limit, filterType);
     const matchStage = this.getMatchStage(filterType);
     const result = await Event.aggregate([
-      { $match: { ...matchStage, category } },
+      { $match: { ...matchStage,  category } },
       { $group: { _id: "$submittedBy", totalPoints: { $sum: "$pointsEarned" } } },
       { $sort: { totalPoints: -1 } },
       { $limit: limit }

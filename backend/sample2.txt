@@ -1,0 +1,60 @@
+// controllers/eventReportController.js
+const eventReportService = require('../services/eventReports.service');
+
+class EventReportController {
+    async getTotalPriceMoneyByClass(req, res) {
+        try {
+            const { timeFilter, year } = req.query;
+            console.log(timeFilter, year);
+            const result = await eventReportService.getTotalPriceMoneyByClass(timeFilter, parseInt(year));
+            res.json(result);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    async getPriceMoneyByStudents(req, res) {
+        try {
+            const { className } = req.params;
+            const { timeFilter, year } = req.query;
+            console.log(timeFilter, year);
+            const result = await eventReportService.getPriceMoneyByStudents(className, timeFilter, parseInt(year));
+            res.json(result);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    async getCategoryWiseParticipation(req, res) {
+        try {
+            const { timeFilter, year } = req.query;
+            const result = await eventReportService.getCategoryWiseParticipation(timeFilter, parseInt(year));
+            res.json(result);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    async getTopCategories(req, res) {
+        try {
+            const { timeFilter, year } = req.query;
+            const result = await eventReportService.getTopCategories(timeFilter, parseInt(year));
+            res.json(result);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    async getTopStudents(req, res) {
+        try {
+            const { timeFilter, year } = req.query;
+            console.log(timeFilter, year);
+            const result = await eventReportService.getTopStudents(timeFilter, parseInt(year));
+            res.json(result);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+}
+
+module.exports = new EventReportController();
