@@ -120,3 +120,15 @@ module.exports.getStudentProfile = async (req, res, next) => {
         next(error); // Pass the error to the error handling middleware
     }
 };
+
+module.exports.updateStudentProfile = async (req, res, next) => { 
+    try {
+        const { registerNo, profileImg } = req.body;
+        console.log(registerNo, profileImg);
+        const student = await studentService.addProfileImg(registerNo, profileImg);
+
+        res.status(200).json(student);
+    } catch (error) {
+        next(error);
+    }
+}

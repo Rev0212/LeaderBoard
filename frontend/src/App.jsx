@@ -9,12 +9,14 @@ import TeacherLoginForm from './pages/Teachers/TeacherLogin';
 import TeacherDashboard from './pages/Teachers/TeacherDashboard';
 import EventHistoryTable from './components/EventList'
 import AdminDashboard from './pages/Admin/AdminDashBoard';
+import ReportsPage from './pages/ReportsPage';
 import { Route, Routes } from 'react-router-dom';
 
 
 const App = () => {
   return (
     <Routes>
+      <Route path='/reports' element={<ReportsPage/>}/>
       <Route path='/events' element={<EventHistoryTable/>}/>
       <Route path='/admin-dashboard' element={<AdminDashboard/>}/>
       <Route path="/teacher-login" element={<TeacherLoginForm/>}/>

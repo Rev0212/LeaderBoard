@@ -69,4 +69,6 @@ router.post('/bulk-register',
     studentController.registerStudentsBulk
 );
 
+
+router.put('/add-profile-img', studentController.updateStudentProfile);
 module.exports = router

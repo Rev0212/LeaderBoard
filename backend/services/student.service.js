@@ -12,6 +12,24 @@ module.exports.createStudent = async ({ name, email, password, registerNo }) => 
         password: password,
         registerNo
     });
-
     return student;
 };
+
+module.exports.addProfileImg = async (registerNo, profileImg) => {
+    try {
+        const updatedStudent = await studentModel.findOneAndUpdate(
+            { registerNo }, 
+            { profileImg: profileImg }, 
+            { new: true } // Return the updated document
+        );
+
+        if (!updatedStudent) {
+            throw new Error("Student not found with the given registerNo");
+        }
+
+        return updatedStudent;
+    } catch (error) {
+        console.error("Error updating profile image:", error);
+        throw error;
+    }
+}
