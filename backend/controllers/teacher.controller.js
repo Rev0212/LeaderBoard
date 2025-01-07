@@ -121,3 +121,27 @@ module.exports.getProfile = async (req, res, next) => {
     }
 };
 
+
+module.exports.addProfileImg = async (req, res, next) => { 
+    try {
+        const { registerNo, profileImg } = req.body;
+        console.log(registerNo, profileImg);
+        const teacher = await teacherService.addProfileImg(registerNo, profileImg);
+
+        res.status(200).json(teacher);
+    } catch (error) {
+        next(error);
+    }
+}
+
+
+module.exports.changePassword = async (req, res, next) => {
+    try {
+        const { oldPassword, newPassword } = req.body;
+        const teacher = await teacherService.changePassword(req.teacher._id, oldPassword, newPassword);
+
+        res.status(200).json(teacher);
+    } catch (error) {
+        next(error);
+    }
+}

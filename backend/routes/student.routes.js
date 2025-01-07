@@ -71,4 +71,8 @@ router.post('/bulk-register',
 
 
 router.put('/add-profile-img', studentController.updateStudentProfile);
+
+router.put('/change-password',authMiddleware.authStudent, studentController.changePassword);
+
 module.exports = router
+

@@ -132,3 +132,17 @@ module.exports.updateStudentProfile = async (req, res, next) => {
         next(error);
     }
 }
+
+
+module.exports.changePassword = async (req, res, next) => {
+    try {
+        if(!req.student) {
+            return res.status(404).json({ message: 'Student not found' });
+        }
+        const { oldPassword, newPassword } = req.body;
+        const student = await studentService.changePassword(req.student._id, oldPassword, newPassword);
+        res.status(200).json(student);
+    } catch (error) {
+        next(error);
+    }
+}
