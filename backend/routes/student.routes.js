@@ -35,13 +35,13 @@ const upload = multer({
 
 
 
-router.post('/register',[
-    body('email').isEmail().withMessage('Invalid Email'),
-    body('name').isLength({min:3}).withMessage('Name must be atleat 3 char long'),
-    body('password').isLength({min:6}).withMessage("Password must be atlaest 6 characters long")
-],
- studentController.registerStudent
-)
+// router.post('/register',[
+//     body('email').isEmail().withMessage('Invalid Email'),
+//     body('name').isLength({min:3}).withMessage('Name must be atleat 3 char long'),
+//     body('password').isLength({min:6}).withMessage("Password must be atlaest 6 characters long")
+// ],
+//  studentController.registerStudent
+// )
 
 
 router.post('/login',[
@@ -52,10 +52,6 @@ router.post('/login',[
 )
 
 router.get('/profile', authMiddleware.authStudent, studentController.getStudentProfile);
-
-
-// router.get('/logout', authMiddleware.authStudent, StudentController.logoutStudent)
-
 
 router.post('/bulk-register', 
     (req, res, next) => {
@@ -69,10 +65,10 @@ router.post('/bulk-register',
     studentController.registerStudentsBulk
 );
 
-
 router.put('/add-profile-img', studentController.updateStudentProfile);
 
 router.put('/change-password',authMiddleware.authStudent, studentController.changePassword);
 
+router.get('/logout', authMiddleware.authStudent, studentController.logoutStudent);
 module.exports = router
 

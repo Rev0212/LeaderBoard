@@ -7,9 +7,9 @@ const studentModel = require('../models/student.model');
 const teacherModel = require('../models/teacher.model');
 
 class StudentBulkService {
-    constructor() {
-        this.emailService = new EmailService();  // Ensure this is correctly instantiated
-    }
+    // constructor() {
+    //     this.emailService = new EmailService();  // Ensure this is correctly instantiated
+    // }
 
     async processCSV(filePath) {
         const results = [];
@@ -49,14 +49,15 @@ class StudentBulkService {
                 });
 
                 //email
-                await this.emailService.sendStudentEmail(newStudent.email,newStudent.name,password);
+                //await this.emailService.sendStudentEmail(newStudent.email,newStudent.name,password);
 
                 results.successful.push({
                     name: student.name,
                     email: student.email,
                     registerNo: student.registerNo,
-                    password: password  // conform ana aprm remove pannu
+                    password: password 
                 });
+
             } catch (error) {
                 results.failed.push({
                     student,

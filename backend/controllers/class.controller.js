@@ -3,8 +3,6 @@ const studentModel = require('../models/student.model')
 const classService = require('../services/class.service');
 const fs = require('fs');
 const csv = require('csv-parser');
-const pLimit = require('p-limit');
-
 const createClass = async (req, res) => {
     const { className, teacherId } = req.body;
 

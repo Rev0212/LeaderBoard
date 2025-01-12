@@ -1,5 +1,6 @@
 const studentModel = require('../models/student.model');
 const studentService = require('../services/student.service');
+const blackListModel = require('../models/blacklistToken.model');
 const { validationResult } = require('express-validator');
 const fs = require('fs');
 const path = require('path');
@@ -27,47 +28,48 @@ module.exports.registerStudentsBulk = async (req, res, next) => {
 
         res.status(200).json({
             message: 'Bulk registration completed',
-            successful: results.successful.length,
+            successful: results.successful,
             failed: results.failed.length,
             failedEntries: results.failed,
             students: results.successful 
         });
+        console.log(results.successful);
     } catch (error) {
         next(error);
     }
 };
 
-module.exports.registerStudent = async (req, res, next) => {
+// module.exports.registerStudent = async (req, res, next) => {
 
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-    }
+//     const errors = validationResult(req);
+//     if (!errors.isEmpty()) {
+//         return res.status(400).json({ errors: errors.array() });
+//     }
 
-    const { name, email, password,registerNo } = req.body;
+//     const { name, email, password,registerNo } = req.body;
 
-    const isUserAlready = await studentModel.findOne({ email });
+//     const isUserAlready = await studentModel.findOne({ email });
 
-    if (isUserAlready) {
-        return res.status(400).json({ message: 'User already exists' });
-    }
+//     if (isUserAlready) {
+//         return res.status(400).json({ message: 'User already exists' });
+//     }
 
-    const hashedPassword = await studentModel.hashPassword(password);
+//     const hashedPassword = await studentModel.hashPassword(password);
     
 
-    const student = await studentService.createStudent({
-        name,
-        email,
-        password: hashedPassword,
-        registerNo
-    });
+//     const student = await studentService.createStudent({
+//         name,
+//         email,
+//         password: hashedPassword,
+//         registerNo
+//     });
 
-    const token = student.generateAuthToken();
+//     const token = student.generateAuthToken();
     
-    res.cookie('token', token);
+//     res.cookie('token', token);
 
-    res.status(201).json({ token, student});
-}
+//     res.status(201).json({ token, student});
+// }
 
 module.exports.loginStudent = async (req, res, next) => {
 
@@ -142,6 +144,17 @@ module.exports.changePassword = async (req, res, next) => {
         const { oldPassword, newPassword } = req.body;
         const student = await studentService.changePassword(req.student._id, oldPassword, newPassword);
         res.status(200).json(student);
+    } catch (error) {
+        next(error);
+    }
+}
+
+module.exports.logoutStudent = async (req, res, next) => {
+    try {
+        res.clearCookie('token');
+        const token = req.cookies.token || req.headers.authorization.split(' ')[1];
+        await blackListModel.create({ token });
+        res.status(200).json({ message: 'Logged out successfully' });
     } catch (error) {
         next(error);
     }

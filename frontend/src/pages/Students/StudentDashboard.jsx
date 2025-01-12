@@ -41,6 +41,25 @@ const StudentDashboard = () => {
     navigate("/event-submit");
   };
 
+  const handleLogoutClick = async () => {
+    const token = localStorage.getItem("student-token");
+    try {
+    const response = await axios.get(`${VITE_BASE_URL}/student/logout`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+    if(response.status === 200) {
+     localStorage.removeItem("student-token");
+     navigate("/student-login");
+    }
+  }
+  catch(err) {
+    console.error("Error logging out:", err);
+  }
+};
+
   const handleShowEvents = () => {
     setShowEventsList(true);
   };
@@ -102,7 +121,7 @@ const StudentDashboard = () => {
             Add Event
           </button>
 
-          <button className="bg-red-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-red-600">
+          <button onClick={handleLogoutClick} className="bg-red-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-red-600">
             <LogOut size={20} />
             Logout
           </button>
@@ -162,5 +181,6 @@ const StudentDashboard = () => {
     </div>
   );
 };
+
 
 export default StudentDashboard;

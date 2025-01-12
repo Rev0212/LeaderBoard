@@ -48,7 +48,24 @@ const TeacherDashboard = () => {
     fetchTeacherData();
   }, [VITE_BASE_URL]);
 
-  console.log(teacherData)
+
+  const haandleLogoutClick = async () => { 
+     const token = localStorage.getItem("token"); 
+     try{
+     const response = await axios.get(`${VITE_BASE_URL}/teacher/logout`,{
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+     if(response.status === 200) {
+      localStorage.removeItem("token");
+      navigate("/teacher-login"); 
+     }} 
+      catch(err) {  
+        console.error("Error logging out:", err);
+      }
+  }
 
   const handleCheckNow = (event) => {
     setSelectedEvent(event);
@@ -113,7 +130,7 @@ const TeacherDashboard = () => {
             </button>
           </div> 
           <button
-            onClick={handleLogout}
+            onClick={haandleLogoutClick}
             className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
           >
             Logout
@@ -180,6 +197,7 @@ const TeacherDashboard = () => {
       />
     </div>
   );
-};
+}
+
 
 export default TeacherDashboard;

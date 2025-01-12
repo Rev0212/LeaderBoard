@@ -29,6 +29,7 @@ class TeacherBulkService {
         });
     }
 
+
     async processTeachers(teachers) {
         const results = {
             successful: [],
@@ -37,6 +38,7 @@ class TeacherBulkService {
 
         for (const teacher of teachers) {
             try {
+                console.log("Input Data from CSV:", results)
                 const password = generateRandomPassword();
                 const hashedPassword = await teacherModel.hashedPassword(password);
 

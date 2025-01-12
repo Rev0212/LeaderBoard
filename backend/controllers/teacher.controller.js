@@ -3,7 +3,8 @@ const path = require('path');
 const multer = require('multer');
 const teacherModel = require('../models/teacher.model');
 const teacherService = require('../services/teacher.service');
-const TeacherBulkService = require('../services/teacherBulk.services')
+const TeacherBulkService = require('../services/teacherBulk.services') 
+const BlacklistToken = require('../models/blacklistToken.model');
 const { validationResult } = require('express-validator');
 
 // Ensure uploads directory exists
@@ -51,9 +52,9 @@ module.exports.registerTeachersBulk = async (req, res, next) => {
         if (!req.file) {
             return res.status(400).json({ message: 'Please upload a CSV file check2' });
         }
-
         const teacherBulkService = new TeacherBulkService();
         const results = await teacherBulkService.processCSV(req.file.path);
+        console.log(results)
 
         // Clean up the uploaded file
         fs.unlinkSync(req.file.path);
@@ -145,3 +146,17 @@ module.exports.changePassword = async (req, res, next) => {
         next(error);
     }
 }
+
+module.exports.logoutTeacher = async (req, res, next) => {
+    try {
+        const token = req.cookies.token || req.headers.authorization.split(' ')[1];
+
+        await BlacklistToken.create({ token });
+
+        res.clearCookie('token');
+
+        res.status(200).json({ message: 'Logged out successfully' });
+    } catch (error) {
+        next(error);
+    }
+};

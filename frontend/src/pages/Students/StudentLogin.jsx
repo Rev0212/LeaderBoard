@@ -67,10 +67,7 @@ const StudentLoginForm = () => {
     
     setIsLoading(true);
     try {
-      const response = await axios.post(`${VITE_BASE_URL}/student/login`, formData);
-      const data = response.data
-      console.log(data)
-      
+      const response = await axios.post(`${VITE_BASE_URL}/student/login`, formData);  
       localStorage.setItem('student-token', response.data.token);
       setSuccessMessage('Login successful!');
       setFormData({

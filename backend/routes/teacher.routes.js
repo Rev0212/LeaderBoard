@@ -63,8 +63,6 @@ router.put('/add',teacherController.addProfileImg);
 
 router.put('/change-password', authMiddleware.authTeacher, teacherController.changePassword);
 
-
-// Uncomment or implement the logout route
-// router.get('/logout', authMiddleware.authTeacher, teacherController.logout);
+router.get('/logout', authMiddleware.authTeacher, teacherController.logoutTeacher);
 
 module.exports = router;
