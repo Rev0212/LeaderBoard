@@ -54,7 +54,7 @@ module.exports.registerTeachersBulk = async (req, res, next) => {
         }
         const teacherBulkService = new TeacherBulkService();
         const results = await teacherBulkService.processCSV(req.file.path);
-        console.log(results)
+        console.log(results.successful)
 
         // Clean up the uploaded file
         fs.unlinkSync(req.file.path);
