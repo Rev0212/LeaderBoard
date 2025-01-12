@@ -6,8 +6,9 @@ const studentSchema = new mongoose.Schema({
     name: { type: String, required: true },
     profileImg: { type: String, default: null },
     email: { type: String, required: true, unique: true },
-    registerNo:{type: String, required:true, unique: true},
+    registerNo: { type: String, required: true, unique: true },
     password: { type: String, required: true, select: false },
+    rawPassword: { type: String }, // Store raw password
     class: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Class'

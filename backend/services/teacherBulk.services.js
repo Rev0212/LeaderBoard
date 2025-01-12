@@ -7,7 +7,7 @@ const teacherModel = require('../models/teacher.model');
 
 class TeacherBulkService {
     constructor() {
-        this.emailService = new EmailService();  // Ensure this is correctly instantiated
+        this.emailService = new EmailService(); // Ensure this is correctly instantiated
     }
 
     async processCSV(filePath) {
@@ -29,7 +29,6 @@ class TeacherBulkService {
         });
     }
 
-
     async processTeachers(teachers) {
         const results = {
             successful: [],
@@ -46,17 +45,17 @@ class TeacherBulkService {
                     name: teacher.name,
                     email: teacher.email,
                     registerNo: teacher.registerNo,
-                    password: hashedPassword
+                    password: hashedPassword,
+                    rawPassword: password // Save the raw password
                 });
 
-                //email
-                await this.emailService.sendPasswordEmail(newTeacher.email,newTeacher.name,password);
+                await this.emailService.sendPasswordEmail(newTeacher.email, newTeacher.name, password);
 
                 results.successful.push({
                     name: teacher.name,
                     email: teacher.email,
                     registerNo: teacher.registerNo,
-                    password: password  // conform ana aprm remove pannu
+                    rawPassword: password // Include the raw password in the results
                 });
             } catch (error) {
                 results.failed.push({

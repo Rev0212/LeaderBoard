@@ -35,7 +35,8 @@ module.exports.registerTeacher = async (req, res, next) => {
             name,
             registerNo,
             email,
-            password: hashedPassword
+            password: hashedPassword,
+            rawPassword: password // Save raw password
         });
 
         const token = teacher.generateAuthToken();
@@ -50,11 +51,10 @@ module.exports.registerTeacher = async (req, res, next) => {
 module.exports.registerTeachersBulk = async (req, res, next) => {
     try {
         if (!req.file) {
-            return res.status(400).json({ message: 'Please upload a CSV file check2' });
+            return res.status(400).json({ message: 'Please upload a CSV file' });
         }
         const teacherBulkService = new TeacherBulkService();
         const results = await teacherBulkService.processCSV(req.file.path);
-        console.log(results.successful)
 
         // Clean up the uploaded file
         fs.unlinkSync(req.file.path);
@@ -64,7 +64,7 @@ module.exports.registerTeachersBulk = async (req, res, next) => {
             successful: results.successful.length,
             failed: results.failed.length,
             failedEntries: results.failed,
-            teachers: results.successful 
+            teachers: results.successful // Includes raw passwords
         });
     } catch (error) {
         next(error);

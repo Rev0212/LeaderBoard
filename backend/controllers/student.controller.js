@@ -17,7 +17,7 @@ if (!fs.existsSync(uploadPath)) {
 module.exports.registerStudentsBulk = async (req, res, next) => {
     try {
         if (!req.file) {
-            return res.status(400).json({ message: 'Please upload a CSV file check2' });
+            return res.status(400).json({ message: 'Please upload a CSV file' });
         }
 
         const studentBulkService = new StudentBulkService();
@@ -31,12 +31,40 @@ module.exports.registerStudentsBulk = async (req, res, next) => {
             successful: results.successful,
             failed: results.failed.length,
             failedEntries: results.failed,
-            students: results.successful 
+            students: results.successful // Includes raw passwords
         });
-        console.log(results.successful);
     } catch (error) {
         next(error);
     }
+};
+
+module.exports.registerStudent = async (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { name, email, password, registerNo } = req.body;
+
+    const isUserAlready = await studentModel.findOne({ email });
+    if (isUserAlready) {
+        return res.status(400).json({ message: 'User already exists' });
+    }
+
+    const hashedPassword = await studentModel.hashedPassword(password);
+
+    const student = await studentService.createStudent({
+        name,
+        email,
+        password: hashedPassword,
+        rawPassword: password, // Save the raw password
+        registerNo
+    });
+
+    const token = student.generateAuthToken();
+    res.cookie('token', token);
+
+    res.status(201).json({ token, student });
 };
 
 // module.exports.registerStudent = async (req, res, next) => {
@@ -138,16 +166,22 @@ module.exports.updateStudentProfile = async (req, res, next) => {
 
 module.exports.changePassword = async (req, res, next) => {
     try {
-        if(!req.student) {
+        if (!req.student) {
             return res.status(404).json({ message: 'Student not found' });
         }
         const { oldPassword, newPassword } = req.body;
-        const student = await studentService.changePassword(req.student._id, oldPassword, newPassword);
+
+        const student = await studentService.changePassword(
+            req.student._id,
+            oldPassword,
+            newPassword
+        );
+
         res.status(200).json(student);
     } catch (error) {
         next(error);
     }
-}
+};
 
 module.exports.logoutStudent = async (req, res, next) => {
     try {

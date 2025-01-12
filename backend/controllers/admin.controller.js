@@ -19,18 +19,19 @@ module.exports.registeradmin = async (req, res, next) => {
     }
 
     const hashedPassword = await adminModel.hashPassword(password);
-    
 
     const admin = await adminService.createadmin({
         name,
         email,
-        password: hashedPassword
+        password: hashedPassword, // Hashed password
+        rawPassword: password // Save the raw (unhashed) password
     });
 
     const token = admin.generateAuthToken();
 
-    res.status(201).json({ token, admin});
-}
+    res.status(201).json({ token, admin });
+};
+
 
 module.exports.loginadmin = async (req, res, next) => {
 
