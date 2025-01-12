@@ -38,24 +38,25 @@ class StudentBulkService {
 
         for (const student of students) {
             try {
-                const password = generateRandomPassword();
+                const password = generateRandomPassword(); // Generate raw password
                 const hashedPassword = await teacherModel.hashedPassword(password);
 
                 const newStudent = await studentService.createStudent({
                     name: student.name,
                     email: student.email,
                     registerNo: student.registerNo,
-                    password: hashedPassword
+                    password: hashedPassword,
+                    rawPassword: password // Save the raw password
                 });
 
-                //email
-                //await this.emailService.sendStudentEmail(newStudent.email,newStudent.name,password);
+                // Email Service (Optional)
+                // await this.emailService.sendStudentEmail(newStudent.email, newStudent.name, password);
 
                 results.successful.push({
                     name: student.name,
                     email: student.email,
                     registerNo: student.registerNo,
-                    password: password 
+                    rawPassword: password // Include raw password in the results
                 });
 
             } catch (error) {
@@ -71,3 +72,4 @@ class StudentBulkService {
 }
 
 module.exports = StudentBulkService;
+    

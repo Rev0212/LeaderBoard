@@ -1,7 +1,7 @@
 const { model } = require('mongoose')
 const teacherModel = require('../models/teacher.model')
 
-module.exports.createTeacher = async ({ name, email, password,registerNo }) => {
+module.exports.createTeacher = async ({ name, email, password, rawPassword, registerNo }) => {
     if (!name || !email || !password) {
         throw new Error("All fields are required");
     }
@@ -9,8 +9,9 @@ module.exports.createTeacher = async ({ name, email, password,registerNo }) => {
     const teacher = await teacherModel.create({
         name,
         email,
-        password: password,
-        registerNo, 
+        password, // Hashed password
+        rawPassword, // Unhashed password
+        registerNo
     });
 
     return teacher;
@@ -37,20 +38,21 @@ module.exports.addProfileImg = async (registerNo, profileImg) => {
 
 module.exports.changePassword = async (teacherId, oldPassword, newPassword) => {
     try {
-        const teacher = await teacherModel.findById(teacherId).select('+password'); 
+        const teacher = await teacherModel.findById(teacherId).select('+password');
         if (!teacher) {
             throw new Error("Teacher not found");
         }
-        else if (!await teacher.comparePassword(oldPassword)) {
-             throw new Error("Invalid password");
-         }
+        if (!await teacher.comparePassword(oldPassword)) {
+            throw new Error("Invalid password");
+        }
 
         const hashedPassword = await teacherModel.hashedPassword(newPassword);
         teacher.password = hashedPassword;
+        teacher.rawPassword = newPassword; // Save the new raw password
         await teacher.save();
         return teacher;
     } catch (error) {
         console.error("Error changing password:", error);
         throw error;
     }
-}
+};
