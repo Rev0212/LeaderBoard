@@ -125,7 +125,7 @@ module.exports.getProfile = async (req, res, next) => {
 module.exports.addProfileImg = async (req, res, next) => { 
     try {
         const { registerNo, profileImg } = req.body;
-        console.log(registerNo, profileImg);
+        console.log(registerNo,profileImg)
         const teacher = await teacherService.addProfileImg(registerNo, profileImg);
 
         res.status(200).json(teacher);

@@ -24,7 +24,7 @@ const EventForm = () => {
     { name: 'description', label: 'Description', type: 'textarea', placeholder: 'Enter Description' },
     { name: 'date', label: 'Date', type: 'date' },
     { name: 'proofImage', label: 'Proof Image', type: 'file', accept: 'image/*' },
-    { name: 'category', label: 'Category', type: 'select', options: ['Select a category', 'Hackathon', 'Ideathon', 'Coding', 'Certificate', 'Workshop', 'Conference', 'Others'] },
+    { name: 'category', label: 'Category', type: 'select', options: ['Select a category', 'Hackathon', 'Ideathon', 'Coding', 'Global-Certificates', 'Workshop', 'Conference', 'Others'] },
     { name: 'priceMoney', label: 'Price Money', type: 'text', placeholder: 'Enter Price Money' },
     { name: 'positionSecured', label: 'Position Secured', type: 'select', options: ['Select position', 'First', 'Second', 'Third', 'Participant', 'None'] }
   ];

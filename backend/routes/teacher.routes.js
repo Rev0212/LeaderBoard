@@ -61,7 +61,7 @@ router.post('/bulk-register',
 
 router.put('/add',teacherController.addProfileImg);
 
-router.post('/change-password', authMiddleware.authTeacher, teacherController.changePassword);
+router.put('/change-password', authMiddleware.authTeacher, teacherController.changePassword);
 
 
 // Uncomment or implement the logout route

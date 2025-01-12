@@ -3,6 +3,7 @@ import axios from 'axios';
 import { User, Mail, Hash, Star, Calendar, ArrowLeft, Camera, Trash2 } from 'lucide-react';
 
 const TeacherProfile = ({ teacherData, handleBackToDashboard }) => {
+   console.log(teacherData)
   const [profileImg, setProfileImg] = useState(teacherData?.profileImg || null);
   const [uploading, setUploading] = useState(false);
   const [showChangePasswordForm, setShowChangePasswordForm] = useState(false);
@@ -39,11 +40,12 @@ const TeacherProfile = ({ teacherData, handleBackToDashboard }) => {
         const responseData = await cloudinaryResponse.json();
         console.log("Image upload response:", responseData);
         const imageUrl = responseData.url;
+        console.log(teacherData.registerNo, imageUrl);
 
         setProfileImg(imageUrl);
 
         await axios.put(
-          `${import.meta.env.VITE_BASE_URL}/teacher/add-profile-img`,
+          `${import.meta.env.VITE_BASE_URL}/teacher/add`,
           {
             profileImg: imageUrl,
             registerNo: teacherData.registerNo
@@ -68,7 +70,7 @@ const TeacherProfile = ({ teacherData, handleBackToDashboard }) => {
     setProfileImg(null);
     try {
       await axios.put(
-        `/api/teachers/${teacherData._id}/profile-image`,
+        `${VITE_BASE_URL}/teacher/${teacherData._id}/profile-image`,
         { profileImg: null },
         {
           headers: {
@@ -109,7 +111,7 @@ const TeacherProfile = ({ teacherData, handleBackToDashboard }) => {
         {
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${localStorage.getItem("teacher-token")}`,
+            "Authorization": `Bearer ${localStorage.getItem("token")}`,
           },
         }
       );

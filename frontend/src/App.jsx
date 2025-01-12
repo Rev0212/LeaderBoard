@@ -22,7 +22,7 @@ const App = () => {
       <Route path="/teacher-dashboard" element={<TeacherProtectWrapper><TeacherDashboard/></TeacherProtectWrapper>}/>
       <Route path="/student-login" element={<StudentLoginForm />} />
       <Route path='/event-submit' element={<StudentProtectWrapper><EventForm/></StudentProtectWrapper>}/>
-      <Route path='/student-dashboard' element={<StudentProtectWrapper><StudentDashboard/></StudentProtectWrapper>}/>
+      <Route path='/' element={<StudentProtectWrapper><StudentDashboard/></StudentProtectWrapper>}/>
     </Routes>
   );
 };

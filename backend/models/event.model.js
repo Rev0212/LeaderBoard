@@ -31,7 +31,7 @@ const eventSchema = new mongoose.Schema({
     },
     category: {
         type: String,
-        enum: ['Hackathon', 'Ideathon', 'Coding', 'Certificate','others'],
+        enum: ['Hackathon', 'Ideathon', 'Coding', 'Global-Certificates', 'Workshop', 'Conference', 'Others'],
         required: true
     },
     positionSecured: {
