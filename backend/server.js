@@ -46,7 +46,7 @@ process.on('SIGINT', async () => {
 
 process.on('SIGTERM', async () => {
     console.log('SIGTERM received. Creating backup before shutdown...');
-    await createBackup(); // Backup data on shutdown
+    // await createBackup(); // Backup data on shutdown
     server.close(() => {
         console.log('Server shutting down gracefully.');
         process.exit(0);

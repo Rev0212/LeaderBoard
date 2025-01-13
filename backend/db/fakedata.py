@@ -57,11 +57,13 @@ def create_student(class_id):
 
 def create_event(event_name, submitted_by, category):
     print(f"Creating event: {event_name} (Category: {category})")
+    pdf_name = "1736790121145-142319603.pdf"
     return {
         "eventName": event_name,
         "description": faker.text(max_nb_chars=200),
         "date": datetime.combine(faker.date_between(start_date="-2y", end_date="today"), datetime.min.time()),
         "proofUrl": "http://res.cloudinary.com/dyiph7is1/image/upload/v1736782080/lbblteg4fwnrlg2jci5v.jpg",
+        "pdfDocument": pdf_name,
         "priceMoney": random.randint(0, 5000),
         "status": random.choice(["Pending", "Approved", "Rejected"]),
         "category": category,
@@ -115,7 +117,7 @@ def populate_database():
             student_ids.append(student_id)
 
             # Assign events to some students with varying participation
-            event_count = random.choices([0, 1, 2, 3, 4, 5, 6], weights=[10, 20, 30, 20, 10, 5, 5], k=1)[0]
+            event_count = random.choices([0, 3, 4, 5, 6], weights=[5, 30, 30, 25, 10], k=1)[0]
             assigned_events = set()
             for _ in range(event_count):
                 event_name = random.choice(event_names)
