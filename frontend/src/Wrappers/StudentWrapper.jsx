@@ -8,9 +8,7 @@ const StudentProtectWrapper = ({ children }) => {
     useEffect(() => {
         if (!token) {
             navigate("/student-login");
-        } else {
-            navigate("/student-dashboard");  
-        }
+        } 
     }, [navigate, token]); 
 
     if (!token) {
