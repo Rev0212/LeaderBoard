@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import backgroundImage from './SRM.jpg'; // Adjust the path as per your folder structure
-import srmLogo from 'C:/Users/cdhiy/LeaderBoard/frontend/src/pages/homepage/srm logo.png'; // Update the correct path // Add the correct path to your SRM logo image
+import srmLogo from './SRMlogo.png'; // Update the correct path // Add the correct path to your SRM logo image
 
 const LandingPage = () => {
   const navigate = useNavigate();
