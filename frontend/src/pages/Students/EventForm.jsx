@@ -186,7 +186,7 @@ const EventForm = () => {
         }
   
         setUploadStatus('Form submitted successfully!');
-        setTimeout(() => navigate("/"), 1500);
+        setTimeout(() => navigate("/student-dashboard"), 1500);
   
       } catch (error) {
         console.error('Submission error:', error);

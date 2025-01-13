@@ -29,6 +29,7 @@ const StudentDashboard = () => {
       } catch (err) {
         console.error("Error fetching student data:", err);
         setError("Failed to load student data. Please try again later.");
+        navigate("/student-login");
       } finally {
         setLoading(false);
       }
