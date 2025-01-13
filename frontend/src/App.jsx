@@ -1,4 +1,5 @@
 import React from 'react';
+import LandingPage from './pages/homepage/LandingPage'; // New Landing Page
 import StudentLoginForm from './pages/Students/StudentLogin';
 import StudentDashboard from './pages/Students/StudentDashboard';
 import EventForm from './pages/Students/EventForm';
@@ -15,6 +16,7 @@ import { Route, Routes } from 'react-router-dom';
 const App = () => {
   return (
     <Routes>
+      <Route path="/" element={<LandingPage />} /> {/* Landing Page Route */}
       <Route path='/reports' element={<ReportsPage/>}/>
       <Route path='/events' element={<EventHistoryTable/>}/>
       <Route path='/admin-dashboard' element={<AdminDashboard/>}/>
