@@ -9,6 +9,7 @@ const TeacherDashboard = () => {
   const [teacherData, setTeacherData] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showProfile, setShowProfile] = useState(false); // State to show profile
+  const [selectedPDF, setSelectedPDF] = useState(null); // State for selected PDF
 
   const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -48,23 +49,22 @@ const TeacherDashboard = () => {
     fetchTeacherData();
   }, [VITE_BASE_URL]);
 
-
   const haandleLogoutClick = async () => { 
-     const token = localStorage.getItem("token"); 
-     try{
-     const response = await axios.get(`${VITE_BASE_URL}/teacher/logout`,{
+    const token = localStorage.getItem("token"); 
+    try{
+      const response = await axios.get(`${VITE_BASE_URL}/teacher/logout`,{
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
       });
-     if(response.status === 200) {
-      localStorage.removeItem("token");
-      navigate("/teacher-login"); 
-     }} 
-      catch(err) {  
-        console.error("Error logging out:", err);
-      }
+      if(response.status === 200) {
+        localStorage.removeItem("token");
+        navigate("/teacher-login"); 
+      } 
+    } catch(err) {  
+      console.error("Error logging out:", err);
+    }
   }
 
   const handleCheckNow = (event) => {
@@ -105,6 +105,20 @@ const TeacherDashboard = () => {
     setShowProfile(false);
   };
 
+  const handleShowPDF = (event) => {
+    // Ensure the PDF document exists before opening it in the modal
+    if (event.pdfDocument) {
+      const pdfUrl = `http://localhost:4000/uploads/pdf/${event.pdfDocument}`;
+      setSelectedPDF(pdfUrl);  // Set the PDF URL to the state
+    } else {
+      console.error('No PDF document available for this event');
+    }
+  };
+
+  const handleClosePDFModal = () => {
+    setSelectedPDF(null);
+  };
+
   if (showProfile) {
     return (
       <TeacherProfile
@@ -120,7 +134,7 @@ const TeacherDashboard = () => {
       <div className="mb-8 flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-800">Teacher Dashboard</h1>
         <div className="flex items-center gap-4">
-        <div className="relative">
+          <div className="relative">
             <button
               onClick={handleShowProfile}
               className="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg shadow hover:shadow-md transition-shadow"
@@ -128,14 +142,13 @@ const TeacherDashboard = () => {
               <User size={20} />
               Profile
             </button>
-          </div> 
+          </div>
           <button
             onClick={haandleLogoutClick}
             className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
           >
             Logout
           </button>
-         
         </div>
       </div>
 
@@ -160,7 +173,14 @@ const TeacherDashboard = () => {
                     {new Date(event.timestamp).toLocaleString()}
                   </p>
                 </div>
-                <div className="ml-4">
+                <div className="ml-4 flex gap-4 items-center">
+                  <button
+                    onClick={() => handleShowPDF(event)}
+                    className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
+                  >
+                    Show PDF Proof
+                  </button>
+
                   {event.status === 'Pending' ? (
                     <button
                       onClick={() => handleCheckNow(event)}
@@ -195,9 +215,31 @@ const TeacherDashboard = () => {
         onApprove={handleApprove}
         onReject={handleReject}
       />
+
+      {/* PDF Modal */}
+      {selectedPDF && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-3xl w-full relative">
+            {/* Close Button */}
+            <button
+              onClick={handleClosePDFModal}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+            >
+              <span className="text-xl font-bold">×</span> {/* Cross icon */}
+            </button>
+            <div className="pdf-container">
+              <iframe
+                src={selectedPDF} // Directly using the URL stored in selectedPDF
+                width="100%"
+                height="500px"
+                title="Event PDF"
+              ></iframe>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
-}
-
+};
 
 export default TeacherDashboard;

@@ -27,3 +27,5 @@ Thumbs.db
 *.csv
 # PNG
 *.png
+#PDF
+.pdf

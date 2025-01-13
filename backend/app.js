@@ -7,6 +7,7 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const connectToDb = require('./db/db');
 
+
 app.get('/', (req, res) => {
     res.send('Server is running!');
 });
@@ -15,6 +16,8 @@ app.use(cors());
 app.use(express.json()); 
 app.use(express.urlencoded({ extended: true })); 
 app.use(cookieParser()); 
+
+app.use('/uploads', express.static('uploads'));
 
 const studentRoutes = require('./routes/student.routes');
 app.use('/student', studentRoutes);

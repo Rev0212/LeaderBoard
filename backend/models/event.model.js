@@ -21,6 +21,10 @@ const eventSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    pdfDocument: {
+        type: String,
+        required: true
+    },
     priceMoney:{
         type:Number,
     },

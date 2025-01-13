@@ -43,17 +43,20 @@ const EventDetailsModal = ({ event, onClose, onApprove, onReject }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-lg w-96 p-6">
+      <div className="bg-white rounded-lg shadow-lg w-80 p-4 relative">
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          className="absolute top-2 right-2 text-gray-600 hover:text-gray-800"
+          disabled={isLoading}
+        >
+          <X className="h-6 w-6" />
+        </button>
+
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-bold">Event Details</h3>
-          <button 
-            onClick={onClose} 
-            className="text-gray-600 hover:text-gray-800"
-            disabled={isLoading}
-          >
-            <X className="h-6 w-6" />
-          </button>
         </div>
+
         <div className="space-y-2">
           <p>
             <strong>Submitted By:</strong> {event.submittedBy.name}
@@ -92,7 +95,7 @@ const EventDetailsModal = ({ event, onClose, onApprove, onReject }) => {
             <img
               src={event.proofUrl}
               alt="Event Proof"
-              className="mt-2 border rounded-md shadow-md max-w-full h-auto"
+              className="mt-2 border rounded-md shadow-md max-w-full h-48 object-contain"
             />
           </div>
         </div>
