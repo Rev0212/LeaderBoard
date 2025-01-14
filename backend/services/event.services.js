@@ -3,6 +3,7 @@ const studentModel = require('../models/student.model');
 
 
 const createEvent = async (eventData, studentId) => {
+    console.log(eventData);
     try {
         const newEvent = new Event({
             ...eventData,

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from "react-router-dom";
+import { Document, Page } from 'react-pdf';
 
 const EventForm = () => {
   const [formData, setFormData] = useState({
@@ -7,13 +8,16 @@ const EventForm = () => {
     description: '',
     date: '',
     proofImage: null,
+    pdfDocument: null, // New field for PDF document
     category: '',
     positionSecured: '',
     priceMoney: ''
   });
 
   const [imagePreview, setImagePreview] = useState(null);
+  const [pdfPreview, setPdfPreview] = useState(null); // State for PDF preview
   const [uploadStatus, setUploadStatus] = useState('');
+  const [showPdfModal, setShowPdfModal] = useState(false); // State to show PDF modal
   const navigate = useNavigate();
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
@@ -24,6 +28,7 @@ const EventForm = () => {
     { name: 'description', label: 'Description', type: 'textarea', placeholder: 'Enter Description' },
     { name: 'date', label: 'Date', type: 'date' },
     { name: 'proofImage', label: 'Proof Image', type: 'file', accept: 'image/*' },
+    { name: 'pdfDocument', label: 'PDF Document', type: 'file', accept: 'application/pdf' }, // New field for PDF document
     { name: 'category', label: 'Category', type: 'select', options: ['Select a category', 'Hackathon', 'Ideathon', 'Coding', 'Global-Certificates', 'Workshop', 'Conference', 'Others'] },
     { name: 'priceMoney', label: 'Price Money', type: 'text', placeholder: 'Enter Price Money' },
     { name: 'positionSecured', label: 'Position Secured', type: 'select', options: ['Select position', 'First', 'Second', 'Third', 'Participant', 'None'] }
@@ -68,6 +73,18 @@ const EventForm = () => {
         ...prev,
         proofImage: file
       }));
+    } else if (name === 'pdfDocument' && files[0]) {
+      const file = files[0];
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPdfPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+      
+      setFormData(prev => ({
+        ...prev,
+        pdfDocument: file
+      }));
     } else {
       setFormData(prev => ({
         ...prev,
@@ -82,6 +99,8 @@ const EventForm = () => {
     formFields.forEach(field => {
       if (field.name === 'proofImage' && !formData.proofImage) {
         newErrors[field.name] = 'Proof image is required';
+      } else if (field.name === 'pdfDocument' && !formData.pdfDocument) {
+        newErrors[field.name] = 'PDF document is required';
       } else if (field.type !== 'file' && !formData[field.name].trim()) {
         newErrors[field.name] = `${field.label} is required`;
       }
@@ -95,14 +114,14 @@ const EventForm = () => {
     e.preventDefault();
     if (validateForm()) {
       setIsLoading(true);
-      setUploadStatus('Uploading image...');
-
+      setUploadStatus('Uploading files...');
+  
       try {
         // Upload image to Cloudinary
         const formDataImage = new FormData();
         formDataImage.append('file', formData.proofImage);
         formDataImage.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
-
+  
         const cloudinaryResponse = await fetch(
           `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`,
           {
@@ -110,15 +129,32 @@ const EventForm = () => {
             body: formDataImage
           }
         );
-
+  
         if (!cloudinaryResponse.ok) {
           throw new Error('Failed to upload image');
         }
-
+  
         const cloudinaryData = await cloudinaryResponse.json();
-
-        setUploadStatus('Image uploaded successfully! Submitting form...');
-
+  
+        // Upload PDF to the backend (/pdf-upload)
+        const formDataPdf = new FormData();
+        formDataPdf.append('pdfDocument', formData.pdfDocument);
+        console.log(formDataPdf);
+  
+        const pdfResponse = await fetch(`${import.meta.env.VITE_BASE_URL}/event/upload-pdf`, {
+          method: 'POST',
+          body: formDataPdf
+        });
+  
+        if (!pdfResponse.ok) {
+          throw new Error('Failed to upload PDF');
+        }
+  
+        const pdfData = await pdfResponse.json(); // Assuming PDF upload response contains the file name or URL
+        console.log(pdfData);
+  
+        setUploadStatus('Files uploaded successfully! Submitting form...');
+  
         const formDataToSend = {
           eventName: formData.eventName,
           description: formData.description,
@@ -126,11 +162,12 @@ const EventForm = () => {
           category: formData.category,
           positionSecured: formData.positionSecured,
           priceMoney: formData.priceMoney,
-          proofUrl: cloudinaryData.url  
+          proofUrl: cloudinaryData.url, // Image URL from Cloudinary
+          pdfDocument: pdfData.fileName, // URL or filename of the uploaded PDF
         };
-
+  
         console.log(formDataToSend);
-
+  
         // Submit form data to backend
         const token = localStorage.getItem('student-token');
         const response = await fetch(`${import.meta.env.VITE_BASE_URL}/event/submit`, {
@@ -141,16 +178,16 @@ const EventForm = () => {
           },
           body: JSON.stringify(formDataToSend)
         });
-
+  
         if (!response.ok) {
           const errorData = await response.json();
           console.error('Error response:', errorData);
           throw new Error('Failed to submit form');
         }
-
+  
         setUploadStatus('Form submitted successfully!');
-        setTimeout(() => navigate("/"), 1500);
-
+        setTimeout(() => navigate("/student-dashboard"), 1500);
+  
       } catch (error) {
         console.error('Submission error:', error);
         setApiError(error.message || 'An error occurred');
@@ -159,6 +196,14 @@ const EventForm = () => {
         setIsLoading(false);
       }
     }
+  };
+  
+  const handleViewPdf = () => {
+    setShowPdfModal(true);
+  };
+
+  const handleClosePdfModal = () => {
+    setShowPdfModal(false);
   };
 
   return (
@@ -203,61 +248,72 @@ const EventForm = () => {
                     accept={field.accept}
                     className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
                   />
-                  {field.type === 'file' && imagePreview && (
-                    <div className="mt-2">
-                      <img 
-                        src={imagePreview} 
-                        alt="Preview" 
-                        className="max-w-full h-32 object-contain rounded-md"
+                  {field.name === 'proofImage' && imagePreview && (
+                    <div className="mt-3">
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        className="w-32 h-32 object-cover rounded-md"
                       />
                     </div>
                   )}
+                  {field.name === 'pdfDocument' && pdfPreview && (
+                    <div className="mt-3">
+                      <button
+                        type="button"
+                        onClick={handleViewPdf}
+                        className="bg-blue-500 text-white px-4 py-2 rounded-md"
+                      >
+                        View PDF
+                      </button>
+                    </div>
+                  )}
+                  {errors[field.name] && (
+                    <div className="text-red-500 text-sm mt-2">{errors[field.name]}</div>
+                  )}
                 </div>
-              )}
-              
-              {errors[field.name] && (
-                <p className="mt-1 text-sm text-red-600">
-                  {errors[field.name]}
-                </p>
               )}
             </div>
           ))}
-
-          {uploadStatus && (
-            <div className="mt-4 p-3 bg-blue-50 text-blue-700 rounded-md">
-              {uploadStatus}
-            </div>
+          
+          {isLoading && (
+            <div className="text-center">Uploading...</div>
+          )}
+          
+          {apiError && (
+            <div className="text-red-500 text-center mt-4">{apiError}</div>
           )}
 
-          <div className="flex space-x-4">
+          <div className="flex justify-between items-center mt-6">
             <button
               type="submit"
+              className="bg-blue-500 text-white px-4 py-2 rounded-md"
               disabled={isLoading}
-              className={`w-full ${
-                isLoading ? 'bg-gray-400' : 'bg-blue-600'
-              } text-white py-2 px-4 rounded-md hover:${
-                isLoading ? 'bg-gray-400' : 'bg-blue-700'
-              } focus:outline-none focus:ring-2 focus:ring-blue-500`}
             >
-              {isLoading ? 'Submitting...' : 'Submit'}
+              Submit
             </button>
-            
-            <button
-              type="button"
-              onClick={() => navigate("/")}
-              className="w-full bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
-            >
-              Cancel
-            </button>
+            <p className="text-sm text-gray-500">{uploadStatus}</p>
           </div>
-
-          {apiError && (
-            <div className="mt-4 p-3 bg-red-50 text-red-700 rounded-md">
-              {apiError}
-            </div>
-          )}
         </form>
       </div>
+
+      {showPdfModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-3xl w-full">
+            <button
+              onClick={handleClosePdfModal}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+            >
+              Close
+            </button>
+            <div className="pdf-container">
+              <Document file={pdfPreview}>
+                <Page pageNumber={1} />
+              </Document>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

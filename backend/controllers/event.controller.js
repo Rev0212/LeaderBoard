@@ -6,7 +6,7 @@ const eventModel = require('../models/event.model')
 // Student submits a new event
 const submitEvent = async (req, res) => {
     try {
-        const { eventName, description, date, proofUrl, category, positionSecured,priceMoney } = req.body;
+        const { eventName, description, date, proofUrl, category, positionSecured,priceMoney, pdfDocument } = req.body;
         const studentId = req.student._id;
 
         const newEvent = await eventService.createEvent({
@@ -17,6 +17,7 @@ const submitEvent = async (req, res) => {
             category,
             positionSecured,
             priceMoney,
+            pdfDocument,
         }, studentId);
 
         res.status(201).json({ 

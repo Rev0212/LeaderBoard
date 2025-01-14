@@ -74,7 +74,7 @@ const StudentLoginForm = () => {
         email: '',
         password: '',
       });
-      navigate('/');
+      navigate('/student-dashboard');
     } catch (error) {
       setApiError(error.response?.data?.message || 'An error occurred during registration');
     } finally {

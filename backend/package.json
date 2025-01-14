@@ -4,7 +4,7 @@
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-     "start": "npx kill-port 4000 && nodemon server.js"
+    "start": "npx kill-port 4000 && nodemon server.js"
   },
   "keywords": [],
   "author": "",
@@ -13,6 +13,7 @@
   "dependencies": {
     "axios": "^1.7.9",
     "bcrypt": "^5.1.1",
+    "bson": "^6.10.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "cros": "^1.0.1",
