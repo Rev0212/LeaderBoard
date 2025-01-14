@@ -289,7 +289,10 @@ const ReportsPage = () => {
                     Class
                   </th>
                   <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Categories
+                    Total Points
+                  </th>
+                  <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Categories Performance
                   </th>
                 </tr>
               </thead>
@@ -297,12 +300,19 @@ const ReportsPage = () => {
                 {categoryByClass.map((classData, index) => (
                   <tr key={index}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {classData._id}
+                      {classData.className || 'N/A'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {classData.totalPoints}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500">
                       {classData.categories.map((cat, idx) => (
-                        <div key={idx}>
-                          {cat.category}: {cat.points} points
+                        <div key={idx} className="mb-2">
+                          <span className="font-medium">{cat.category}:</span>{' '}
+                          {cat.points} points{' '}
+                          <span className="text-gray-400">
+                            ({cat.participationCount} participation{cat.participationCount !== 1 ? 's' : ''})
+                          </span>
                         </div>
                       ))}
                     </td>

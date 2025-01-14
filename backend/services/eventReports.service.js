@@ -234,29 +234,60 @@ class EventReportsService {
           }
         },
         { $unwind: "$classInfo" },
+        // First group by class and category
         {
           $group: {
             _id: {
-              className: "$classInfo.name",
+              classId: "$classInfo._id",
+              className: "$classInfo.className", // Using className instead of name
               category: "$category"
             },
-            totalPoints: { $sum: "$pointsEarned" }
+            totalPoints: { $sum: "$pointsEarned" },
+            participationCount: { $sum: 1 }
           }
         },
+        // Then group by class
         {
           $group: {
-            _id: "$_id.className",
+            _id: {
+              classId: "$_id.classId",
+              className: "$_id.className"
+            },
+            totalPoints: { $sum: "$totalPoints" },
             categories: {
               $push: {
                 category: "$_id.category",
-                points: "$totalPoints"
+                points: "$totalPoints",
+                participationCount: "$participationCount"
+              }
+            }
+          }
+        },
+        // Sort by total points
+        { $sort: { totalPoints: -1 } },
+        // Final structure
+        {
+          $project: {
+            _id: 0,
+            className: { $ifNull: ["$_id.className", "N/A"] }, // Provide default value if className is null
+            totalPoints: 1,
+            categories: {
+              $sortArray: {
+                input: "$categories",
+                sortBy: { points: -1 }
               }
             }
           }
         }
       ]);
-      console.log('Category Performance Result:', result);
-      return result;
+
+      // Add additional error checking for empty or null classNames
+      const processedResult = result.map(item => ({
+        ...item,
+        className: item.className || 'N/A'
+      }));
+
+      return processedResult;
     } catch (error) {
       console.error('Category Performance Error:', error);
       throw new Error(`Error getting category performance by class: ${error.message}`);

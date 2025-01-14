@@ -106,7 +106,7 @@ def populate_database():
     classes = []
     years = ["22", "23"]
     for year in years:
-        for char in "ABCD":
+        for char in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
             for num in range(1, 3):  # A1, A2, ..., Z1, Z2
                 class_name = f"{char}{num}"
                 teacher = teachers[len(classes) % len(teachers)]
@@ -126,7 +126,7 @@ def populate_database():
     print("Creating students and assigning them to classes...")
     for class_id, teacher_id, year in classes:
         student_ids = []
-        for _ in range(20):
+        for _ in range(60):
             student = create_student(class_id, year)
             student_id = students_col.insert_one(student).inserted_id
             student_ids.append(student_id)
