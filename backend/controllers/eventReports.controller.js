@@ -86,6 +86,37 @@ class EventReportsController {
       next(error);
     }
   }
+
+  static async getClassPerformance(req, res, next) {
+    const { filterType = 'monthly' } = req.query;
+    try {
+      const performance = await EventReportsService.getClassPerformance(filterType);
+      res.status(200).json({ performance });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getDetailedStudentPerformance(req, res, next) {
+    const { filterType = 'monthly' } = req.query;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    try {
+      const performance = await EventReportsService.getDetailedStudentPerformance(limit, filterType);
+      res.status(200).json({ performance });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getCategoryPerformanceByClass(req, res, next) {
+    const { filterType = 'monthly' } = req.query;
+    try {
+      const performance = await EventReportsService.getCategoryPerformanceByClass(filterType);
+      res.status(200).json({ performance });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 module.exports = EventReportsController;
