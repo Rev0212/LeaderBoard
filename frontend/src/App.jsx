@@ -9,6 +9,7 @@ import TeacherDashboard from './pages/Teachers/TeacherDashboard';
 import TeacherProtectWrapper from './Wrappers/TeacherWrapper';
 import EventHistoryTable from './components/EventList'
 import AdminDashboard from './pages/Admin/AdminDashBoard';
+import AdminLoginForm from './pages/Admin/AdminLogin'; // Admin Login Page
 import ReportsPage from './pages/ReportsPage';
 import { Route, Routes } from 'react-router-dom';
 
@@ -16,7 +17,9 @@ import { Route, Routes } from 'react-router-dom';
 const App = () => {
   return (
     <Routes>
-      <Route path="/" element={<LandingPage />} /> {/* Landing Page Route */}
+      <Route path="/" element={<LandingPage />} /> 
+      <Route path="/admin-login" element={<AdminLoginForm />} />
+      <Route path="/admin-dashboard" element={<AdminDashboard />} />
       <Route path='/reports' element={<ReportsPage/>}/>
       <Route path='/events' element={<EventHistoryTable/>}/>
       <Route path='/admin-dashboard' element={<AdminDashboard/>}/>
