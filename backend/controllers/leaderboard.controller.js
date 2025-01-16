@@ -15,39 +15,40 @@ exports.getLeaderboard = async (req, res) => {
     const searchQuery = req.query.search || '';
     const skip = (page - 1) * limit;
 
-    // Build filter object
+    // First, get ALL students (regardless of search) for global ranking
+    const allStudents = await studentModel
+      .find({}) // No filter here to get everyone
+      .sort({ totalPoints: -1 })
+      .select('_id totalPoints')
+      .lean();
+
+    // Calculate global ranks
+    let currentRank = 1;
+    let currentPoints = null;
+    const globalRankMap = new Map();
+    
+    allStudents.forEach((student) => {
+      if (student.totalPoints !== currentPoints) {
+        currentPoints = student.totalPoints;
+        globalRankMap.set(student._id.toString(), currentRank++);
+      } else {
+        globalRankMap.set(student._id.toString(), currentRank - 1);
+      }
+    });
+
+    // Now apply search/class filters for pagination
     const filter = {};
     if (req.query.classId) {
       filter.class = req.query.classId;
     }
     if (searchQuery) {
-      filter.name = { $regex: searchQuery, $options: 'i' }; // Case-insensitive search
+      filter.name = { $regex: searchQuery, $options: 'i' };
     }
 
-    // First, get all students sorted by points
-    const allStudents = await studentModel
-      .find(filter)
-      .sort({ totalPoints: -1 })
-      .select('_id totalPoints')
-      .lean();
+    // Get total count of filtered results for pagination
+    const totalFilteredStudents = await studentModel.countDocuments(filter);
 
-    // Create a map of points to rank using dense ranking
-    let currentRank = 1;
-    let currentPoints = null;
-    const rankMap = new Map();
-    
-    allStudents.forEach((student) => {
-      if (student.totalPoints !== currentPoints) {
-        // Only increment rank when points change
-        currentPoints = student.totalPoints;
-        rankMap.set(student._id.toString(), currentRank++);
-      } else {
-        // Same points get same rank
-        rankMap.set(student._id.toString(), currentRank - 1);
-      }
-    });
-
-    // Get paginated results
+    // Get paginated results with filters
     const leaderboard = await studentModel
       .find(filter)
       .sort({ totalPoints: -1 })
@@ -56,10 +57,10 @@ exports.getLeaderboard = async (req, res) => {
       .select('name email totalPoints class')
       .lean();
 
-    // Add actual ranks to the paginated results
+    // Add global ranks to the filtered results
     const leaderboardWithRanks = leaderboard.map(student => ({
       ...student,
-      rank: rankMap.get(student._id.toString())
+      rank: globalRankMap.get(student._id.toString())
     }));
 
     res.status(200).json({
@@ -67,8 +68,8 @@ exports.getLeaderboard = async (req, res) => {
       data: leaderboardWithRanks,
       pagination: {
         currentPage: page,
-        totalPages: Math.ceil(allStudents.length / limit),
-        totalStudents: allStudents.length,
+        totalPages: Math.ceil(totalFilteredStudents / limit),
+        totalStudents: totalFilteredStudents,
       },
     });
   } catch (error) {
