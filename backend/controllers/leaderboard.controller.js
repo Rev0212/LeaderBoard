@@ -12,29 +12,55 @@ exports.getLeaderboard = async (req, res) => {
 
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
+    const searchQuery = req.query.search || '';
     const skip = (page - 1) * limit;
 
-    // Optional filtering by class
+    // First, get ALL students (regardless of search) for global ranking
+    const allStudents = await studentModel
+      .find({}) // No filter here to get everyone
+      .sort({ totalPoints: -1 })
+      .select('_id totalPoints')
+      .lean();
+
+    // Calculate global ranks
+    let currentRank = 1;
+    let currentPoints = null;
+    const globalRankMap = new Map();
+    
+    allStudents.forEach((student) => {
+      if (student.totalPoints !== currentPoints) {
+        currentPoints = student.totalPoints;
+        globalRankMap.set(student._id.toString(), currentRank++);
+      } else {
+        globalRankMap.set(student._id.toString(), currentRank - 1);
+      }
+    });
+
+    // Now apply search/class filters for pagination
     const filter = {};
     if (req.query.classId) {
       filter.class = req.query.classId;
     }
+    if (searchQuery) {
+      filter.name = { $regex: searchQuery, $options: 'i' };
+    }
 
-    // Get total count for pagination
-    const totalStudents = await studentModel.countDocuments(filter);
+    // Get total count of filtered results for pagination
+    const totalFilteredStudents = await studentModel.countDocuments(filter);
 
-    // Fetch leaderboard
+    // Get paginated results with filters
     const leaderboard = await studentModel
       .find(filter)
-      .sort({ totalPoints: -1 }) // Sort by totalPoints descending
+      .sort({ totalPoints: -1 })
       .skip(skip)
       .limit(limit)
-      .select('name email totalPoints class'); // Include only required fields
+      .select('name email totalPoints class')
+      .lean();
 
-    // Add rank to each student
-    const leaderboardWithRanks = leaderboard.map((student, index) => ({
-      ...student.toObject(),
-      rank: skip + index + 1,
+    // Add global ranks to the filtered results
+    const leaderboardWithRanks = leaderboard.map(student => ({
+      ...student,
+      rank: globalRankMap.get(student._id.toString())
     }));
 
     res.status(200).json({
@@ -42,8 +68,8 @@ exports.getLeaderboard = async (req, res) => {
       data: leaderboardWithRanks,
       pagination: {
         currentPage: page,
-        totalPages: Math.ceil(totalStudents / limit),
-        totalStudents,
+        totalPages: Math.ceil(totalFilteredStudents / limit),
+        totalStudents: totalFilteredStudents,
       },
     });
   } catch (error) {
