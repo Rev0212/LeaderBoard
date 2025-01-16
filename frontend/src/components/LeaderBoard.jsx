@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Medal, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Medal, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import axios from 'axios';
 
 const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -10,37 +11,52 @@ const LeaderboardTable = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchTimeout, setSearchTimeout] = useState(null);
+
+  const fetchLeaderboardData = async (page, limit, search) => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${VITE_BASE_URL}/leaderboard`, {
+        params: {
+          page,
+          limit,
+          search,
+        },
+      });
+      
+      setLeaderboardData(response.data.data);
+      setTotalPages(response.data.pagination.totalPages);
+      setError(null);
+    } catch (err) {
+      setError('Failed to fetch leaderboard data');
+      console.error('Error fetching leaderboard:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchLeaderboard = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch(
-          `${VITE_BASE_URL}/leaderboard?page=${currentPage}&limit=${itemsPerPage}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('student-token')}`,
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-        const data = await response.json();
-        
-        if (!data.success) {
-          throw new Error('Failed to fetch leaderboard data');
-        }
-        
-        setLeaderboardData(data.data);
-        setTotalPages(data.pagination.totalPages);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchLeaderboard();
+    fetchLeaderboardData(currentPage, itemsPerPage, searchQuery);
   }, [currentPage, itemsPerPage]);
+
+  const handleSearch = (e) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    
+    // Clear existing timeout
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+    
+    // Set new timeout to debounce the search
+    const timeoutId = setTimeout(() => {
+      setCurrentPage(1); // Reset to first page
+      fetchLeaderboardData(1, itemsPerPage, query);
+    }, 300); // Wait 300ms after user stops typing
+    
+    setSearchTimeout(timeoutId);
+  };
 
   const handlePageChange = (newPage) => {
     setCurrentPage(newPage);
@@ -52,31 +68,11 @@ const LeaderboardTable = () => {
   };
 
   if (loading) {
-    return (
-      <div className="border rounded-lg shadow-sm p-4">
-        <div className="flex items-center gap-2 mb-4">
-          <Medal className="h-5 w-5" />
-          <h2 className="text-lg font-bold">Leaderboard</h2>
-        </div>
-        <div className="flex justify-center items-center h-40">
-          <div className="text-gray-500">Loading leaderboard data...</div>
-        </div>
-      </div>
-    );
+    return <div className="text-center py-4">Loading...</div>;
   }
 
   if (error) {
-    return (
-      <div className="border rounded-lg shadow-sm p-4">
-        <div className="flex items-center gap-2 mb-4">
-          <Medal className="h-5 w-5" />
-          <h2 className="text-lg font-bold">Leaderboard</h2>
-        </div>
-        <div className="flex justify-center items-center h-40 text-red-500">
-          Error: {error}
-        </div>
-      </div>
-    );
+    return <div className="text-center py-4 text-red-500">{error}</div>;
   }
 
   return (
@@ -88,6 +84,16 @@ const LeaderboardTable = () => {
             <h2 className="text-lg font-bold">Leaderboard</h2>
           </div>
           <div className="flex items-center gap-4">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search by name..."
+                value={searchQuery}
+                onChange={handleSearch}
+                className="border rounded-md px-3 py-1.5 pl-8 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <Search className="h-4 w-4 text-gray-400 absolute left-2 top-1/2 transform -translate-y-1/2" />
+            </div>
             <select
               value={itemsPerPage}
               onChange={handleItemsPerPageChange}

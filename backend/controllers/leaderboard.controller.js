@@ -12,29 +12,54 @@ exports.getLeaderboard = async (req, res) => {
 
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
+    const searchQuery = req.query.search || '';
     const skip = (page - 1) * limit;
 
-    // Optional filtering by class
+    // Build filter object
     const filter = {};
     if (req.query.classId) {
       filter.class = req.query.classId;
     }
+    if (searchQuery) {
+      filter.name = { $regex: searchQuery, $options: 'i' }; // Case-insensitive search
+    }
 
-    // Get total count for pagination
-    const totalStudents = await studentModel.countDocuments(filter);
+    // First, get all students sorted by points
+    const allStudents = await studentModel
+      .find(filter)
+      .sort({ totalPoints: -1 })
+      .select('_id totalPoints')
+      .lean();
 
-    // Fetch leaderboard
+    // Create a map of points to rank using dense ranking
+    let currentRank = 1;
+    let currentPoints = null;
+    const rankMap = new Map();
+    
+    allStudents.forEach((student) => {
+      if (student.totalPoints !== currentPoints) {
+        // Only increment rank when points change
+        currentPoints = student.totalPoints;
+        rankMap.set(student._id.toString(), currentRank++);
+      } else {
+        // Same points get same rank
+        rankMap.set(student._id.toString(), currentRank - 1);
+      }
+    });
+
+    // Get paginated results
     const leaderboard = await studentModel
       .find(filter)
-      .sort({ totalPoints: -1 }) // Sort by totalPoints descending
+      .sort({ totalPoints: -1 })
       .skip(skip)
       .limit(limit)
-      .select('name email totalPoints class'); // Include only required fields
+      .select('name email totalPoints class')
+      .lean();
 
-    // Add rank to each student
-    const leaderboardWithRanks = leaderboard.map((student, index) => ({
-      ...student.toObject(),
-      rank: skip + index + 1,
+    // Add actual ranks to the paginated results
+    const leaderboardWithRanks = leaderboard.map(student => ({
+      ...student,
+      rank: rankMap.get(student._id.toString())
     }));
 
     res.status(200).json({
@@ -42,8 +67,8 @@ exports.getLeaderboard = async (req, res) => {
       data: leaderboardWithRanks,
       pagination: {
         currentPage: page,
-        totalPages: Math.ceil(totalStudents / limit),
-        totalStudents,
+        totalPages: Math.ceil(allStudents.length / limit),
+        totalStudents: allStudents.length,
       },
     });
   } catch (error) {
