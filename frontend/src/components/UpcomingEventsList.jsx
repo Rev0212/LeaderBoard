@@ -1,18 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Pencil } from 'lucide-react';
+import EditEventModal from './EditEventModal';
 
 const UpcomingEventsList = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedEvent, setSelectedEvent] = useState(null);
 
   const fetchEvents = async () => {
     try {
+    //   console.log('Fetching events from:', `${import.meta.env.VITE_BASE_URL}/upcoming-events`);
       const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/upcoming-events`);
+    //   console.log('Response:', response);
       setEvents(response.data);
     } catch (err) {
-      setError('Failed to fetch events');
+      console.error('Error details:', err);
+      setError(err.message || 'Failed to fetch events');
     } finally {
       setLoading(false);
     }
@@ -35,6 +40,29 @@ const UpcomingEventsList = () => {
       fetchEvents();
     } catch (err) {
       setError('Failed to delete event');
+    }
+  };
+
+  const handleEdit = (event) => {
+    setSelectedEvent(event);
+  };
+
+  const handleCloseEdit = () => {
+    setSelectedEvent(null);
+  };
+
+  const handleUpdateEvent = async (updatedEvent) => {
+    try {
+      await axios.patch(
+        `${import.meta.env.VITE_BASE_URL}/upcoming-events/${updatedEvent._id}`,
+        updatedEvent
+      );
+      // Refresh the events list
+      fetchEvents();
+      setSelectedEvent(null);
+    } catch (err) {
+      console.error('Update error:', err);
+      setError('Failed to update event');
     }
   };
 
@@ -65,17 +93,34 @@ const UpcomingEventsList = () => {
                 </p>
               </div>
               
-              <button
-                onClick={() => handleDelete(event._id)}
-                className="p-2 text-red-600 hover:bg-red-100 rounded-full"
-                title="Delete event"
-              >
-                <Trash2 className="w-5 h-5" />
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleEdit(event)}
+                  className="p-2 text-blue-600 hover:bg-blue-100 rounded-full"
+                  title="Edit event"
+                >
+                  <Pencil className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => handleDelete(event._id)}
+                  className="p-2 text-red-600 hover:bg-red-100 rounded-full"
+                  title="Delete event"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           ))
         )}
       </div>
+
+      {selectedEvent && (
+        <EditEventModal
+          event={selectedEvent}
+          onClose={handleCloseEdit}
+          onUpdate={handleUpdateEvent}
+        />
+      )}
     </div>
   );
 };
