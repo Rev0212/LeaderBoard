@@ -59,7 +59,7 @@ const AdminUpcomingEventForm = () => {
             type="text"
             value={formData.eventName}
             onChange={(e) => setFormData({...formData, eventName: e.target.value})}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            className="mt-1 block w-full rounded-md border border-gray-400 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
             required
           />
         </div>
@@ -103,7 +103,7 @@ const AdminUpcomingEventForm = () => {
             value={formData.content}
             onChange={(e) => setFormData({...formData, content: e.target.value})}
             rows="4"
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            className="mt-1 block w-full rounded-md border border-gray-400 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
             required
           />
         </div>
