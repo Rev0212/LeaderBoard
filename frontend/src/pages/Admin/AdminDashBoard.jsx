@@ -326,9 +326,13 @@ const AdminDashboard = () => {
         )}
 
         {activeTab === 'upcoming-events' && (
-          <div className="space-y-8">
-            <AdminUpcomingEventForm />
-            <UpcomingEventsList />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="lg:sticky lg:top-4 lg:h-fit">
+              <AdminUpcomingEventForm />
+            </div>
+            <div>
+              <UpcomingEventsList />
+            </div>
           </div>
         )}
 

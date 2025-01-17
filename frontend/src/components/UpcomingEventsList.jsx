@@ -70,9 +70,8 @@ const UpcomingEventsList = () => {
   if (error) return <div className="text-center py-4 text-red-500">{error}</div>;
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-2xl font-semibold mb-4">Current Upcoming Events</h2>
-      
+    <div className="bg-white rounded-lg shadow-md p-6">
+      <h2 className="text-2xl font-semibold text-gray-900 mb-6">Current Events</h2>
       <div className="space-y-4">
         {events.length === 0 ? (
           <p className="text-gray-500 text-center">No upcoming events found</p>
