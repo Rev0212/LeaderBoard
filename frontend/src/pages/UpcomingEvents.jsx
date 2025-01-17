@@ -25,10 +25,28 @@ const UpcomingEvents = () => {
   }, []);
 
   const getGdriveImageUrl = (driveLink) => {
-    const fileId = driveLink.match(/[-\w]{25,}/);
-    return fileId 
-      ? `https://drive.google.com/uc?export=view&id=${fileId[0]}`
-      : null;
+    try {
+      let fileId;
+      
+      if (driveLink.includes('/file/d/')) {
+        fileId = driveLink.split('/file/d/')[1].split('/')[0];
+      } else if (driveLink.includes('id=')) {
+        fileId = driveLink.split('id=')[1].split('&')[0];
+      } else {
+        const match = driveLink.match(/[-\w]{25,}/);
+        fileId = match ? match[0] : null;
+      }
+
+      if (!fileId) {
+        return '/placeholder-image.jpg';
+      }
+
+      // Use the preview URL format
+      return `https://drive.google.com/file/d/${fileId}/preview`;
+    } catch (error) {
+      console.error('Error parsing Google Drive URL:', error);
+      return '/placeholder-image.jpg';
+    }
   };
 
   if (loading) return <div className="text-center py-10">Loading...</div>;
@@ -41,14 +59,15 @@ const UpcomingEvents = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {events.map((event) => (
           <div key={event._id} className="bg-white rounded-lg shadow-md overflow-hidden">
-            <img
-              src={getGdriveImageUrl(event.posterLink)}
-              alt={event.eventName}
-              className="w-full h-48 object-cover"
-              onError={(e) => {
-                e.target.src = '/placeholder-image.jpg'; // Add a placeholder image
-              }}
-            />
+            <div className="w-full h-48 relative">
+              <iframe
+                src={getGdriveImageUrl(event.posterLink)}
+                className="w-full h-full border-none"
+                title={event.eventName}
+                loading="lazy"
+                allowFullScreen
+              />
+            </div>
             
             <div className="p-4">
               <h2 className="text-xl font-semibold text-gray-900 mb-2">
