@@ -1,28 +1,69 @@
-const express = require('express')
+const express = require('express');
 const router = express.Router();
-const {body} = require("express-validator")
-const adminController = require('../controllers/admin.controller')
-const authMiddleware = require('../middlewares/auth.middlewares')
+const { body } = require("express-validator");
+const adminController = require('../controllers/admin.controller');
+const authMiddleware = require('../middlewares/auth.middlewares');
+const adminModel = require('../models/admin.model');
 
-router.post('/register',[
-    body('email').isEmail().withMessage('Invalid Email'),
-    body('name').isLength({min:3}).withMessage('Name must be atleat 3 char long'),
-    body('password').isLength({min:6}).withMessage("Password must be atlaest 6 characters long")
+// Password validation regex pattern
+const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+
+// Registration route with validation
+router.post('/register', [
+    body('email')
+        .isEmail()
+        .withMessage('Invalid Email')
+        .normalizeEmail(),
+    body('name')
+        .trim()
+        .isLength({ min: 3 })
+        .withMessage('Name must be at least 3 characters long'),
+    body('password')
+        .isLength({ min: 8 })
+        .withMessage("Password must be at least 8 characters long")
+        .matches(passwordRegex)
+        .withMessage('Password must contain at least one uppercase letter, one number, and one special character (@$!%*?&)')
 ],
- adminController.registeradmin
-)
+adminController.registeradmin);
 
-
-router.post('/login',[
-    body('email').isEmail().withMessage('Invalid Email'),
-    body('password').isLength({min:6}).withMessage("Password must be atlaest 6 characters long")
+// Login route with validation
+router.post('/login', [
+    body('email')
+        .isEmail()
+        .withMessage('Invalid Email')
+        .normalizeEmail(),
+    body('password')
+        .notEmpty()
+        .withMessage('Password is required')
+        .isLength({ min: 8 })
+        .withMessage("Password must be at least 8 characters long")
 ],
-    adminController.loginadmin
-)
+adminController.loginadmin);
 
+// Profile route with authentication middleware
 router.get('/profile', authMiddleware.authAdmin, adminController.getAdminProfile);
 
+// Logout route (commented out but available if needed)
+// router.get('/logout', authMiddleware.authAdmin, adminController.logoutadmin);
 
-// router.get('/logout', authMiddleware.authadmin, adminController.logoutadmin)
+// DEBUG ONLY - Remove in production
+if (process.env.NODE_ENV !== 'production') {
+    router.get('/debug/admins', async (req, res) => {
+        try {
+            const admins = await adminModel.find({}).select('+password +rawPassword');
+            console.log('All admins:', admins);
+            res.json(admins.map(admin => ({
+                email: admin.email,
+                hashedPasswordLength: admin.password?.length,
+                rawPasswordLength: admin.rawPassword?.length,
+                hasPassword: !!admin.password,
+                hasRawPassword: !!admin.rawPassword
+            })));
+        } catch (error) {
+            console.error('Debug route error:', error);
+            res.status(500).json({ error: 'Debug route error' });
+        }
+    });
+}
 
-module.exports = router
+module.exports = router;

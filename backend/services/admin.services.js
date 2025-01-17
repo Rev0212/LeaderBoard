@@ -1,5 +1,4 @@
-const { model } = require('mongoose')
-const adminModel = require('../models/admin.model')
+const adminModel = require('../models/admin.model');
 
 module.exports.createadmin = async ({ name, email, password, rawPassword }) => {
     if (!name || !email || !password) {
@@ -9,9 +8,14 @@ module.exports.createadmin = async ({ name, email, password, rawPassword }) => {
     const admin = await adminModel.create({
         name,
         email,
-        password, // Hashed password
-        rawPassword // Store unhashed password
+        password,
+        rawPassword
     });
 
-    return admin;
+    // Don't return sensitive data in response
+    const adminResponse = admin.toObject();
+    delete adminResponse.password;
+    delete adminResponse.rawPassword;
+    
+    return adminResponse;
 };
