@@ -132,7 +132,59 @@ const getEvents = async (req, res) => {
     }
 };
 
+const editEvent = async (req, res) => {
+    console.log('Inside editEvent controller');
+    try {
+        const { id } = req.params;
+        const { newStatus } = req.body;
+
+        if (!newStatus) {
+            return res.status(400).json({ error: 'New status is required' });
+        }
+
+        if (!req.teacher || !req.teacher._id) {
+            return res.status(401).json({ error: 'Unauthorized: Teacher ID is missing' });
+        }
+
+        const teacherId = req.teacher._id;
+
+        // Call service to update event status
+        const result = await eventService.editEventStatus(id, newStatus, teacherId);
+
+        if (!result.success) {
+            const statusCode = result.error === 'Event not found' ? 404 : 400;
+            return res.status(statusCode).json({ error: result.error });
+        }
+
+        const updatedEvent = result.data;
+
+        // Update student points based on the new status
+        const student = await studentModel.findById(updatedEvent.submittedBy);
+        if (!student) {
+            return res.status(404).json({ error: 'Student not found' });
+        }
+
+        if (newStatus === 'Approved') {
+            student.totalPoints += updatedEvent.pointsEarned;
+        } else if (newStatus === 'Rejected') {
+            student.totalPoints -= updatedEvent.pointsEarned;
+        }
+
+        await student.save();
+
+        res.status(200).json({
+            message: 'Event status updated successfully',
+            event: updatedEvent,
+        });
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({
+            error: 'Failed to update event status',
+            details: error.message,
+        });
+    }
+};
 
 
 
-module.exports = { submitEvent, reviewEvent, getEvents };
+module.exports = { submitEvent, reviewEvent, getEvents, editEvent };

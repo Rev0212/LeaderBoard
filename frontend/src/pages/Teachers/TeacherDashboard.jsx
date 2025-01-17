@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import {useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Bell, CheckCircle, User, ArrowLeft } from 'lucide-react';
 import EventDetailsModal from '../../components/EventDetailModel';
@@ -50,6 +51,8 @@ const TeacherDashboard = () => {
 
     fetchTeacherData();
   }, [VITE_BASE_URL]);
+
+  const navigate = useNavigate();
 
   const haandleLogoutClick = async () => { 
     const token = localStorage.getItem("token"); 
@@ -144,6 +147,10 @@ const TeacherDashboard = () => {
     );
   }
 
+  const handleReportsClick = () => {
+    navigate("/reports");
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       {/* Header with Profile, Class List, and Logout */}
@@ -165,6 +172,14 @@ const TeacherDashboard = () => {
               className="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg shadow hover:shadow-md transition-shadow"
             >
               Class List
+            </button>
+          </div>
+          <div className="relative">
+            <button
+              onClick={handleReportsClick}
+              className="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg shadow hover:shadow-md transition-shadow"
+            >
+             Reports
             </button>
           </div>
           <button

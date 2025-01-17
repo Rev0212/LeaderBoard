@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Pencil, FileText } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import EventDetailsModal from '../../components/EventDetailModel';
+import EventDetailsModal from '../../components/EventEditModel';
 
 const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -28,11 +28,10 @@ const TeacherEventsPage = () => {
             }
           }
         );
-        console.log(response.data);
+        
         setEvents(response.data);
         setLoading(false);
-      } catch (err) {
-        console.error('Error fetching events:', err);
+      } catch (err) {;
         setError('Failed to fetch events. Please try again.');
         setLoading(false);
       }
@@ -47,9 +46,9 @@ const TeacherEventsPage = () => {
     try {
       const token = localStorage.getItem('token');
       await axios.patch(
-        `${VITE_BASE_URL}/event/${eventId}/review`,
+        `${VITE_BASE_URL}/event/edit/${eventId}`,
         {
-          status: newStatus
+          newStatus: newStatus
         },
         {
           headers: {
@@ -58,29 +57,30 @@ const TeacherEventsPage = () => {
           }
         }
       );
-  
-      // Clear the local state and trigger a refetch after successful API call
-      setEvents([]);
-      fetchEvents();
+      // Refresh the page after a successful update
+      window.location.reload();
     } catch (error) {
       console.error('Error updating event status:', error);
       // Show error message to user
-      alert('Failed to update event status. Please try again.');
+      alert(error.response?.data?.message || 'Failed to update event status');  
     }
   };
-  
 
   const handleApprove = () => {
-    if (selectedEvent) {
+    if (selectedEvent && selectedEvent._id) {
       updateEventStatus(selectedEvent._id, 'Approved');
       setSelectedEvent(null);
+    } else {
+      alert('No event selected');
     }
   };
 
   const handleReject = () => {
-    if (selectedEvent) {
+    if (selectedEvent && selectedEvent._id) {
       updateEventStatus(selectedEvent._id, 'Rejected');
       setSelectedEvent(null);
+    } else {
+      alert('No event selected');
     }
   };
 
@@ -196,8 +196,7 @@ const TeacherEventsPage = () => {
                         <Pencil className="h-5 w-5" />
                       </button>
                     </div>
-                  </td>
-                  
+                  </td>                 
                 </tr>
               ))}
             </tbody>
