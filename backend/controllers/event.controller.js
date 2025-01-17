@@ -39,6 +39,9 @@ const reviewEvent = async (req, res) => {
         const { id } = req.params;
         const { status } = req.body;
 
+        console.log(id);
+        console.log(status);
+
         // Ensure teacherId exists and is valid
         if (!req.teacher || !req.teacher._id) {
             throw new Error("Teacher ID is missing .");
@@ -128,6 +131,8 @@ const getEvents = async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 };
+
+
 
 
 module.exports = { submitEvent, reviewEvent, getEvents };

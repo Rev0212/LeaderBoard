@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
-console.log(VITE_BASE_URL)
+
 
 // Form validation constants
 const VALIDATION_RULES = {

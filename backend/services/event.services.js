@@ -21,6 +21,7 @@ const createEvent = async (eventData, studentId) => {
 };
 
 const reviewEvent = async (eventId, status, teacherId) => {
+    console.log(eventId, status, teacherId);
     try {
         const event = await Event.findById(eventId);
         if (!event) {

@@ -193,3 +193,20 @@ module.exports.logoutStudent = async (req, res, next) => {
         next(error);
     }
 }
+
+
+module.exports.getstudentEventDetails = async (req, res, next) => {
+    try {
+        const studentId = req.params.id;
+        console.log(studentId);
+        const student = await studentModel.findById(studentId).populate('eventsParticipated');
+
+        if (!student) {
+            return res.status(404).json({ message: 'Student not found' });
+        }
+
+        res.status(200).json(student.eventsParticipated);
+    } catch (error) {
+        next(error);
+    }
+};

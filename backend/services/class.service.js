@@ -77,7 +77,7 @@ const changeClassTeacher = async (classId, teacherId) => {
 const getClassDetails = async (classId) => {
     const classDetails = await classModel.findById(classId)
     .populate('teacher', 'name email')
-    .populate('students', 'name email');
+    .populate('students', 'name email registerNo');
           
     
     if (!classDetails) {

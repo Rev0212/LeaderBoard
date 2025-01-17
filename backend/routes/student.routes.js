@@ -72,3 +72,4 @@ router.put('/change-password',authMiddleware.authStudent, studentController.chan
 router.get('/logout', authMiddleware.authStudent, studentController.logoutStudent);
 module.exports = router
 
+router.get('/events/:id',studentController.getstudentEventDetails);

@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Bell, CheckCircle, User, ArrowLeft } from 'lucide-react';
 import EventDetailsModal from '../../components/EventDetailModel';
 import TeacherProfile from '../../components/TeacherProfile'; // Import the TeacherProfile component
+import ClassDetails from '../../components/ClassList'; // Import the ClassDetails component
 
 const TeacherDashboard = () => {
   const [events, setEvents] = useState([]);
@@ -10,6 +11,7 @@ const TeacherDashboard = () => {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showProfile, setShowProfile] = useState(false); // State to show profile
   const [selectedPDF, setSelectedPDF] = useState(null); // State for selected PDF
+  const [showClassList, setShowClassList] = useState(false); // State to show class list
 
   const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -101,8 +103,13 @@ const TeacherDashboard = () => {
     setShowProfile(true);
   };
 
+  const handleShowClassList = () => {
+    setShowClassList(true);
+  };
+
   const handleBackToDashboard = () => {
     setShowProfile(false);
+    setShowClassList(false); // Reset class list view
   };
 
   const handleShowPDF = (event) => {
@@ -128,9 +135,18 @@ const TeacherDashboard = () => {
     );
   }
 
+  if (showClassList) {
+    return (
+      <ClassDetails
+        classId="6788965102ac37c82f370bf6" // Pass the classId as a prop
+        handleBackToDashboard={handleBackToDashboard}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      {/* Header with Profile and Logout */}
+      {/* Header with Profile, Class List, and Logout */}
       <div className="mb-8 flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-800">Teacher Dashboard</h1>
         <div className="flex items-center gap-4">
@@ -141,6 +157,14 @@ const TeacherDashboard = () => {
             >
               <User size={20} />
               Profile
+            </button>
+          </div>
+          <div className="relative">
+            <button
+              onClick={handleShowClassList}
+              className="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg shadow hover:shadow-md transition-shadow"
+            >
+              Class List
             </button>
           </div>
           <button

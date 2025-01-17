@@ -37,7 +37,7 @@ const router = express.Router();
 router.post('/create', authMiddleware.authAdmin, classController.createClass);
 router.put('/add-students', authMiddleware.authAdmin , classController.addStudentsToClass);
 router.put('/change-teacher', authMiddleware.authAdmin , classController.changeClassTeacher);
-router.get('/:classId', authMiddleware.authAdmin , classController.getClassDetails);
+router.get('/:classId',classController.getClassDetails);
 router.post('/create-in-bulk',(req, res, next) => {
     upload.single('file')(req, res, (err) => {
         if (err) {

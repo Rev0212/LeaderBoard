@@ -11,6 +11,7 @@ import TeacherProtectWrapper from './Wrappers/TeacherWrapper';
 import EventHistoryTable from './components/EventList'
 import AdminDashboard from './pages/Admin/AdminDashBoard';
 import ReportsPage from './pages/ReportsPage';
+import EventTable from './pages/Teachers/TeacherEventVerify';
 import { Route, Routes } from 'react-router-dom';
 
 
@@ -26,6 +27,7 @@ const App = () => {
       <Route path="/student-login" element={<StudentLoginForm />} />
       <Route path='/event-submit' element={<StudentProtectWrapper><EventForm/></StudentProtectWrapper>}/>
       <Route path='/student-dashboard' element={<StudentProtectWrapper><StudentDashboard/></StudentProtectWrapper>}/>
+      <Route path='/teacher-events' element={<TeacherProtectWrapper><EventTable/></TeacherProtectWrapper>}/>
       <Route path="/" element={<HomePage/>}/>
     </Routes>
   );
