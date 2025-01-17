@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Upload, Users, FileText, Download, UserPlus, Calendar } from 'lucide-react';
 import AdminUpcomingEventForm from '../../components/AdminUpcomingEventForm';
 import UpcomingEventsList from '../../components/UpcomingEventsList';
+import ReportsPage from '../ReportsPage';
 
 const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -324,54 +325,17 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {activeTab === 'reports' && (
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-2xl font-semibold mb-6">Download Reports</h2>
-            <div className="space-y-4">
-              <button
-                onClick={() => handleDownloadReport('total-prize-money')}
-                className="w-full flex items-center justify-between p-4 border rounded hover:bg-gray-50"
-              >
-                <span className="font-medium">Total Prize Money Report</span>
-                <Download size={20} />
-              </button>
-              <button
-                onClick={() => handleDownloadReport('top-students')}
-                className="w-full flex items-center justify-between p-4 border rounded hover:bg-gray-50"
-              >
-                <span className="font-medium">Top Students Report</span>
-                <Download size={20} />
-              </button>
-              <button
-                onClick={() => handleDownloadReport('top-performers-by-category')}
-                className="w-full flex items-center justify-between p-4 border rounded hover:bg-gray-50"
-              >
-                <span className="font-medium">Top Performers by Category Report</span>
-                <Download size={20} />
-              </button>
-              <button
-                onClick={() => handleDownloadReport('popular-categories')}
-                className="w-full flex items-center justify-between p-4 border rounded hover:bg-gray-50"
-              >
-                <span className="font-medium">Popular Categories Report</span>
-                <Download size={20} />
-              </button>
-              <button
-                onClick={() => handleDownloadReport('class-wise-participation')}
-                className="w-full flex items-center justify-between p-4 border rounded hover:bg-gray-50"
-              >
-                <span className="font-medium">Class-wise Participation Report</span>
-                <Download size={20} />
-              </button>
-            </div>
+        {activeTab === 'upcoming-events' && (
+          <div className="space-y-8">
+            <AdminUpcomingEventForm />
+            <UpcomingEventsList />
           </div>
         )}
 
-        {activeTab === 'upcoming-events' && (
-          <>
-            <AdminUpcomingEventForm />
-            <UpcomingEventsList />
-          </>
+        {activeTab === 'reports' && (
+          <div className="bg-white rounded-lg shadow">
+            <ReportsPage />
+          </div>
         )}
       </div>
     </div>

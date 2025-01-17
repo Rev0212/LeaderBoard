@@ -161,7 +161,7 @@ const ReportsPage = () => {
           <LeaderboardTable />
         </div>
 
-        {/* Charts Grid */}
+on        {/* Charts Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Popular Categories Chart */}
           <div className="bg-white rounded-lg shadow p-6">
