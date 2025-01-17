@@ -13,7 +13,8 @@ import AdminDashboard from './pages/Admin/AdminDashBoard';
 import AdminLoginForm from './pages/Admin/AdminLogin'; // Admin Login Page
 import ReportsPage from './pages/ReportsPage';
 import EventTable from './pages/Teachers/TeacherEventVerify';
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes, Link } from 'react-router-dom';
+import UpcomingEvents from './pages/UpcomingEvents';
 
 
 const App = () => {
@@ -32,6 +33,7 @@ const App = () => {
       <Route path='/student-dashboard' element={<StudentProtectWrapper><StudentDashboard/></StudentProtectWrapper>}/>
       <Route path='/teacher-events' element={<TeacherProtectWrapper><EventTable/></TeacherProtectWrapper>}/>
       <Route path="/" element={<HomePage/>}/>
+      <Route path="/upcoming-events" element={<UpcomingEvents />} />
     </Routes>
   );
 };

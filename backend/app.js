@@ -40,6 +40,11 @@ app.use('/leaderboard',leaderboardRoutes)
 const eventReports = require('./routes/eventReports.routes');
 app.use('/reports', eventReports);
 
+const upcomingEventRoutes = require('./routes/upcomingEvent.routes');
+
+app.use('/upcoming-events', upcomingEventRoutes);
+
+console.log('Mounted upcoming events routes at /upcoming-events');
 
 connectToDb();
 
