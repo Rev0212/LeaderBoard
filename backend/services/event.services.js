@@ -2,20 +2,36 @@ const Event = require('../models/event.model');
 const studentModel = require('../models/student.model');
 
 
-const createEvent = async (eventData, studentId) => {
-    console.log(eventData);
+const createEvent = async (eventData) => {
     try {
-        const newEvent = new Event({
-            ...eventData,
-            submittedBy: studentId,
-            status: 'Pending' // Set default status
-        });
+        // Validate required fields based on category
+        if (['Hackathon', 'Ideathon', 'Coding', 'Workshop', 'Conference'].includes(eventData.category)) {
+            if (!eventData.eventLocation) {
+                throw new Error('Event location is required for this category');
+            }
+            if (!eventData.eventScope) {
+                throw new Error('Event scope is required for this category');
+            }
+            if (!eventData.eventOrganizer) {
+                throw new Error('Event organizer is required for this category');
+            }
+            if (!eventData.participationType) {
+                throw new Error('Participation type is required for this category');
+            }
+            if (eventData.eventLocation === 'Outside College' && !eventData.otherCollegeName) {
+                throw new Error('College name is required for outside college events');
+            }
+        }
 
-        // Save the event in the service layer
+        // Validate prize money for winning positions
+        if (['First', 'Second', 'Third'].includes(eventData.positionSecured) && !eventData.priceMoney) {
+            throw new Error('Prize money is required for winning positions');
+        }
+
+        const newEvent = new Event(eventData);
         const savedEvent = await newEvent.save();
         return savedEvent;
     } catch (error) {
-        // Handle specific errors
         throw new Error(`Failed to create event: ${error.message}`);
     }
 };
