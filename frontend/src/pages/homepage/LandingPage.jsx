@@ -50,7 +50,7 @@ const LandingPage = () => {
 
     return (
         <div
-            className="min-h-screen flex flex-col items-center justify-center py-10"
+            className="min-h-screen flex flex-col items-center justify-center py-10 pb-20"
             style={{
                 backgroundImage: `url(${backgroundImage})`,
                 backgroundSize: 'cover',
@@ -76,7 +76,7 @@ const LandingPage = () => {
                         className="relative w-full h-64 perspective"
                     >
                         <div
-                            className="card bg-white shadow-md rounded-lg p-6 flex flex-col items-center text-center border transition transform hover:scale-105 hover:shadow-lg"
+                            className="card bg-white shadow-md rounded-lg p-6 flex flex-col items-center text-center border shadow-lg"
                         >
                             <div className="card-inner">
                                 <div className="card-front">
@@ -84,7 +84,7 @@ const LandingPage = () => {
                                     <h2 className="text-xl font-semibold text-gray-700 mb-2">{option.title}</h2>
                                     <p className="text-gray-600 mb-4">{option.description}</p>
                                 </div>
-                                <div className="card-back bg-gray-200 text-gray-700 p-4 rounded-lg">
+                                <div className="card-back bg whitetext-gray-700 p-4 rounded-lg">
                                     <ul className="text-left text-gray-500 mb-4 space-y-2">
                                         {option.features.map((feature, i) => (
                                             <li key={i}>{feature}</li>
