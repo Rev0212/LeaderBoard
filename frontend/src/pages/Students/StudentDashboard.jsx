@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Trophy, Calendar, Plus, Medal, User, LogOut, CalendarDays } from "lucide-react";
+import { Trophy, Calendar, Plus, Medal, User, LogOut, CalendarDays, History } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import LeaderboardTable from "../../components/LeaderBoard";
 import EventsList from "../../components/EventsList"; // Import the new component
 import StudentProfile from "../../components/StudentProfile"; 
+import StudentEventHistory from "../../components/StudentEventHistory";
 const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const StudentDashboard = () => {
@@ -13,6 +14,7 @@ const StudentDashboard = () => {
   const [error, setError] = useState(null);
   const [showEventsList, setShowEventsList] = useState(false);
   const [showProfile, setShowProfile] = useState(false); // State to show profile
+  const [showEventHistory, setShowEventHistory] = useState(false);
 
   const navigate = useNavigate();
 
@@ -104,12 +106,28 @@ const StudentDashboard = () => {
     );
   }
 
+  if (showEventHistory) {
+    return (
+      <StudentEventHistory
+        studentData={studentData}
+        handleBackToDashboard={() => setShowEventHistory(false)}
+      />
+    );
+  }
+
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Student Dashboard</h1>
         <div className="flex gap-4">
+          <button
+            onClick={() => setShowEventHistory(true)}
+            className="border border-gray-300 px-4 py-2 rounded-lg flex items-center gap-2 text-sm hover:bg-gray-100"
+          >
+            <History size={20} />
+            Event History
+          </button>
           <button
             onClick={handleShowProfile}
             className="border border-gray-300 px-4 py-2 rounded-lg flex items-center gap-2 text-sm hover:bg-gray-100"
