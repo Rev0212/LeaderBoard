@@ -11,6 +11,8 @@ import {
   Legend
 } from 'recharts';
 
+import LeaderboardTable from '../components/LeaderBoard';
+
 const ReportsPage = () => {
   const [totalPrizeMoney, setTotalPrizeMoney] = useState(0);
   const [topStudents, setTopStudents] = useState([]);
@@ -155,23 +157,12 @@ const ReportsPage = () => {
           </div>
         </div>
 
+        <div className='h-30 mb-8 bg-white rounded-lg shadow'>
+          <LeaderboardTable />
+        </div>
+
         {/* Charts Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Top Students Chart */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-gray-700 mb-4">Top Students</h2>
-            <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={topStudents} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                  <XAxis dataKey="submittedBy" tick={{ fill: '#4B5563' }} />
-                  <YAxis tick={{ fill: '#4B5563' }} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="totalPoints" fill="#4F46E5" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
           {/* Popular Categories Chart */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold text-gray-700 mb-4">Popular Categories</h2>
@@ -199,57 +190,8 @@ const ReportsPage = () => {
             </div>
           </div>
 
-          {/* Approval Rates Chart */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-gray-700 mb-4">Approval Rates</h2>
-            <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={approvalRates}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    labelLine={false}
-                    label={renderCustomizedLabel}
-                  >
-                    {approvalRates.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* Trends Chart */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-gray-700 mb-4">Event Trends</h2>
-            <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={trends} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                  <XAxis dataKey="year" tick={{ fill: '#4B5563' }} />
-                  <YAxis tick={{ fill: '#4B5563' }} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Line 
-                    type="monotone" 
-                    dataKey="count" 
-                    stroke="#4F46E5"
-                    strokeWidth={2}
-                    dot={{ fill: '#4F46E5' }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
-
-        {/* Class Performance Chart */}
-        <div className="bg-white rounded-lg shadow p-6 mb-8">
+  
+          <div className="bg-white rounded-lg shadow p-6 mb-8">
           <h2 className="text-xl font-semibold text-gray-700 mb-4">Class Performance</h2>
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -262,24 +204,11 @@ const ReportsPage = () => {
             </ResponsiveContainer>
           </div>
         </div>
-
-        {/* Student Performance Chart */}
-        <div className="bg-white rounded-lg shadow p-6 mb-8">
-          <h2 className="text-xl font-semibold text-gray-700 mb-4">Student Performance</h2>
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={studentPerformance}>
-                <XAxis dataKey="_id.name" />
-                <YAxis />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="totalPoints" fill="#10B981" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
         </div>
 
+
         {/* Category by Class Performance */}
-        <div className="bg-white rounded-lg shadow p-6 mb-8">
+        <div className="bg-white rounded-lg shadow p-8 mt-5 mb-8">
           <h2 className="text-xl font-semibold text-gray-700 mb-4">Category Performance by Class</h2>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -322,8 +251,9 @@ const ReportsPage = () => {
             </table>
           </div>
         </div>
+
       </div>
-    </div>
+      </div>
   );
 };
 
