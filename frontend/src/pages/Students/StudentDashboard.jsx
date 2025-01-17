@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Trophy, Calendar, Plus, Medal, User, LogOut, } from "lucide-react";
+import { Trophy, Calendar, Plus, Medal, User, LogOut, CalendarDays } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import LeaderboardTable from "../../components/LeaderBoard";
@@ -72,6 +72,10 @@ const StudentDashboard = () => {
 
   const handleShowProfile = () => {
     setShowProfile(true);
+  };
+
+  const handleUpcomingEvents = () => {
+    navigate("/upcoming-events");
   };
 
   if (loading) {
@@ -172,6 +176,22 @@ const StudentDashboard = () => {
           <div>
             <p className="text-2xl font-bold">
               {studentData?.totalPoints || 0}
+            </p>
+          </div>
+        </div>
+
+        <div
+          className="border p-4 rounded-lg shadow cursor-pointer hover:bg-gray-50 transition-colors"
+          onClick={handleUpcomingEvents}
+        >
+          <div className="flex items-center justify-between pb-2">
+            <h2 className="text-sm font-medium">Upcoming Events</h2>
+            <CalendarDays className="h-4 w-4 text-blue-500" />
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-blue-600">View</p>
+            <p className="text-xs text-gray-500">
+              Check upcoming college events
             </p>
           </div>
         </div>
