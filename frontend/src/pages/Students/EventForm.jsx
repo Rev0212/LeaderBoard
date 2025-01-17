@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
-import { Document, Page } from 'react-pdf';
 
 const EventForm = () => {
   const [formData, setFormData] = useState({
@@ -8,30 +7,121 @@ const EventForm = () => {
     description: '',
     date: '',
     proofImage: null,
-    pdfDocument: null, // New field for PDF document
+    pdfDocument: null,
     category: '',
     positionSecured: '',
-    priceMoney: ''
+    priceMoney: '',
+    participationType: '',
+    eventLocation: '',
+    otherCollegeName: '',
+    eventScope: '',
+    eventOrganizer: ''
   });
 
   const [imagePreview, setImagePreview] = useState(null);
-  const [pdfPreview, setPdfPreview] = useState(null); // State for PDF preview
+  const [pdfPreview, setPdfPreview] = useState(null);
   const [uploadStatus, setUploadStatus] = useState('');
-  const [showPdfModal, setShowPdfModal] = useState(false); // State to show PDF modal
-  const navigate = useNavigate();
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState('');
+  const navigate = useNavigate();
 
+  // Check various conditions for showing fields
+  const shouldShowPrizeMoney = ['First', 'Second', 'Third'].includes(formData.positionSecured);
+  const shouldShowCollegeName = formData.eventLocation === 'Outside College';
+  const shouldShowEventDetails = ['Hackathon', 'Ideathon', 'Coding', 'Workshop', 'Conference'].includes(formData.category);
+
+  const getBasicFields = () => [
+    {
+      section: 'Basic Information',
+      fields: [
+        { name: 'eventName', label: 'Event Name', type: 'text', placeholder: 'Enter Event Name' },
+        { name: 'description', label: 'Description', type: 'textarea', placeholder: 'Enter Description' },
+        { name: 'date', label: 'Date', type: 'date' },
+        { 
+          name: 'category', 
+          label: 'Category', 
+          type: 'select', 
+          options: ['Select a category', 'Hackathon', 'Ideathon', 'Coding', 'Global-Certificates', 'Workshop', 'Conference', 'Others'] 
+        }
+      ]
+    }
+  ];
+
+  const getEventDetailFields = () => shouldShowEventDetails ? [
+    {
+      section: 'Event Details',
+      fields: [
+        { 
+          name: 'eventLocation', 
+          label: 'Event Location', 
+          type: 'select', 
+          options: ['Select location', 'Within College', 'Outside College']
+        },
+        ...(shouldShowCollegeName ? [{
+          name: 'otherCollegeName',
+          label: 'College Name',
+          type: 'text',
+          placeholder: 'Enter College Name'
+        }] : []),
+        { 
+          name: 'eventScope', 
+          label: 'Event Scope', 
+          type: 'select', 
+          options: ['Select scope', 'International', 'National', 'State'] 
+        },
+        { 
+          name: 'eventOrganizer', 
+          label: 'Event Organizer', 
+          type: 'select', 
+          options: ['Select organizer type', 'Industry Based', 'College Based'] 
+        },
+        { 
+          name: 'participationType', 
+          label: 'Participation Type', 
+          type: 'select', 
+          options: ['Select type', 'Individual', 'Team'] 
+        }
+      ]
+    }
+  ] : [];
+
+  const getAchievementFields = () => [
+    {
+      section: 'Achievement Details',
+      fields: [
+        { 
+          name: 'positionSecured', 
+          label: 'Position Secured', 
+          type: 'select', 
+          options: ['Select position', 'First', 'Second', 'Third', 'Participant', 'None'] 
+        },
+        ...(shouldShowPrizeMoney ? [{
+          name: 'priceMoney',
+          label: 'Prize Money',
+          type: 'text',
+          placeholder: 'Enter Prize Amount'
+        }] : [])
+      ]
+    }
+  ];
+
+  const getDocumentFields = () => [
+    {
+      section: 'Supporting Documents',
+      fields: [
+        { name: 'proofImage', label: 'Proof Image', type: 'file', accept: 'image/*' },
+        { name: 'pdfDocument', label: 'PDF Document', type: 'file', accept: 'application/pdf' }
+      ]
+    }
+  ];
+
+  // Combine all sections based on conditions
   const formFields = [
-    { name: 'eventName', label: 'Event Name', type: 'text', placeholder: 'Enter Event Name' },
-    { name: 'description', label: 'Description', type: 'textarea', placeholder: 'Enter Description' },
-    { name: 'date', label: 'Date', type: 'date' },
-    { name: 'proofImage', label: 'Proof Image', type: 'file', accept: 'image/*' },
-    { name: 'pdfDocument', label: 'PDF Document', type: 'file', accept: 'application/pdf' }, // New field for PDF document
-    { name: 'category', label: 'Category', type: 'select', options: ['Select a category', 'Hackathon', 'Ideathon', 'Coding', 'Global-Certificates', 'Workshop', 'Conference', 'Others'] },
-    { name: 'priceMoney', label: 'Price Money', type: 'text', placeholder: 'Enter Price Money' },
-    { name: 'positionSecured', label: 'Position Secured', type: 'select', options: ['Select position', 'First', 'Second', 'Third', 'Participant', 'None'] }
+    ...getBasicFields(),
+    ...getEventDetailFields(),
+    ...getAchievementFields(),
+    ...getDocumentFields()
   ];
 
   const validateImage = (file) => {
@@ -50,6 +140,20 @@ const EventForm = () => {
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     
+    // Reset dependent fields when category changes
+    if (name === 'category') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        eventLocation: '',
+        otherCollegeName: '',
+        eventScope: '',
+        eventOrganizer: '',
+        participationType: ''
+      }));
+      return;
+    }
+    
     if (name === 'proofImage' && files[0]) {
       const file = files[0];
       const error = validateImage(file);
@@ -58,11 +162,8 @@ const EventForm = () => {
         setErrors(prev => ({ ...prev, proofImage: error }));
         return;
       }
-
-      // Clear any previous errors
       setErrors(prev => ({ ...prev, proofImage: null }));
       
-      // Create preview
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result);
@@ -96,15 +197,43 @@ const EventForm = () => {
   const validateForm = () => {
     const newErrors = {};
 
-    formFields.forEach(field => {
+    // Always validate basic fields
+    const basicFields = getBasicFields().flatMap(section => section.fields);
+    basicFields.forEach(field => {
+      if (!formData[field.name]?.trim()) {
+        newErrors[field.name] = `${field.label} is required`;
+      }
+    });
+
+    // Validate event detail fields only if category requires them
+    if (shouldShowEventDetails) {
+      const eventDetailFields = getEventDetailFields().flatMap(section => section.fields);
+      eventDetailFields.forEach(field => {
+        if (!formData[field.name]?.trim()) {
+          newErrors[field.name] = `${field.label} is required`;
+        }
+      });
+    }
+
+    // Validate achievement and document fields
+    const otherFields = [...getAchievementFields(), ...getDocumentFields()].flatMap(section => section.fields);
+    otherFields.forEach(field => {
       if (field.name === 'proofImage' && !formData.proofImage) {
         newErrors[field.name] = 'Proof image is required';
       } else if (field.name === 'pdfDocument' && !formData.pdfDocument) {
         newErrors[field.name] = 'PDF document is required';
-      } else if (field.type !== 'file' && !formData[field.name].trim()) {
+      } else if (field.type !== 'file' && !formData[field.name]?.trim()) {
         newErrors[field.name] = `${field.label} is required`;
       }
     });
+
+    // Additional validations
+    if (shouldShowPrizeMoney && !formData.priceMoney?.trim()) {
+      newErrors.priceMoney = 'Prize money is required for winning positions';
+    }
+    if (shouldShowCollegeName && !formData.otherCollegeName?.trim()) {
+      newErrors.otherCollegeName = 'College name is required for outside college events';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -115,7 +244,7 @@ const EventForm = () => {
     if (validateForm()) {
       setIsLoading(true);
       setUploadStatus('Uploading files...');
-  
+      
       try {
         // Upload image to Cloudinary
         const formDataImage = new FormData();
@@ -130,45 +259,30 @@ const EventForm = () => {
           }
         );
   
-        if (!cloudinaryResponse.ok) {
-          throw new Error('Failed to upload image');
-        }
-  
+        if (!cloudinaryResponse.ok) throw new Error('Failed to upload image');
         const cloudinaryData = await cloudinaryResponse.json();
   
-        // Upload PDF to the backend (/pdf-upload)
+        // Upload PDF
         const formDataPdf = new FormData();
         formDataPdf.append('pdfDocument', formData.pdfDocument);
-        console.log(formDataPdf);
   
         const pdfResponse = await fetch(`${import.meta.env.VITE_BASE_URL}/event/upload-pdf`, {
           method: 'POST',
           body: formDataPdf
         });
   
-        if (!pdfResponse.ok) {
-          throw new Error('Failed to upload PDF');
-        }
-  
-        const pdfData = await pdfResponse.json(); // Assuming PDF upload response contains the file name or URL
-        console.log(pdfData);
+        if (!pdfResponse.ok) throw new Error('Failed to upload PDF');
+        const pdfData = await pdfResponse.json();
   
         setUploadStatus('Files uploaded successfully! Submitting form...');
   
         const formDataToSend = {
-          eventName: formData.eventName,
-          description: formData.description,
-          date: formData.date,
-          category: formData.category,
-          positionSecured: formData.positionSecured,
-          priceMoney: formData.priceMoney,
-          proofUrl: cloudinaryData.url, // Image URL from Cloudinary
-          pdfDocument: pdfData.fileName, // URL or filename of the uploaded PDF
+          ...formData,
+          proofUrl: cloudinaryData.url,
+          pdfDocument: pdfData.fileName,
         };
   
-        console.log(formDataToSend);
-  
-        // Submit form data to backend
+        // Submit form data
         const token = localStorage.getItem('student-token');
         const response = await fetch(`${import.meta.env.VITE_BASE_URL}/event/submit`, {
           method: 'POST',
@@ -179,11 +293,7 @@ const EventForm = () => {
           body: JSON.stringify(formDataToSend)
         });
   
-        if (!response.ok) {
-          const errorData = await response.json();
-          console.error('Error response:', errorData);
-          throw new Error('Failed to submit form');
-        }
+        if (!response.ok) throw new Error('Failed to submit form');
   
         setUploadStatus('Form submitted successfully!');
         setTimeout(() => navigate("/student-dashboard"), 1500);
@@ -197,123 +307,175 @@ const EventForm = () => {
       }
     }
   };
-  
-  const handleViewPdf = () => {
-    setShowPdfModal(true);
-  };
-
-  const handleClosePdfModal = () => {
-    setShowPdfModal(false);
-  };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
-      <div className="w-full max-w-md bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold mb-6 text-center">Event Details Form</h2>
+    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-md overflow-hidden">
+        <div className="bg-blue-600 py-4 px-6">
+          <h2 className="text-2xl font-bold text-white text-center">Event Details Form</h2>
+        </div>
         
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {formFields.map((field, index) => (
-            <div key={index}>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {field.label}
-              </label>
-              
-              {field.type === 'textarea' ? (
-                <textarea
-                  name={field.name}
-                  value={formData[field.name]}
-                  onChange={handleChange}
-                  rows="3"
-                  placeholder={field.placeholder}
-                  className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-                />
-              ) : field.type === 'select' ? (
-                <select
-                  name={field.name}
-                  value={formData[field.name]}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-                >
-                  {field.options.map((option, i) => (
-                    <option key={i} value={option}>{option}</option>
-                  ))}
-                </select>
-              ) : (
+        <form onSubmit={handleSubmit} className="p-6 space-y-8">
+          {/* Modified Basic Information section with side-by-side layout */}
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold text-gray-700 border-b pb-2">
+              Basic Information
+            </h3>
+            
+            <div className="grid grid-cols-2 gap-6">
+              {/* Left column */}
+              <div className="space-y-6">
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Event Name
+                  </label>
                   <input
-                    type={field.type}
-                    name={field.name}
+                    type="text"
+                    name="eventName"
+                    value={formData.eventName}
                     onChange={handleChange}
-                    placeholder={field.placeholder}
-                    accept={field.accept}
+                    placeholder="Enter Event Name"
                     className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
                   />
-                  {field.name === 'proofImage' && imagePreview && (
-                    <div className="mt-3">
-                      <img
-                        src={imagePreview}
-                        alt="Preview"
-                        className="w-32 h-32 object-cover rounded-md"
-                      />
-                    </div>
-                  )}
-                  {field.name === 'pdfDocument' && pdfPreview && (
-                    <div className="mt-3">
-                      <button
-                        type="button"
-                        onClick={handleViewPdf}
-                        className="bg-blue-500 text-white px-4 py-2 rounded-md"
-                      >
-                        View PDF
-                      </button>
-                    </div>
-                  )}
-                  {errors[field.name] && (
-                    <div className="text-red-500 text-sm mt-2">{errors[field.name]}</div>
+                  {errors.eventName && (
+                    <p className="mt-1 text-sm text-red-600">{errors.eventName}</p>
                   )}
                 </div>
-              )}
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    name="date"
+                    value={formData.date}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+                  />
+                  {errors.date && (
+                    <p className="mt-1 text-sm text-red-600">{errors.date}</p>
+                  )}
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Category
+                  </label>
+                  <select
+                    name="category"
+                    value={formData.category}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+                  >
+                    {['Select a category', 'Hackathon', 'Ideathon', 'Coding', 'Global-Certificates', 'Workshop', 'Conference', 'Others'].map((option, i) => (
+                      <option key={i} value={option}>{option}</option>
+                    ))}
+                  </select>
+                  {errors.category && (
+                    <p className="mt-1 text-sm text-red-600">{errors.category}</p>
+                  )}
+                </div>
+              </div>
+              
+              {/* Right column - Description */}
+              <div className="h-full">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  placeholder="Enter Description"
+                  className="w-full h-[calc(100%-2rem)] px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 resize-none"
+                  rows="8"
+                />
+                {errors.description && (
+                  <p className="mt-1 text-sm text-red-600">{errors.description}</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Rest of the form sections */}
+          {formFields.slice(1).map((section, sectionIndex) => (
+            <div key={sectionIndex} className="space-y-6">
+              <h3 className="text-lg font-semibold text-gray-700 border-b pb-2">
+                {section.section}
+              </h3>
+              
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                {section.fields.map((field, fieldIndex) => (
+                  <div key={fieldIndex}>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {field.label}
+                    </label>
+                    
+                    {field.type === 'select' ? (
+                      <select
+                        name={field.name}
+                        value={formData[field.name]}
+                        onChange={handleChange}
+                        className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+                      >
+                        {field.options.map((option, i) => (
+                          <option key={i} value={option}>{option}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <div>
+                        <input
+                          type={field.type}
+                          name={field.name}
+                          onChange={handleChange}
+                          value={field.type !== 'file' ? formData[field.name] : undefined}
+                          placeholder={field.placeholder}
+                          accept={field.accept}
+                          className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+                        />
+                        {field.name === 'proofImage' && imagePreview && (
+                          <div className="mt-3">
+                            <img
+                              src={imagePreview}
+                              alt="Preview"
+                              className="w-32 h-32 object-cover rounded-md"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    {errors[field.name] && (
+                      <p className="mt-1 text-sm text-red-600">{errors[field.name]}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           ))}
           
-          {isLoading && (
-            <div className="text-center">Uploading...</div>
+          {apiError && (
+            <div className="text-red-500 text-center p-3 bg-red-50 rounded-md">
+              {apiError}
+            </div>
           )}
           
-          {apiError && (
-            <div className="text-red-500 text-center mt-4">{apiError}</div>
-          )}
-
-          <div className="flex justify-between items-center mt-6">
+          <div className="flex items-center justify-between mt-6 pt-6 border-t">
             <button
               type="submit"
-              className="bg-blue-500 text-white px-4 py-2 rounded-md"
               disabled={isLoading}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Submit
+              {isLoading ? 'Submitting...' : 'Submit Event'}
             </button>
-            <p className="text-sm text-gray-500">{uploadStatus}</p>
           </div>
+          
+          {uploadStatus && (
+            <p className="text-sm text-center mt-4 text-gray-600">{uploadStatus}</p>
+          )}
         </form>
       </div>
-
-      {showPdfModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-3xl w-full">
-            <button
-              onClick={handleClosePdfModal}
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-            >
-              Close
-            </button>
-            <div className="pdf-container">
-              <Document file={pdfPreview}>
-                <Page pageNumber={1} />
-              </Document>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
