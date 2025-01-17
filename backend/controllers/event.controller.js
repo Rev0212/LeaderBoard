@@ -6,19 +6,54 @@ const eventModel = require('../models/event.model')
 // Student submits a new event
 const submitEvent = async (req, res) => {
     try {
-        const { eventName, description, date, proofUrl, category, positionSecured,priceMoney, pdfDocument } = req.body;
+        const {
+            eventName,
+            description,
+            date,
+            proofUrl,
+            category,
+            eventLocation,
+            otherCollegeName,
+            eventScope,
+            eventOrganizer,
+            participationType,
+            positionSecured,
+            priceMoney,
+            pdfDocument
+        } = req.body;
+        
         const studentId = req.student._id;
 
-        const newEvent = await eventService.createEvent({
+        // Create event data object with conditional fields
+        const eventData = {
             eventName,
             description,
             date,
             proofUrl,
             category,
             positionSecured,
-            priceMoney,
             pdfDocument,
-        }, studentId);
+            submittedBy: studentId
+        };
+
+        // Add conditional fields based on category
+        if (['Hackathon', 'Ideathon', 'Coding', 'Workshop', 'Conference'].includes(category)) {
+            eventData.eventLocation = eventLocation;
+            eventData.eventScope = eventScope;
+            eventData.eventOrganizer = eventOrganizer;
+            eventData.participationType = participationType;
+
+            if (eventLocation === 'Outside College') {
+                eventData.otherCollegeName = otherCollegeName;
+            }
+        }
+
+        // Add prize money if position is top 3
+        if (['First', 'Second', 'Third'].includes(positionSecured)) {
+            eventData.priceMoney = priceMoney;
+        }
+
+        const newEvent = await eventService.createEvent(eventData);
 
         res.status(201).json({ 
             message: 'Event submitted successfully', 
