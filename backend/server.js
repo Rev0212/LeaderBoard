@@ -24,7 +24,7 @@ const server = http.createServer(app);
 
         // Ensure database connection is ready before restoring backup
         mongoose.connection.once('open', async () => {
-            await restoreBackup(); // Restore data from backup
+            // await restoreBackup(); // Restore data from backup
             server.listen(port, () => {
                 console.log(`Server is running at port ${port}`);
             });
@@ -37,7 +37,7 @@ const server = http.createServer(app);
 // Gracefully handle shutdown
 process.on('SIGINT', async () => {
     console.log('SIGINT received. Creating backup before shutdown...');
-    await createBackup(); // Backup data on shutdown
+    // await createBackup(); // Backup data on shutdown
     server.close(() => {
         console.log('Server shutting down gracefully.');
         process.exit(0);
