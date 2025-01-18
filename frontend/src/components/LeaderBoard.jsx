@@ -76,28 +76,31 @@ const LeaderboardTable = () => {
   }
 
   return (
-    <div className="border rounded-lg shadow-sm">
-      <div className="p-4">
-        <div className="flex items-center justify-between mb-4">
+    <div className="bg-white border rounded-lg shadow-sm">
+      <div className="p-4 lg:p-6">
+        {/* Header Section */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-2">
-            <Medal className="h-5 w-5" />
-            <h2 className="text-lg font-bold">Leaderboard</h2>
+            <Medal className="h-6 w-6 text-yellow-500" />
+            <h2 className="text-lg lg:text-xl font-bold text-gray-900">Leaderboard</h2>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="relative">
+          
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <div className="relative w-full sm:w-auto">
               <input
                 type="text"
                 placeholder="Search by name..."
                 value={searchQuery}
                 onChange={handleSearch}
-                className="border rounded-md px-3 py-1.5 pl-8 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full sm:w-64 border rounded-lg px-4 py-2 pl-9 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
-              <Search className="h-4 w-4 text-gray-400 absolute left-2 top-1/2 transform -translate-y-1/2" />
+              <Search className="h-4 w-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
             </div>
+            
             <select
               value={itemsPerPage}
               onChange={handleItemsPerPageChange}
-              className="border rounded-md px-2 py-1"
+              className="w-full sm:w-auto border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value={10}>10 per page</option>
               <option value={20}>20 per page</option>
@@ -107,47 +110,63 @@ const LeaderboardTable = () => {
           </div>
         </div>
         
-        <div className="max-h-[700px] overflow-y-auto">
-          <div className="space-y-3">
+        {/* Leaderboard List */}
+        <div className="max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-gray-50">
+          <div className="space-y-2">
             {leaderboardData.map((student, index) => (
               <div
                 key={student._id}
-                className={`flex items-center justify-between p-4 rounded-lg ${
-                  index % 2 === 1 ? 'bg-gray-50' : ''
-                }`}
+                className={`flex items-center justify-between p-4 rounded-lg transition-colors ${
+                  index % 2 === 1 ? 'bg-gray-50' : 'bg-white'
+                } hover:bg-gray-100`}
               >
                 <div className="flex items-center gap-4">
-                  <span className="text-xl font-bold text-gray-500">
-                    #{student.rank}
-                  </span>
-                  <span className="font-medium">{student.name}</span>
+                  <div className="flex items-center justify-center w-8 h-8">
+                    {student.rank <= 3 ? (
+                      <span className={`text-lg font-bold ${
+                        student.rank === 1 ? 'text-yellow-500' :
+                        student.rank === 2 ? 'text-gray-400' :
+                        'text-orange-500'
+                      }`}>
+                        #{student.rank}
+                      </span>
+                    ) : (
+                      <span className="text-lg font-bold text-gray-400">
+                        #{student.rank}
+                      </span>
+                    )}
+                  </div>
+                  <span className="font-medium text-gray-900">{student.name}</span>
                 </div>
                 
                 <div className="flex items-center gap-2">
-                  <span className="font-bold">{student.totalPoints}</span>
+                  <span className="font-bold text-blue-600">{student.totalPoints.toLocaleString()}</span>
                   <span className="text-sm text-gray-500">points</span>
                 </div>
               </div>
             ))}
           </div>
         </div>
-
-        <div className="flex items-center justify-between mt-4 border-t pt-4">
+  
+        {/* Pagination */}
+        <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-100">
           <button
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            className="flex items-center gap-1 px-3 py-1 rounded-md bg-gray-100 disabled:opacity-50"
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <ChevronLeft className="h-4 w-4" />
             Previous
           </button>
+          
           <span className="text-sm text-gray-600">
             Page {currentPage} of {totalPages}
           </span>
+          
           <button
             onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
-            className="flex items-center gap-1 px-3 py-1 rounded-md bg-gray-100 disabled:opacity-50"
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Next
             <ChevronRight className="h-4 w-4" />

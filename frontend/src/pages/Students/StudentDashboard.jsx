@@ -110,146 +110,144 @@ const StudentDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Sidebar */}
-      <div className="fixed top-0 left-0 h-full w-64 bg-white shadow-lg p-6">
-        <h1 className="text-2xl font-bold text-gray-800 mb-8">Student Portal</h1>
-        <nav className="space-y-4">
-          <button
-            onClick={handleShowProfile}
-            className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            <User size={20} />
-            Profile
-          </button>
-          <button
-            onClick={() => setShowEventHistory(true)}
-            className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            <History size={20} />
-            Event History
-          </button>
-          <button
-            onClick={handleUpcomingEvents}
-            className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            <CalendarDays size={20} />
-            Upcoming Events
-          </button>
-          <button
-            onClick={handleAddEventClick}
-            className="w-full flex items-center gap-3 p-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-          >
-            <Plus size={20} />
-            Add Event
-          </button>
-          <button
-            onClick={handleLogoutClick}
-            className="w-full flex items-center gap-3 p-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors mt-auto"
-          >
-            <LogOut size={20} />
-            Logout
-          </button>
-        </nav>
+      {/* Sidebar - Collapsible on mobile */}
+      <div className="lg:fixed lg:top-0 lg:left-0 lg:h-full lg:w-64 bg-white shadow-lg p-4 lg:p-6">
+        <div className="flex lg:flex-col justify-between">
+          <h1 className="text-xl lg:text-2xl font-bold text-gray-800 mb-4 lg:mb-8">Student Portal</h1>
+          <nav className="flex lg:flex-col gap-2 lg:gap-4">
+            <button
+              onClick={handleShowProfile}
+              className="flex items-center gap-2 p-2 lg:p-3 rounded-lg hover:bg-gray-100 transition-colors text-sm lg:text-base"
+            >
+              <User size={18} />
+              <span className="hidden lg:inline">Profile</span>
+            </button>
+            <button
+              onClick={() => setShowEventHistory(true)}
+              className="flex items-center gap-2 p-2 lg:p-3 rounded-lg hover:bg-gray-100 transition-colors text-sm lg:text-base"
+            >
+              <History size={18} />
+              <span className="hidden lg:inline">Event History</span>
+            </button>
+            <button
+              onClick={handleUpcomingEvents}
+              className="flex items-center gap-2 p-2 lg:p-3 rounded-lg hover:bg-gray-100 transition-colors text-sm lg:text-base"
+            >
+              <CalendarDays size={18} />
+              <span className="hidden lg:inline">Upcoming Events</span>
+            </button>
+            <button
+              onClick={handleAddEventClick}
+              className="flex items-center gap-2 p-2 lg:p-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm lg:text-base"
+            >
+              <Plus size={18} />
+              <span className="hidden lg:inline">Add Event</span>
+            </button>
+            <button
+              onClick={handleLogoutClick}
+              className="flex items-center gap-2 p-2 lg:p-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm lg:text-base mt-auto"
+            >
+              <LogOut size={18} />
+              <span className="hidden lg:inline">Logout</span>
+            </button>
+          </nav>
+        </div>
       </div>
 
       {/* Main Content */}
-      <div className="ml-64 p-8">
+      <div className="lg:ml-64 p-4 lg:p-8">
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-700">Events Participated</h3>
-              <Calendar className="h-6 w-6 text-blue-500" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 mb-6 lg:mb-8">
+          <div className="bg-white p-4 lg:p-6 rounded-lg shadow-md">
+            <div className="flex items-center justify-between mb-3 lg:mb-4">
+              <h3 className="text-base lg:text-lg font-semibold text-gray-700">Events Participated</h3>
+              <Calendar className="h-5 w-5 lg:h-6 lg:w-6 text-blue-500" />
             </div>
-            <p className="text-3xl font-bold text-gray-900">{studentData?.eventsParticipated?.length || 0}</p>
-            <p className="text-sm text-gray-500 mt-2">
+            <p className="text-2xl lg:text-3xl font-bold text-gray-900">{studentData?.eventsParticipated?.length || 0}</p>
+            <p className="text-xs lg:text-sm text-gray-500 mt-2">
               Recent: {studentData?.eventsParticipated?.[0]?.eventName || "N/A"}
             </p>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-700">Current Rank</h3>
-              <Trophy className="h-6 w-6 text-yellow-500" />
+          <div className="bg-white p-4 lg:p-6 rounded-lg shadow-md">
+            <div className="flex items-center justify-between mb-3 lg:mb-4">
+              <h3 className="text-base lg:text-lg font-semibold text-gray-700">Current Rank</h3>
+              <Trophy className="h-5 w-5 lg:h-6 lg:w-6 text-yellow-500" />
             </div>
-            <p className="text-3xl font-bold text-gray-900">#{studentData?.currentRank || "N/A"}</p>
-            <p className="text-sm text-gray-500 mt-2">Out of {studentData?.totalStudents || 0} students</p>
+            <p className="text-2xl lg:text-3xl font-bold text-gray-900">#{studentData?.currentRank || "N/A"}</p>
+            <p className="text-xs lg:text-sm text-gray-500 mt-2">Out of {studentData?.totalStudents || 0} students</p>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-700">Total Points</h3>
-              <Medal className="h-6 w-6 text-purple-500" />
+          <div className="bg-white p-4 lg:p-6 rounded-lg shadow-md">
+            <div className="flex items-center justify-between mb-3 lg:mb-4">
+              <h3 className="text-base lg:text-lg font-semibold text-gray-700">Total Points</h3>
+              <Medal className="h-5 w-5 lg:h-6 lg:w-6 text-purple-500" />
             </div>
-            <p className="text-3xl font-bold text-gray-900">{studentData?.totalPoints || 0}</p>
-            <p className="text-sm text-gray-500 mt-2">Points accumulated</p>
+            <p className="text-2xl lg:text-3xl font-bold text-gray-900">{studentData?.totalPoints || 0}</p>
+            <p className="text-xs lg:text-sm text-gray-500 mt-2">Points accumulated</p>
           </div>
         </div>
 
-        {/* New Upcoming Events Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Upcoming Events */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-6 w-6 text-blue-500" />
-                <h2 className="text-xl font-semibold text-gray-800">Upcoming Events</h2>
-              </div>
-              <button
-                onClick={handleUpcomingEvents}
-                className="text-blue-500 hover:text-blue-600 text-sm"
-              >
-                View All
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              {upcomingEvents.length > 0 ? (
-                upcomingEvents.slice(0, 3).map((event) => (
-                  <div
-                    key={event._id}
-                    className="p-4 border rounded-lg hover:bg-gray-50 transition-colors h-[100px] flex items-center"
-                  >
-                    <div className="flex-1 flex justify-between items-center">
-                      <div className="flex-1">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <h3 className="font-medium text-gray-900">{event.eventName}</h3>
-                            <p className="text-sm text-gray-500">{event.category}</p>
-                          </div>
-                          <span className="text-sm font-medium text-blue-500">
-                            {new Date(event.date).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </div>
-                      
-                      <div className="ml-4">
-                        <a
-                          href={event.registrationLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors"
-                        >
-                          Register Now
-                          <ExternalLink size={16} />
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-gray-500 text-center py-4">No upcoming events</p>
-              )}
-            </div>
-          </div>
-
-          {/* Leaderboard Section */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-6">Leaderboard</h2>
-            <LeaderboardTable />
-          </div>
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 lg:gap-6">
+    {/* Upcoming Events */}
+    <div className="xl:col-span-1 bg-white rounded-lg shadow-md p-4 lg:p-6">
+      <div className="flex items-center justify-between mb-4 lg:mb-6">
+        <div className="flex items-center gap-2">
+          <Calendar className="h-5 w-5 lg:h-6 lg:w-6 text-blue-500" />
+          <h2 className="text-lg lg:text-xl font-semibold text-gray-800">Upcoming Events</h2>
         </div>
+        <button
+          onClick={handleUpcomingEvents}
+          className="text-blue-500 hover:text-blue-600 text-sm"
+        >
+          View All
+        </button>
       </div>
+      
+      <div className="space-y-3 lg:space-y-4">
+        {upcomingEvents.length > 0 ? (
+          upcomingEvents.slice(0, 3).map((event) => (
+            <div
+              key={event._id}
+              className="p-3 lg:p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div>
+                  <h3 className="font-medium text-gray-900">{event.eventName}</h3>
+                  <p className="text-sm text-gray-500">{event.category}</p>
+                </div>
+                <div className="flex items-center justify-between sm:justify-end gap-3">
+                  <span className="text-sm font-medium text-blue-500">
+                    {new Date(event.date).toLocaleDateString()}
+                  </span>
+                  <a
+                    href={event.registrationLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors"
+                  >
+                    Register
+                    <ExternalLink size={14} />
+                  </a>
+                </div>
+              </div>
+            </div>
+          ))
+        ) : (
+          <p className="text-gray-500 text-center py-4">No upcoming events</p>
+        )}
+      </div>
+    </div>
+
+    {/* Leaderboard Section */}
+    <div className="xl:col-span-2 bg-white rounded-lg shadow-md">
+      <div className="h-full">
+        <LeaderboardTable />
+      </div>
+    </div>
+  </div>
+</div>
+
 
       {/* Conditional Renders */}
       {showEventsList && (
@@ -268,4 +266,4 @@ const StudentDashboard = () => {
   );
 };
 
-export default StudentDashboard;
+export default StudentDashboard;  
