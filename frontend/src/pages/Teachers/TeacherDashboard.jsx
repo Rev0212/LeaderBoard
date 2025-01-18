@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {useNavigate } from 'react-router-dom';
+import {useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { Bell, CheckCircle, User, ArrowLeft } from 'lucide-react';
 import EventDetailsModal from '../../components/EventDetailModel';
@@ -15,6 +15,7 @@ const TeacherDashboard = () => {
   const [showClassList, setShowClassList] = useState(false); // State to show class list
 
   const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
+  const location = useLocation();
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -35,22 +36,29 @@ const TeacherDashboard = () => {
   }, [VITE_BASE_URL]);
 
   useEffect(() => {
-    const fetchTeacherData = async () => {
+    const fetchTeacherProfile = async () => {
       try {
-        const response = await axios.get(`${VITE_BASE_URL}/teacher/profile`, {
+        const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/teacher/profile`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'application/json',
-          },
+            'Content-Type': 'application/json'
+          }
         });
         setTeacherData(response.data);
       } catch (error) {
-        console.error("Error fetching teacher data:", error);
+        console.error("Error fetching teacher profile:", error);
       }
     };
 
-    fetchTeacherData();
-  }, [VITE_BASE_URL]);
+    fetchTeacherProfile();
+  }, []);
+
+  useEffect(() => {
+    // Check if we're returning from student view
+    if (location.state?.showClassList) {
+      setShowClassList(true);
+    }
+  }, [location]);
 
   const navigate = useNavigate();
 
@@ -112,7 +120,7 @@ const TeacherDashboard = () => {
 
   const handleBackToDashboard = () => {
     setShowProfile(false);
-    setShowClassList(false); // Reset class list view
+    setShowClassList(false);
   };
 
   const handleShowPDF = (event) => {
@@ -138,10 +146,11 @@ const TeacherDashboard = () => {
     );
   }
 
-  if (showClassList) {
+  if (showClassList && teacherData) {
     return (
       <ClassDetails
-        classId={teacherData?.classes?.[0]?._id} // Get the first class ID from teacherData
+        classId={teacherData?.classes?.[0]?._id}
+        teacherData={teacherData}
         handleBackToDashboard={handleBackToDashboard}
       />
     );

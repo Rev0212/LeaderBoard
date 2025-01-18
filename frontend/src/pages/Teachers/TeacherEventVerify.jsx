@@ -95,6 +95,11 @@ const TeacherEventsPage = () => {
     }
   };
 
+  const handleBack = () => {
+    // Navigate back to class list instead of dashboard
+    navigate('/teacher-dashboard', { state: { showClassList: true } });
+  };
+
   if (loading) {
     return (
       <div className="w-full h-48 flex items-center justify-center">
@@ -115,11 +120,11 @@ const TeacherEventsPage = () => {
     <div className="p-6 bg-gray-100 min-h-screen">
       <div className="mb-6">
         <button
-          onClick={() => navigate(-1)}
+          onClick={handleBack}
           className="flex items-center gap-2 text-blue-500 hover:underline"
         >
           <ArrowLeft size={20} />
-          Back
+          Back to Class List
         </button>
       </div>
 
