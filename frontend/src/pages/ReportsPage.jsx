@@ -421,9 +421,9 @@ const ReportsPage = () => {
               <h2 className="text-xl font-semibold text-gray-700 mb-4">Inactive Students</h2>
               
               {/* Filters Section */}
-              <div className="mb-4 flex flex-wrap gap-4">
+              <div className="mb-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {/* Student Name Search */}
-                <div className="flex-1 min-w-[200px]">
+                <div className="w-full">
                   <label htmlFor="nameSearch" className="block text-sm font-medium text-gray-700 mb-1">
                     Search by Student Name
                   </label>
@@ -431,7 +431,7 @@ const ReportsPage = () => {
                     <input
                       type="text"
                       id="nameSearch"
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10"
                       placeholder="Enter student name..."
                       value={nameSearchQuery}
                       onChange={(e) => setNameSearchQuery(e.target.value)}
@@ -443,13 +443,13 @@ const ReportsPage = () => {
                 </div>
 
                 {/* Class Filter Dropdown */}
-                <div className="flex-1 min-w-[200px]">
+                <div className="w-full">
                   <label htmlFor="classFilter" className="block text-sm font-medium text-gray-700 mb-1">
                     Filter by Class
                   </label>
                   <select
                     id="classFilter"
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10"
                     value={selectedClass}
                     onChange={(e) => setSelectedClass(e.target.value)}
                   >
@@ -463,13 +463,13 @@ const ReportsPage = () => {
                 </div>
 
                 {/* Inactive Days Filter */}
-                <div className="flex-1 min-w-[200px]">
+                <div className="w-full">
                   <label htmlFor="inactiveDays" className="block text-sm font-medium text-gray-700 mb-1">
                     Inactive For At Least
                   </label>
                   <select
                     id="inactiveDays"
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10"
                     value={inactiveDaysFilter}
                     onChange={(e) => setInactiveDaysFilter(Number(e.target.value))}
                   >
@@ -504,16 +504,16 @@ const ReportsPage = () => {
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50 sticky top-0 z-10">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 w-1/4">
                           Name
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 w-1/4">
                           Class
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 w-1/4">
                           Last Activity
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 w-1/4">
                           Inactive Days
                         </th>
                       </tr>
