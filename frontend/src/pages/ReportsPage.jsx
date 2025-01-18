@@ -26,8 +26,9 @@ const ReportsPage = () => {
   const [activeSection, setActiveSection] = useState('overview');
   const [inactiveStudents, setInactiveStudents] = useState([]);
   const [classParticipation, setClassParticipation] = useState([]);
+  const [nameSearchQuery, setNameSearchQuery] = useState('');
+  const [selectedClass, setSelectedClass] = useState('');
   const [inactiveDaysFilter, setInactiveDaysFilter] = useState(30);
-  const [searchQuery, setSearchQuery] = useState('');
 
   const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -174,16 +175,18 @@ const ReportsPage = () => {
   };
 
   const filteredInactiveStudents = inactiveStudents.filter(student => {
-    const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         student.className.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesName = student.name.toLowerCase().includes(nameSearchQuery.toLowerCase());
+    const matchesClass = !selectedClass || student.className === selectedClass;
     
     const lastActivity = student.lastActivity ? new Date(student.lastActivity) : null;
     const inactiveDays = lastActivity 
       ? Math.floor((new Date() - lastActivity) / (1000 * 60 * 60 * 24))
       : Number.POSITIVE_INFINITY;
 
-    return matchesSearch && inactiveDays >= inactiveDaysFilter;
+    return matchesName && matchesClass && inactiveDays >= inactiveDaysFilter;
   });
+
+  const uniqueClasses = [...new Set(inactiveStudents.map(student => student.className))].sort();
 
   const renderContent = () => {
     switch (activeSection) {
@@ -419,25 +422,47 @@ const ReportsPage = () => {
               
               {/* Filters Section */}
               <div className="mb-4 flex flex-wrap gap-4">
+                {/* Student Name Search */}
                 <div className="flex-1 min-w-[200px]">
-                  <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
-                    Search Students
+                  <label htmlFor="nameSearch" className="block text-sm font-medium text-gray-700 mb-1">
+                    Search by Student Name
                   </label>
                   <div className="relative">
                     <input
                       type="text"
-                      id="search"
+                      id="nameSearch"
                       className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                      placeholder="Search by name or class..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Enter student name..."
+                      value={nameSearchQuery}
+                      onChange={(e) => setNameSearchQuery(e.target.value)}
                     />
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                       <Search className="h-4 w-4 text-gray-400" />
                     </div>
                   </div>
                 </div>
-                
+
+                {/* Class Filter Dropdown */}
+                <div className="flex-1 min-w-[200px]">
+                  <label htmlFor="classFilter" className="block text-sm font-medium text-gray-700 mb-1">
+                    Filter by Class
+                  </label>
+                  <select
+                    id="classFilter"
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    value={selectedClass}
+                    onChange={(e) => setSelectedClass(e.target.value)}
+                  >
+                    <option value="">All Classes</option>
+                    {uniqueClasses.map((className) => (
+                      <option key={className} value={className}>
+                        {className}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Inactive Days Filter */}
                 <div className="flex-1 min-w-[200px]">
                   <label htmlFor="inactiveDays" className="block text-sm font-medium text-gray-700 mb-1">
                     Inactive For At Least
@@ -460,6 +485,18 @@ const ReportsPage = () => {
               {/* Results count */}
               <div className="text-sm text-gray-500 mb-4">
                 Found {filteredInactiveStudents.length} inactive students
+                {(nameSearchQuery || selectedClass || inactiveDaysFilter !== 30) && (
+                  <button
+                    onClick={() => {
+                      setNameSearchQuery('');
+                      setSelectedClass('');
+                      setInactiveDaysFilter(30);
+                    }}
+                    className="ml-2 text-blue-600 hover:text-blue-800"
+                  >
+                    Clear filters
+                  </button>
+                )}
               </div>
 
               <div className="overflow-x-auto">
