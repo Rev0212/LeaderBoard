@@ -1,4 +1,5 @@
 const Event = require('../models/event.model');
+const Student = require('../models/student.model');
 
 class EventReportsService {
   // Helper function to get match stage based on filter type
@@ -52,15 +53,42 @@ class EventReportsService {
   }
 
   // Get top students
-  static async getTopStudents(limit = 10, filterType) {
-    const matchStage = this.getMatchStage(filterType);
-    const result = await Event.aggregate([
-      { $match: matchStage },
-      { $group: { _id: "$submittedBy", totalPoints: { $sum: "$pointsEarned" } } },
-      { $sort: { totalPoints: -1 } },
-      { $limit: limit }
-    ]);
-    return result;
+  static async getTopStudents(limit = 200, filterType) {
+    try {
+      // Get ALL students sorted by total points
+      const allStudents = await Student.find({})
+        .sort({ totalPoints: -1 })
+        .select('name registerNo totalPoints')
+        .lean();
+
+      // Calculate global ranks (using same logic as leaderboard)
+      let currentRank = 1;
+      let currentPoints = null;
+      let rankedStudents = [];
+      
+      allStudents.forEach((student) => {
+        if (student.totalPoints !== currentPoints) {
+          currentPoints = student.totalPoints;
+          currentRank = rankedStudents.length + 1;
+        }
+
+        rankedStudents.push({
+          "Rank": currentRank,
+          "Register Number": student.registerNo,
+          "Name": student.name,
+          "Points": student.totalPoints || 0
+        });
+
+        // Only break after we've included all students of the current rank
+        if (currentRank > limit && student.totalPoints !== currentPoints) {
+          return false; // Break the forEach loop
+        }
+      });
+
+      return rankedStudents;
+    } catch (error) {
+      throw error;
+    }
   }
 
   // Get top performers by category
