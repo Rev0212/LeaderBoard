@@ -38,7 +38,6 @@ const ReportsPage = () => {
   // Sidebar navigation items
   const sidebarItems = [
     { id: 'overview', label: 'Overview', icon: <TrendingUp size={20} /> },
-    { id: 'performance', label: 'Performance', icon: <Award size={20} /> },
     { id: 'categories', label: 'Categories', icon: <PieChartIcon size={20} /> },
     { id: 'class-analysis', label: 'Class Analysis', icon: <BarChart2 size={20} /> },
     { id: 'students', label: 'Students', icon: <Users size={20} /> },
@@ -202,39 +201,6 @@ const ReportsPage = () => {
             
             <div className="bg-white rounded-lg shadow">
               <LeaderboardTable />
-            </div>
-          </div>
-        );
-
-      case 'performance':
-        return (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold text-gray-700 mb-4">Class Performance</h2>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={classPerformance}>
-                    <XAxis dataKey="_id" />
-                    <YAxis />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Bar dataKey="totalPoints" fill="#4F46E5" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold text-gray-700 mb-4">Student Performance</h2>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={studentPerformance}>
-                    <XAxis dataKey="name" angle={-45} textAnchor="end" height={60} />
-                    <YAxis />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Bar dataKey="totalPoints" fill="#10B981" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
             </div>
           </div>
         );
