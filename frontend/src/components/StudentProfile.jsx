@@ -185,8 +185,7 @@ const StudentProfile = ({ studentData, handleBackToDashboard }) => {
             <InfoCard icon={<User />} label="Register Number" value={studentData?.registerNo || "N/A"} />
             <InfoCard icon={<Calendar />} label="Events Participated" value={studentData?.eventsParticipated?.length || 0} />
             <InfoCard icon={<Star />} label="Total Points" value={studentData?.totalPoints || 0} />
-            <InfoCard icon={<Hash />} label="Class ID" value={studentData?.class || "N/A"} />
-            <InfoCard icon={<Hash />} label="Student ID" value={studentData?._id || "N/A"} />
+            <InfoCard icon={<Hash />} label="Class" value={studentData?.class?.className || "N/A"} />
           </div>
         </div>
 

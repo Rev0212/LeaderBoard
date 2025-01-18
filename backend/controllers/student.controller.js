@@ -137,12 +137,13 @@ module.exports.getStudentProfile = async (req, res, next) => {
             return res.status(404).json({ message: 'Student not found' });
         }
 
-        // Get student with populated events
+        // Get student with populated events and class
         const populatedStudent = await studentModel.findById(req.student._id)
             .populate({
                 path: 'eventsParticipated',
                 options: { sort: { date: -1 } }
-            });
+            })
+            .populate('class', 'className');
 
         if (!populatedStudent) {
             return res.status(404).json({ message: 'Student data not found' });
