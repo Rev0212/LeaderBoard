@@ -1,5 +1,5 @@
-const Event = require('../models/event.model');
 const Student = require('../models/student.model');
+const Event = require('../models/event.model');
 
 class EventReportsService {
   // Helper function to get match stage based on filter type
@@ -319,6 +319,125 @@ class EventReportsService {
     } catch (error) {
       console.error('Category Performance Error:', error);
       throw new Error(`Error getting category performance by class: ${error.message}`);
+    }
+  }
+
+  // Get inactive students
+  static async getInactiveStudents(inactivePeriodDays = 30) {
+    try {
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - inactivePeriodDays);
+
+      const inactiveStudents = await Student.aggregate([
+        {
+          $lookup: {
+            from: 'events',
+            localField: '_id',
+            foreignField: 'submittedBy',
+            as: 'events'
+          }
+        },
+        {
+          $lookup: {
+            from: 'classes',
+            localField: 'class',
+            foreignField: '_id',
+            as: 'classInfo'
+          }
+        },
+        {
+          $unwind: '$classInfo'
+        },
+        {
+          $project: {
+            name: 1,
+            className: '$classInfo.className',
+            lastActivity: { $max: '$events.date' }
+          }
+        },
+        {
+          $match: {
+            $or: [
+              { lastActivity: { $lt: cutoffDate } },
+              { lastActivity: null }
+            ]
+          }
+        },
+        {
+          $sort: { lastActivity: 1, name: 1 }
+        }
+      ]);
+
+      return inactiveStudents;
+    } catch (error) {
+      console.error('Error getting inactive students:', error);
+      throw error;
+    }
+  }
+
+  // Get class participation by category
+  static async getClassParticipation(filterType) {
+    try {
+      const matchStage = this.getMatchStage(filterType);
+      const participation = await Event.aggregate([
+        { $match: matchStage },
+        {
+          $lookup: {
+            from: 'students',
+            localField: 'submittedBy',
+            foreignField: '_id',
+            as: 'student'
+          }
+        },
+        { $unwind: '$student' },
+        {
+          $lookup: {
+            from: 'classes',
+            localField: 'student.class',
+            foreignField: '_id',
+            as: 'classInfo'
+          }
+        },
+        { $unwind: '$classInfo' },
+        {
+          $group: {
+            _id: {
+              className: '$classInfo.className',
+              category: '$category'
+            },
+            participationCount: { $sum: 1 },
+            totalPoints: { $sum: '$pointsEarned' }
+          }
+        },
+        {
+          $group: {
+            _id: '$_id.className',
+            className: { $first: '$_id.className' },
+            totalPoints: { $sum: '$totalPoints' },
+            categories: {
+              $push: {
+                category: '$_id.category',
+                participationCount: '$participationCount',
+                points: '$totalPoints'
+              }
+            }
+          }
+        },
+        {
+          $project: {
+            _id: 0,
+            className: 1,
+            totalPoints: 1,
+            categories: 1
+          }
+        },
+        { $sort: { totalPoints: -1 } }
+      ]);
+
+      return participation;
+    } catch (error) {
+      console.error('Error getting class participation:', error);
+      throw error;
     }
   }
 }

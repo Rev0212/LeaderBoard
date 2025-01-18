@@ -16,4 +16,7 @@ router.get('/detailed-student-performance', EventReportsController.getDetailedSt
 router.get('/category-performance-by-class', EventReportsController.getCategoryPerformanceByClass);
 router.get('/download/:reportType', EventReportsController.downloadReport);
 
+router.get('/inactive-students', EventReportsController.getInactiveStudents);
+router.get('/class-participation', EventReportsController.getClassParticipation);
+
 module.exports = router;

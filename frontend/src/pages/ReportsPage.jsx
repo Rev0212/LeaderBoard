@@ -1,15 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { 
-  BarChart, Bar, 
-  LineChart, Line,
-  PieChart, Pie, 
-  XAxis, YAxis, 
-  Tooltip, 
-  ResponsiveContainer,
-  Cell,
-  Legend
+  BarChart, Bar, LineChart, Line, PieChart, Pie, 
+  XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Legend, CartesianGrid
 } from 'recharts';
+import { 
+  TrendingUp, Award, PieChart as PieChartIcon, 
+  BarChart2, Users, Download
+} from 'lucide-react';
 
 import LeaderboardTable from '../components/LeaderBoard';
 import ReportsDownloadSection from '../components/ReportsDownloadSection';
@@ -25,11 +23,24 @@ const ReportsPage = () => {
   const [classPerformance, setClassPerformance] = useState([]);
   const [studentPerformance, setStudentPerformance] = useState([]);
   const [categoryByClass, setCategoryByClass] = useState([]);
+  const [activeSection, setActiveSection] = useState('overview');
+  const [inactiveStudents, setInactiveStudents] = useState([]);
+  const [classParticipation, setClassParticipation] = useState([]);
 
   const baseURL = import.meta.env.VITE_BASE_URL;
 
   // Color schemes for charts
   const COLORS = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
+
+  // Sidebar navigation items
+  const sidebarItems = [
+    { id: 'overview', label: 'Overview', icon: <TrendingUp size={20} /> },
+    { id: 'performance', label: 'Performance', icon: <Award size={20} /> },
+    { id: 'categories', label: 'Categories', icon: <PieChartIcon size={20} /> },
+    { id: 'class-analysis', label: 'Class Analysis', icon: <BarChart2 size={20} /> },
+    { id: 'students', label: 'Students', icon: <Users size={20} /> },
+    { id: 'downloads', label: 'Downloads', icon: <Download size={20} /> }
+  ];
 
   useEffect(() => {
     const fetchData = async () => {
@@ -84,6 +95,14 @@ const ReportsPage = () => {
         console.log('Category Performance Response:', categoryResponse.data); // Add logging
         setCategoryByClass(categoryResponse.data.performance || []);
 
+        // Fetch inactive students
+        const inactiveStudentsResponse = await axios.get(`${baseURL}/reports/inactive-students`);
+        setInactiveStudents(inactiveStudentsResponse.data.inactiveStudents || []);
+
+        // Fetch class participation data
+        const classParticipationResponse = await axios.get(`${baseURL}/reports/class-participation`);
+        setClassParticipation(classParticipationResponse.data.participation || []);
+
       } catch (err) {
         console.error('Error details:', err.response?.data || err.message); // Add detailed error logging
         setError(err.response?.data?.message || 'Failed to load report data');
@@ -127,136 +146,280 @@ const ReportsPage = () => {
     );
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-lg text-gray-600">Loading reports...</div>
-      </div>
-    );
-  }
+  const formatDataForChart = (data) => {
+    if (!data || data.length === 0) return [];
+    
+    // Get unique categories across all classes
+    const allCategories = [...new Set(
+      data.flatMap(item => item.categories.map(cat => cat.category))
+    )];
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-lg text-red-600">{error}</div>
-      </div>
-    );
-  }
+    // Format data for the chart
+    return data.map(classData => {
+      const formattedData = {
+        className: classData.className,
+        totalPoints: classData.totalPoints,
+      };
 
-  return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Event Reports</h1>
-        
-        <ReportsDownloadSection baseURL={baseURL} />
-        
-        {/* Prize Money Card */}
-        <div className="bg-white rounded-lg shadow p-6 mb-8">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-700">Total Prize Money</h2>
-            <span className="text-3xl font-bold text-green-600">
-            ₹{totalPrizeMoney.toLocaleString()}
-            </span>
-          </div>
-        </div>
+      // Add each category's points
+      allCategories.forEach(category => {
+        const categoryData = classData.categories.find(cat => cat.category === category);
+        formattedData[category] = categoryData ? categoryData.points : 0;
+      });
 
-        <div className='h-30 mb-8 bg-white rounded-lg shadow'>
-          <LeaderboardTable />
-        </div>
+      return formattedData;
+    });
+  };
 
-        {/* Charts Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Popular Categories Chart */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-gray-700 mb-4">Popular Categories</h2>
-            <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={popularCategories}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    labelLine={false}
-                    label={renderCustomizedLabel}
-                  >
-                    {popularCategories.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
+  const renderContent = () => {
+    switch (activeSection) {
+      case 'overview':
+        return (
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold text-gray-700 mb-4">Total Prize Money</h2>
+              <span className="text-3xl font-bold text-green-600">
+                ₹{totalPrizeMoney.toLocaleString()}
+              </span>
+            </div>
+            
+            <div className="bg-white rounded-lg shadow">
+              <LeaderboardTable />
             </div>
           </div>
+        );
 
-  
-          <div className="bg-white rounded-lg shadow p-6 mb-8">
-          <h2 className="text-xl font-semibold text-gray-700 mb-4">Class Performance</h2>
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={classPerformance}>
-                <XAxis dataKey="_id" />
-                <YAxis />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="totalPoints" fill="#4F46E5" />
-              </BarChart>
-            </ResponsiveContainer>
+      case 'performance':
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold text-gray-700 mb-4">Class Performance</h2>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={classPerformance}>
+                    <XAxis dataKey="_id" />
+                    <YAxis />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Bar dataKey="totalPoints" fill="#4F46E5" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold text-gray-700 mb-4">Student Performance</h2>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={studentPerformance}>
+                    <XAxis dataKey="name" angle={-45} textAnchor="end" height={60} />
+                    <YAxis />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Bar dataKey="totalPoints" fill="#10B981" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
           </div>
-        </div>
-        </div>
+        );
 
-
-        {/* Category by Class Performance */}
-        <div className="bg-white rounded-lg shadow p-8 mt-5 mb-8">
-          <h2 className="text-xl font-semibold text-gray-700 mb-4">Category Performance by Class</h2>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead>
-                <tr>
-                  <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Class
-                  </th>
-                  <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Total Points
-                  </th>
-                  <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Categories Performance
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {categoryByClass.map((classData, index) => (
-                  <tr key={index}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {classData.className || 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {classData.totalPoints}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">
-                      {classData.categories.map((cat, idx) => (
-                        <div key={idx} className="mb-2">
-                          <span className="font-medium">{cat.category}:</span>{' '}
-                          {cat.points} points{' '}
-                          <span className="text-gray-400">
-                            ({cat.participationCount} participation{cat.participationCount !== 1 ? 's' : ''})
-                          </span>
-                        </div>
+      case 'categories':
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold text-gray-700 mb-4">Popular Categories</h2>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={popularCategories}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={100}
+                      labelLine={false}
+                      label={renderCustomizedLabel}
+                    >
+                      {popularCategories.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                    </Pie>
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
 
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold text-gray-700 mb-4">Category Performance by Class</h2>
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead>
+                    <tr>
+                      <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Class
+                      </th>
+                      <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Total Points
+                      </th>
+                      <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Categories Performance
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {categoryByClass.map((classData, index) => (
+                      <tr key={index}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {classData.className || 'N/A'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {classData.totalPoints}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500">
+                          {classData.categories.map((cat, idx) => (
+                            <div key={idx} className="mb-2">
+                              <span className="font-medium">{cat.category}:</span>{' '}
+                              {cat.points} points{' '}
+                              <span className="text-gray-400">
+                                ({cat.participationCount} participation{cat.participationCount !== 1 ? 's' : ''})
+                              </span>
+                            </div>
+                          ))}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+              </table>
+            </div>
+          </div>
+        );
+
+      case 'class-analysis':
+        return (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white rounded-lg shadow p-6">
+                <h2 className="text-xl font-semibold text-gray-700 mb-4">Class Participation by Category</h2>
+                <div className="h-96">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={formatDataForChart(classParticipation)}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis 
+                        dataKey="className" 
+                        angle={-45}
+                        textAnchor="end"
+                        height={60}
+                        interval={0}
+                      />
+                      <YAxis label={{ value: 'Points', angle: -90, position: 'insideLeft' }} />
+                      <Tooltip />
+                      <Legend wrapperStyle={{ paddingTop: "20px" }} />
+                      {Object.keys(formatDataForChart(classParticipation)[0] || {})
+                        .filter(key => !['className', 'totalPoints'].includes(key))
+                        .map((category, index) => (
+                          <Bar 
+                            key={category}
+                            dataKey={category}
+                            fill={COLORS[index % COLORS.length]}
+                            name={category}
+                          />
+                        ))}
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg shadow p-6">
+                <h2 className="text-xl font-semibold text-gray-700 mb-4">Inactive Students</h2>
+                <div className="overflow-y-auto max-h-80">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Name
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Class
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Last Activity
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {inactiveStudents.map((student, index) => (
+                        <tr key={student._id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {student.name}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {student.className}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {student.lastActivity ? new Date(student.lastActivity).toLocaleDateString() : 'Never'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'downloads':
+        return <ReportsDownloadSection baseURL={baseURL} />;
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Sidebar */}
+      <div className="w-64 bg-white shadow-lg fixed h-full">
+        <div className="p-6">
+          <h1 className="text-xl font-bold text-gray-800 mb-6">Reports Dashboard</h1>
+          <nav className="space-y-2">
+            {sidebarItems.map(item => (
+              <button
+                key={item.id}
+                onClick={() => setActiveSection(item.id)}
+                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                  activeSection === item.id 
+                    ? 'bg-blue-50 text-blue-600' 
+                    : 'text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                {item.icon}
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </nav>
+        </div>
       </div>
+
+      {/* Main Content */}
+      <div className="ml-64 flex-1 p-8">
+        {loading ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-lg text-gray-600">Loading reports...</div>
+          </div>
+        ) : error ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-lg text-red-600">{error}</div>
+          </div>
+        ) : (
+          renderContent()
+        )}
       </div>
+    </div>
   );
 };
 

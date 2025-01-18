@@ -50,7 +50,7 @@ const upcomingEventRoutes = require('./routes/upcomingEvent.routes');
 
 app.use('/upcoming-events', upcomingEventRoutes);
 
-console.log('Mounted upcoming events routes at /upcoming-events');
+// console.log('Mounted upcoming events routes at /upcoming-events');
 
 connectToDb();
 

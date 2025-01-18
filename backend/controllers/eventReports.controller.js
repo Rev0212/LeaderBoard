@@ -155,6 +155,26 @@ class EventReportsController {
       next(error);
     }
   }
+
+  static async getInactiveStudents(req, res, next) {
+    try {
+      const { days = 30 } = req.query;
+      const inactiveStudents = await EventReportsService.getInactiveStudents(parseInt(days));
+      res.status(200).json({ inactiveStudents });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getClassParticipation(req, res, next) {
+    try {
+      const { filterType = 'monthly' } = req.query;
+      const participation = await EventReportsService.getClassParticipation(filterType);
+      res.status(200).json({ participation });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 module.exports = EventReportsController;
