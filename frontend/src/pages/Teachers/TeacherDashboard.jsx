@@ -141,7 +141,7 @@ const TeacherDashboard = () => {
   if (showClassList) {
     return (
       <ClassDetails
-        classId="6788965102ac37c82f370bf6" // Pass the classId as a prop
+        classId={teacherData?.classes?.[0]?._id} // Get the first class ID from teacherData
         handleBackToDashboard={handleBackToDashboard}
       />
     );

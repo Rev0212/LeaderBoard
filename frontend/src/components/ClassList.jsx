@@ -12,15 +12,29 @@ const ClassDetails = ({ classId, handleBackToDashboard }) => {
 
   const navigate = useNavigate();
 
-  // Function to fetch class details
   const fetchClassDetails = async () => {
+    if (!classId) {
+      setError("No class assigned");
+      setLoading(false);
+      return;
+    }
+
     try {
-      const response = await axios.get(`${VITE_BASE_URL}/class/${classId}`);
+      const response = await axios.get(
+        `${import.meta.env.VITE_BASE_URL}/class/${classId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
       const classData = response.data.class;
       setStudents(classData.students);
       setLoading(false);
     } catch (err) {
-      setError("Failed to fetch class details.");
+      console.error("Error fetching class details:", err);
+      setError(err.response?.data?.message || "Failed to fetch class details.");
       setLoading(false);
     }
   };
