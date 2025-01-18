@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { 
   BarChart, Bar, LineChart, Line, PieChart, Pie, 
-  XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Legend, CartesianGrid
+  XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Legend, CartesianGrid, LabelList
 } from 'recharts';
 import { 
   TrendingUp, Award, PieChart as PieChartIcon, 
@@ -340,22 +340,46 @@ const ReportsPage = () => {
             {/* Category Performance by Class */}
             <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-xl font-semibold text-gray-700 mb-4">Category Performance by Class</h2>
-              <div className="h-96">
+              <div className="h-[600px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={formatDataForChart(classParticipation)}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                    layout="vertical"
+                    margin={{ top: 20, right: 30, left: 60, bottom: 60 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" />
-                    <YAxis 
-                      type="category" 
-                      dataKey="className" 
-                      width={100}
+                    <XAxis 
+                      dataKey="className"
+                      angle={-45}
+                      textAnchor="end"
+                      height={100}
+                      interval={0}
+                      tick={{ fontSize: 12 }}
                     />
-                    <Tooltip />
-                    <Legend />
+                    <YAxis
+                      label={{ 
+                        value: 'Points Earned', 
+                        angle: -90, 
+                        position: 'insideLeft',
+                        offset: -10
+                      }}
+                    />
+                    <Tooltip 
+                      formatter={(value, name) => [`${value} points`, name]}
+                      contentStyle={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                        borderRadius: '6px',
+                        padding: '8px 12px',
+                        border: '1px solid #e2e8f0',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                      }}
+                    />
+                    <Legend 
+                      verticalAlign="top"
+                      height={36}
+                      wrapperStyle={{
+                        paddingBottom: '20px'
+                      }}
+                    />
                     {Object.keys(formatDataForChart(classParticipation)[0] || {})
                       .filter(key => !['className', 'totalPoints'].includes(key))
                       .map((category, index) => (
@@ -365,7 +389,14 @@ const ReportsPage = () => {
                           fill={COLORS[index % COLORS.length]}
                           name={category}
                           stackId="a"
-                        />
+                        >
+                          <LabelList 
+                            dataKey={category} 
+                            position="inside" 
+                            fill="white"
+                            formatter={(value) => (value > 0 ? value : '')}
+                          />
+                        </Bar>
                       ))}
                   </BarChart>
                 </ResponsiveContainer>
