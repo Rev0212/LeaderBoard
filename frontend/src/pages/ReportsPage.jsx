@@ -369,7 +369,7 @@ const ReportsPage = () => {
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                      label={false}
                       outerRadius={120}
                       fill="#8884d8"
                       dataKey="value"
@@ -378,8 +378,22 @@ const ReportsPage = () => {
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip />
-                    <Legend />
+                    <Tooltip 
+                      formatter={(value, name) => {
+                        const total = classParticipation.reduce((sum, item) => 
+                          sum + item.categories.reduce((catSum, cat) => catSum + cat.participationCount, 0), 0
+                        );
+                        const percentage = ((value / total) * 100).toFixed(1);
+                        return [`${percentage}% (${value} participations)`, name];
+                      }}
+                      contentStyle={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                        borderRadius: '6px',
+                        padding: '8px 12px',
+                        border: '1px solid #e2e8f0',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                      }}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
