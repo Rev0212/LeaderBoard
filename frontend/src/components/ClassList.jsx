@@ -64,7 +64,6 @@ const ClassDetails = ({ classId, handleBackToDashboard }) => {
               <th className="px-4 py-2 text-left text-gray-600">Email</th>
               <th className="px-4 py-2 text-left text-gray-600">Register No</th>
               <th className="px-4 py-2 text-left text-gray-600">Actions</th>
-              <th className="px-4 py-2 text-left text-gray-600">PDF</th>
             </tr>
           </thead>
           <tbody>
@@ -84,11 +83,6 @@ const ClassDetails = ({ classId, handleBackToDashboard }) => {
                   >
                     View Events
                   </button>
-                </td>
-                <td className="px-4 py-2">
-                  <a href={`${VITE_BASE_URL}/student/${student._id}/pdf`} target="_blank" rel="noopener noreferrer">
-                    <FileText className="text-blue-500 hover:text-blue-700" size={20} />
-                  </a>
                 </td>
               </tr>
             ))}
