@@ -220,6 +220,27 @@ const editEvent = async (req, res) => {
     }
 };
 
+const getAllStudentEvents = async (req, res) => {
+    if (!req.teacher) {
+        return res.status(403).json({ message: 'Unauthorized access' });
+    }
 
+    try {
+        const { studentId } = req.params;
 
-module.exports = { submitEvent, reviewEvent, getEvents, editEvent };
+        // Find all events for the specific student
+        const events = await eventModel.find({
+            submittedBy: studentId
+        })
+        .populate('submittedBy', 'name class')  // Only populate necessary student fields
+        .populate('approvedBy', 'name')  // Only populate teacher name
+        .sort({ date: -1 });  // Sort by date, newest first
+
+        res.status(200).json(events);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+module.exports = { submitEvent, reviewEvent, getEvents, editEvent, getAllStudentEvents };
