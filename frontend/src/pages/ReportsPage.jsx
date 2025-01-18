@@ -6,7 +6,7 @@ import {
 } from 'recharts';
 import { 
   TrendingUp, Award, PieChart as PieChartIcon, 
-  BarChart2, Users, Download
+  BarChart2, Users, Download, Search
 } from 'lucide-react';
 
 import LeaderboardTable from '../components/LeaderBoard';
@@ -26,6 +26,8 @@ const ReportsPage = () => {
   const [activeSection, setActiveSection] = useState('overview');
   const [inactiveStudents, setInactiveStudents] = useState([]);
   const [classParticipation, setClassParticipation] = useState([]);
+  const [inactiveDaysFilter, setInactiveDaysFilter] = useState(30);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -170,6 +172,18 @@ const ReportsPage = () => {
       return formattedData;
     });
   };
+
+  const filteredInactiveStudents = inactiveStudents.filter(student => {
+    const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         student.className.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const lastActivity = student.lastActivity ? new Date(student.lastActivity) : null;
+    const inactiveDays = lastActivity 
+      ? Math.floor((new Date() - lastActivity) / (1000 * 60 * 60 * 24))
+      : Number.POSITIVE_INFINITY;
+
+    return matchesSearch && inactiveDays >= inactiveDaysFilter;
+  });
 
   const renderContent = () => {
     switch (activeSection) {
@@ -402,6 +416,52 @@ const ReportsPage = () => {
             {/* Inactive Students Table */}
             <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-xl font-semibold text-gray-700 mb-4">Inactive Students</h2>
+              
+              {/* Filters Section */}
+              <div className="mb-4 flex flex-wrap gap-4">
+                <div className="flex-1 min-w-[200px]">
+                  <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
+                    Search Students
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      id="search"
+                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      placeholder="Search by name or class..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                      <Search className="h-4 w-4 text-gray-400" />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex-1 min-w-[200px]">
+                  <label htmlFor="inactiveDays" className="block text-sm font-medium text-gray-700 mb-1">
+                    Inactive For At Least
+                  </label>
+                  <select
+                    id="inactiveDays"
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    value={inactiveDaysFilter}
+                    onChange={(e) => setInactiveDaysFilter(Number(e.target.value))}
+                  >
+                    <option value={7}>7 days</option>
+                    <option value={14}>14 days</option>
+                    <option value={30}>30 days</option>
+                    <option value={60}>60 days</option>
+                    <option value={90}>90 days</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Results count */}
+              <div className="text-sm text-gray-500 mb-4">
+                Found {filteredInactiveStudents.length} inactive students
+              </div>
+
               <div className="overflow-x-auto">
                 <div className="max-h-[400px] overflow-y-auto">
                   <table className="min-w-full divide-y divide-gray-200">
@@ -422,7 +482,7 @@ const ReportsPage = () => {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {inactiveStudents.map((student, index) => {
+                      {filteredInactiveStudents.map((student, index) => {
                         const lastActivity = student.lastActivity ? new Date(student.lastActivity) : null;
                         const inactiveDays = lastActivity 
                           ? Math.floor((new Date() - lastActivity) / (1000 * 60 * 60 * 24))
