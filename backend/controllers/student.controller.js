@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
 const StudentBulkService = require('../services/studentsBulk.services');
+const eventModel = require('../models/event.model');
 
 
 const uploadPath = path.join(__dirname, '../uploads');
@@ -136,18 +137,31 @@ module.exports.getStudentProfile = async (req, res, next) => {
             return res.status(404).json({ message: 'Student not found' });
         }
 
-       
+        // Get student with populated events
         const populatedStudent = await studentModel.findById(req.student._id)
-            .populate('eventsParticipated')
-            
+            .populate({
+                path: 'eventsParticipated',
+                options: { sort: { date: -1 } }
+            });
 
         if (!populatedStudent) {
             return res.status(404).json({ message: 'Student data not found' });
         }
 
-        res.status(200).json(populatedStudent);
+        // Fetch all events (including pending) for this student
+        const allEvents = await eventModel.find({
+            submittedBy: req.student._id
+        }).sort({ date: -1 });
+
+        // Create response object with all events
+        const responseData = {
+            ...populatedStudent.toObject(),
+            eventsParticipated: allEvents
+        };
+
+        res.status(200).json(responseData);
     } catch (error) {
-        next(error); // Pass the error to the error handling middleware
+        next(error);
     }
 };
 
@@ -199,7 +213,13 @@ module.exports.getstudentEventDetails = async (req, res, next) => {
     try {
         const studentId = req.params.id;
         console.log(studentId);
-        const student = await studentModel.findById(studentId).populate('eventsParticipated');
+        
+        const student = await studentModel.findById(studentId)
+            .populate({
+                path: 'eventsParticipated',
+                match: { status: { $ne: 'Pending' } },
+                options: { sort: { date: -1 } }
+            });
 
         if (!student) {
             return res.status(404).json({ message: 'Student not found' });

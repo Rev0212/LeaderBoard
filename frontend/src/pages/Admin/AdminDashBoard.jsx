@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
-import { Upload, Users, FileText, Download, UserPlus } from 'lucide-react';
+import { Upload, Users, FileText, Download, UserPlus, Calendar } from 'lucide-react';
+import AdminUpcomingEventForm from '../../components/AdminUpcomingEventForm';
+import UpcomingEventsList from '../../components/UpcomingEventsList';
+import ReportsPage from '../ReportsPage';
 
 const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -155,63 +158,69 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Sidebar */}
-      <div className="fixed w-64 h-full bg-white shadow-lg">
-        <div className="p-4">
-          <h1 className="text-xl font-bold text-gray-800">Admin Dashboard</h1>
+    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Tab Navigation */}
+        <div className="mb-8 border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
+            <button
+              onClick={() => setActiveTab('create-class')}
+              className={`w-full p-4 flex items-center gap-2 ${
+                activeTab === 'create-class' ? 'bg-blue-50 text-blue-600' : 'text-gray-600'
+              }`}
+            >
+              <Upload size={20} />
+              Create Class
+            </button>
+            <button
+              onClick={() => setActiveTab('add-student')}
+              className={`w-full p-4 flex items-center gap-2 ${
+                activeTab === 'add-student' ? 'bg-blue-50 text-blue-600' : 'text-gray-600'
+              }`}
+            >
+              <Users size={20} />
+              Add Students
+            </button>
+            <button
+              onClick={() => setActiveTab('register-teacher')}
+              className={`w-full p-4 flex items-center gap-2 ${
+                activeTab === 'register-teacher' ? 'bg-blue-50 text-blue-600' : 'text-gray-600'
+              }`}
+            >
+              <UserPlus size={20} />
+              Register Teacher
+            </button>
+            <button
+              onClick={() => setActiveTab('register-student')}
+              className={`w-full p-4 flex items-center gap-2 ${
+                activeTab === 'register-student' ? 'bg-blue-50 text-blue-600' : 'text-gray-600'
+              }`}
+            >
+              <UserPlus size={20} />
+              Register Student
+            </button>
+            <button
+              onClick={() => setActiveTab('reports')}
+              className={`w-full p-4 flex items-center gap-2 ${
+                activeTab === 'reports' ? 'bg-blue-50 text-blue-600' : 'text-gray-600'
+              }`}
+            >
+              <FileText size={20} />
+              Reports
+            </button>
+            <button
+              onClick={() => setActiveTab('upcoming-events')}
+              className={`w-full p-4 flex items-center gap-2 ${
+                activeTab === 'upcoming-events' ? 'bg-blue-50 text-blue-600' : 'text-gray-600'
+              }`}
+            >
+              <Calendar size={20} />
+              Manage Upcoming Events
+            </button>
+          </nav>
         </div>
-        <nav className="mt-4">
-          <button
-            onClick={() => setActiveTab('create-class')}
-            className={`w-full p-4 flex items-center gap-2 ${
-              activeTab === 'create-class' ? 'bg-blue-50 text-blue-600' : 'text-gray-600'
-            }`}
-          >
-            <Upload size={20} />
-            Create Class
-          </button>
-          <button
-            onClick={() => setActiveTab('add-student')}
-            className={`w-full p-4 flex items-center gap-2 ${
-              activeTab === 'add-student' ? 'bg-blue-50 text-blue-600' : 'text-gray-600'
-            }`}
-          >
-            <Users size={20} />
-            Add Students
-          </button>
-          <button
-            onClick={() => setActiveTab('register-teacher')}
-            className={`w-full p-4 flex items-center gap-2 ${
-              activeTab === 'register-teacher' ? 'bg-blue-50 text-blue-600' : 'text-gray-600'
-            }`}
-          >
-            <UserPlus size={20} />
-            Register Teacher
-          </button>
-          <button
-            onClick={() => setActiveTab('register-student')}
-            className={`w-full p-4 flex items-center gap-2 ${
-              activeTab === 'register-student' ? 'bg-blue-50 text-blue-600' : 'text-gray-600'
-            }`}
-          >
-            <UserPlus size={20} />
-            Register Student
-          </button>
-          <button
-            onClick={() => setActiveTab('reports')}
-            className={`w-full p-4 flex items-center gap-2 ${
-              activeTab === 'reports' ? 'bg-blue-50 text-blue-600' : 'text-gray-600'
-            }`}
-          >
-            <FileText size={20} />
-            Reports
-          </button>
-        </nav>
-      </div>
 
-      {/* Main Content */}
-      <div className="ml-64 p-8">
+        {/* Tab Content */}
         {activeTab === 'create-class' && (
           <div className="bg-white p-6 rounded-lg shadow">
             <h2 className="text-2xl font-semibold mb-4">Create Class</h2>
@@ -316,46 +325,20 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {activeTab === 'reports' && (
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-2xl font-semibold mb-6">Download Reports</h2>
-            <div className="space-y-4">
-              <button
-                onClick={() => handleDownloadReport('total-prize-money')}
-                className="w-full flex items-center justify-between p-4 border rounded hover:bg-gray-50"
-              >
-                <span className="font-medium">Total Prize Money Report</span>
-                <Download size={20} />
-              </button>
-              <button
-                onClick={() => handleDownloadReport('top-students')}
-                className="w-full flex items-center justify-between p-4 border rounded hover:bg-gray-50"
-              >
-                <span className="font-medium">Top Students Report</span>
-                <Download size={20} />
-              </button>
-              <button
-                onClick={() => handleDownloadReport('top-performers-by-category')}
-                className="w-full flex items-center justify-between p-4 border rounded hover:bg-gray-50"
-              >
-                <span className="font-medium">Top Performers by Category Report</span>
-                <Download size={20} />
-              </button>
-              <button
-                onClick={() => handleDownloadReport('popular-categories')}
-                className="w-full flex items-center justify-between p-4 border rounded hover:bg-gray-50"
-              >
-                <span className="font-medium">Popular Categories Report</span>
-                <Download size={20} />
-              </button>
-              <button
-                onClick={() => handleDownloadReport('class-wise-participation')}
-                className="w-full flex items-center justify-between p-4 border rounded hover:bg-gray-50"
-              >
-                <span className="font-medium">Class-wise Participation Report</span>
-                <Download size={20} />
-              </button>
+        {activeTab === 'upcoming-events' && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="lg:sticky lg:top-4 lg:h-fit">
+              <AdminUpcomingEventForm />
             </div>
+            <div>
+              <UpcomingEventsList />
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'reports' && (
+          <div className="bg-white rounded-lg shadow">
+            <ReportsPage />
           </div>
         )}
       </div>
