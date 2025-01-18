@@ -202,7 +202,7 @@ class EventReportsService {
         { $sort: { totalPoints: -1 } },
         { $limit: limit }
       ]);
-      console.log('Student Performance Result:', result);
+      // console.log('Student Performance Result:', result);
       return result;
     } catch (error) {
       console.error('Student Performance Error:', error);

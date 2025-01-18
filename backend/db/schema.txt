@@ -1,0 +1,109 @@
+Here’s a detailed schema for each collection based on the provided sample documents:
+
+---
+
+Schema for `classes` Collection
+```json
+{
+  "_id": "ObjectId",
+  "className": "String",
+  "teacher": "ObjectId (Reference to teachers._id)",
+  "students": [
+    "ObjectId (Reference to students._id)"
+  ]
+}
+```
+
+---
+
+Schema for `events` Collection
+```json
+{
+  "_id": "ObjectId",
+  "eventName": "String",
+  "description": "String",
+  "date": "ISODate",
+  "proofUrl": "String (URL)",
+  "pdfDocument": "String (PDF File Name)",
+  "priceMoney": "Number",
+  "status": "String",
+  "category": "String",
+  "positionSecured": "String",
+  "pointsEarned": "Number",
+  "submittedBy": "ObjectId (Reference to students._id)",
+  "approvedBy": "ObjectId (Reference to teachers._id)"
+}
+```
+
+---
+
+Schema for `students` Collection
+```json
+{
+  "_id": "ObjectId",
+  "name": "String",
+  "profileImg": "String (URL)",
+  "email": "String",
+  "registerNo": "String",
+  "password": "String (Encrypted)",
+  "rawPassword": "String",
+  "class": "ObjectId (Reference to classes._id)",
+  "totalPoints": "Number",
+  "eventsParticipated": [
+    "ObjectId (Reference to events._id)"
+  ],
+  "__v": "Number"
+}
+```
+
+---
+
+Schema for `teachers` Collection
+```json
+{
+  "_id": "ObjectId",
+  "name": "String",
+  "email": "String",
+  "password": "String (Encrypted)",
+  "rawPassword": "String",
+  "profileImg": "String (URL)",
+  "registerNo": "String",
+  "classes": [
+    "ObjectId (Reference to classes._id)"
+  ]
+}
+```
+
+---
+
+Explanation of Fields
+
+1. ObjectId:
+   - Used as a unique identifier and often acts as a reference to related documents.
+
+2. String:
+   - Holds textual data such as names, descriptions, URLs, etc.
+
+3. ISODate:
+   - Used for storing date-time values.
+
+4. Array:
+   - Represents a list of items, such as references to other documents or simple values.
+
+5. Number:
+   - Used for numerical values, such as points or money.
+
+---
+
+Relationships Between Collections
+- `classes.teacher` → References `teachers._id`.
+- `classes.students` → References `students._id`.
+- `events.submittedBy` → References `students._id`.
+- `events.approvedBy` → References `teachers._id`.
+- `students.class` → References `classes._id`.
+- `students.eventsParticipated` → References `events._id`.
+- `teachers.classes` → References `classes._id`.
+
+---
+
+Let me know if you'd like to generate code for schema validation or more details!

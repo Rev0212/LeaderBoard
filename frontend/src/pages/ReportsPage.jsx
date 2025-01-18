@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 
 import LeaderboardTable from '../components/LeaderBoard';
+import ReportsDownloadSection from '../components/ReportsDownloadSection';
 
 const ReportsPage = () => {
   const [totalPrizeMoney, setTotalPrizeMoney] = useState(0);
@@ -147,6 +148,8 @@ const ReportsPage = () => {
       <div className="max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold text-gray-900 mb-8">Event Reports</h1>
         
+        <ReportsDownloadSection baseURL={baseURL} />
+        
         {/* Prize Money Card */}
         <div className="bg-white rounded-lg shadow p-6 mb-8">
           <div className="flex items-center justify-between">
@@ -161,7 +164,7 @@ const ReportsPage = () => {
           <LeaderboardTable />
         </div>
 
-on        {/* Charts Grid */}
+        {/* Charts Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Popular Categories Chart */}
           <div className="bg-white rounded-lg shadow p-6">

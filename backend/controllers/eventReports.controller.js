@@ -1,4 +1,5 @@
 const EventReportsService = require('../services/eventReports.service');
+const { convertToCSV } = require('../utils/csvConverter');
 
 class EventReportsController {
   static async getTotalPrizeMoney(req, res, next) {
@@ -113,6 +114,43 @@ class EventReportsController {
     try {
       const performance = await EventReportsService.getCategoryPerformanceByClass(filterType);
       res.status(200).json({ performance });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async downloadReport(req, res, next) {
+    try {
+      const { reportType } = req.params;
+      const { filterType = 'monthly' } = req.query;
+      
+      let data;
+      switch (reportType) {
+        case 'top-students':
+          data = await EventReportsService.getTopStudents(10, filterType);
+          break;
+        case 'class-performance':
+          data = await EventReportsService.getClassPerformance(filterType);
+          break;
+        case 'category-performance':
+          data = await EventReportsService.getCategoryPerformanceByClass(filterType);
+          break;
+        case 'popular-categories':
+          data = await EventReportsService.getPopularCategories(10, filterType);
+          break;
+        case 'approval-rates':
+          data = await EventReportsService.getApprovalRates(filterType);
+          break;
+        default:
+          throw new Error('Invalid report type');
+      }
+
+      // Convert data to CSV format
+      const csv = await convertToCSV(data);
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename=${reportType}-report.csv`);
+      res.send(csv);
     } catch (error) {
       next(error);
     }
