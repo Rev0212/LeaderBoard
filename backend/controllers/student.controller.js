@@ -233,3 +233,24 @@ module.exports.getstudentEventDetails = async (req, res, next) => {
         next(error);
     }
 };
+
+module.exports.getAllStudentEvents = async (req, res, next) => {
+    try {
+        if (!req.student) {
+            return res.status(404).json({ message: 'Student not found' });
+        }
+
+        // Fetch all events for this student (including all statuses)
+        const allEvents = await eventModel.find({
+            submittedBy: req.student._id
+        }).sort({ date: -1 }); // Sort by date, newest first
+
+        if (!allEvents) {
+            return res.status(404).json({ message: 'No events found' });
+        }
+
+        res.status(200).json(allEvents);
+    } catch (error) {
+        next(error);
+    }
+};
