@@ -15,6 +15,7 @@ const StudentDashboard = () => {
   const [error, setError] = useState(null);
   const [currentView, setCurrentView] = useState('dashboard');
   const [upcomingEvents, setUpcomingEvents] = useState([]);
+  const [rank, setRank] = useState(null);
 
   const navigate = useNavigate();
 
@@ -56,6 +57,24 @@ const StudentDashboard = () => {
     };
 
     fetchUpcomingEvents();
+  }, []);
+
+  useEffect(() => {
+    const fetchRank = async () => {
+      try {
+        const response = await axios.get(`${VITE_BASE_URL}/student/current-rank`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("student-token")}`,
+            "Content-Type": "application/json",
+          },
+        });
+        setRank(response.data);
+      } catch (err) {
+        console.error("Error fetching rank:", err);
+      }
+    };
+
+    fetchRank();
   }, []);
 
   const handleAddEventClick = () => {
@@ -116,8 +135,12 @@ const StudentDashboard = () => {
             <h3 className="text-base lg:text-lg font-semibold text-gray-700">Current Rank</h3>
             <Trophy className="h-5 w-5 lg:h-6 lg:w-6 text-yellow-500" />
           </div>
-          <p className="text-2xl lg:text-3xl font-bold text-gray-900">#{studentData?.currentRank || "N/A"}</p>
-          <p className="text-xs lg:text-sm text-gray-500 mt-2">Out of {studentData?.totalStudents || 0} students</p>
+          <p className="text-2xl lg:text-3xl font-bold text-gray-900">
+            #{rank?.rank || "N/A"}
+          </p>
+          <p className="text-xs lg:text-sm text-gray-500 mt-2">
+            Out of {rank?.totalStudents || 0} students
+          </p>
         </div>
 
         <div className="bg-white p-4 lg:p-6 rounded-lg shadow-md">

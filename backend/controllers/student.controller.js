@@ -254,3 +254,42 @@ module.exports.getAllStudentEvents = async (req, res, next) => {
         next(error);
     }
 };
+
+module.exports.getCurrentRank = async (req, res, next) => {
+    try {
+        if (!req.student) {
+            return res.status(404).json({ message: 'Student not found' });
+        }
+
+        // Get ALL students sorted by total points
+        const allStudents = await studentModel
+            .find({})
+            .sort({ totalPoints: -1 })
+            .select('_id totalPoints')
+            .lean();
+
+        // Calculate dense ranking
+        let currentRank = 1;
+        let currentPoints = null;
+        let studentRank = null;
+        let totalStudents = allStudents.length;
+
+        for (const student of allStudents) {
+            if (student.totalPoints !== currentPoints) {
+                currentPoints = student.totalPoints;
+                studentRank = currentRank++;
+            }
+            
+            if (student._id.toString() === req.student._id.toString()) {
+                break;
+            }
+        }
+
+        res.status(200).json({
+            rank: studentRank,
+            totalStudents: totalStudents
+        });
+    } catch (error) {
+        next(error);
+    }
+};
