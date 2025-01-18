@@ -357,14 +357,20 @@ const ReportsPage = () => {
                     />
                     <YAxis
                       label={{ 
-                        value: 'Points Earned', 
+                        value: 'Points', 
                         angle: -90, 
                         position: 'insideLeft',
                         offset: -10
                       }}
                     />
                     <Tooltip 
-                      formatter={(value, name) => [`${value} points`, name]}
+                      formatter={(value, name, props) => {
+                        const total = Object.keys(props.payload)
+                          .filter(key => !['className', 'totalPoints'].includes(key))
+                          .reduce((sum, key) => sum + (props.payload[key] || 0), 0);
+                        const percentage = ((value / total) * 100).toFixed(1);
+                        return [`${value} points (${percentage}%)`, name];
+                      }}
                       contentStyle={{
                         backgroundColor: 'rgba(255, 255, 255, 0.95)',
                         borderRadius: '6px',
@@ -372,13 +378,19 @@ const ReportsPage = () => {
                         border: '1px solid #e2e8f0',
                         boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                       }}
+                      wrapperStyle={{
+                        zIndex: 1000
+                      }}
                     />
                     <Legend 
-                      verticalAlign="top"
+                      verticalAlign="bottom"
                       height={36}
                       wrapperStyle={{
-                        paddingBottom: '20px'
+                        paddingTop: '20px',
+                        bottom: '-10px'
                       }}
+                      iconType="circle"
+                      iconSize={10}
                     />
                     {Object.keys(formatDataForChart(classParticipation)[0] || {})
                       .filter(key => !['className', 'totalPoints'].includes(key))
@@ -389,14 +401,7 @@ const ReportsPage = () => {
                           fill={COLORS[index % COLORS.length]}
                           name={category}
                           stackId="a"
-                        >
-                          <LabelList 
-                            dataKey={category} 
-                            position="inside" 
-                            fill="white"
-                            formatter={(value) => (value > 0 ? value : '')}
-                          />
-                        </Bar>
+                        />
                       ))}
                   </BarChart>
                 </ResponsiveContainer>
