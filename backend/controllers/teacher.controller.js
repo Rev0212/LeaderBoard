@@ -107,10 +107,15 @@ module.exports.getProfile = async (req, res, next) => {
             return res.status(404).json({ message: 'Teacher not found' });
         }
 
-       
         const populatedTeacher = await teacherModel.findById(req.teacher._id)
-            .populate('classes')
-            
+            .populate({
+                path: 'classes',
+                select: '_id className students',
+                populate: {
+                    path: 'students',
+                    select: 'name email _id'
+                }
+            });
 
         if (!populatedTeacher) {
             return res.status(404).json({ message: 'Teacher data not found' });
@@ -118,7 +123,7 @@ module.exports.getProfile = async (req, res, next) => {
 
         res.status(200).json(populatedTeacher);
     } catch (error) {
-        next(error); // Pass the error to the error handling middleware
+        next(error);
     }
 };
 

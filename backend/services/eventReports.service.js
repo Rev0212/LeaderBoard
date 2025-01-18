@@ -166,7 +166,7 @@ class EventReportsService {
         rank: index + 1
       }));
 
-      console.log('Class Performance Result:', rankedResults);
+      // console.log('Class Performance Result:', rankedResults);
       return rankedResults;
     } catch (error) {
       console.error('Class Performance Error:', error);

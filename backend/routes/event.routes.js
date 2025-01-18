@@ -19,4 +19,6 @@ router.post('/upload-pdf', fileUpload.uploadPDF);
 
 router.patch('/edit/:id',authMiddleware.authTeacher,eventController.editEvent);
 
+router.get('/student-events/:studentId', authMiddleware.authTeacher, eventController.getAllStudentEvents);
+
 module.exports = router;

@@ -5,42 +5,62 @@ import { useNavigate } from "react-router-dom";
 
 const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
 
-const ClassDetails = ({ classId, handleBackToDashboard }) => {
+const ClassDetails = ({ classId, teacherData, handleBackToDashboard }) => {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
   const navigate = useNavigate();
 
-  // Function to fetch class details
-  const fetchClassDetails = async () => {
-    try {
-      const response = await axios.get(`${VITE_BASE_URL}/class/${classId}`);
-      const classData = response.data.class;
-      setStudents(classData.students);
-      setLoading(false);
-    } catch (err) {
-      setError("Failed to fetch class details.");
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const fetchClassDetails = async () => {
+      if (!classId) {
+        setError("No class assigned");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_BASE_URL}/class/${classId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token')}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+        
+        if (response.data && response.data.class && response.data.class.students) {
+          setStudents(response.data.class.students);
+        } else {
+          setStudents([]);
+        }
+      } catch (err) {
+        console.error("Error fetching class details:", err);
+        setError(err.response?.data?.message || "Failed to fetch class details");
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchClassDetails();
   }, [classId]);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-gray-600 text-lg">Loading...</div>
-      </div>
-    );
+    return <div className="p-6">Loading...</div>;
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-red-500 text-lg">{error}</div>
+      <div className="p-6">
+        <button
+          onClick={handleBackToDashboard}
+          className="flex items-center gap-2 text-blue-500 hover:underline mb-6"
+        >
+          <ArrowLeft size={20} />
+          Back to Dashboard
+        </button>
+        <div className="text-red-500">{error}</div>
       </div>
     );
   }

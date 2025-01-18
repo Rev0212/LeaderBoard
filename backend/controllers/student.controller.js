@@ -137,12 +137,14 @@ module.exports.getStudentProfile = async (req, res, next) => {
             return res.status(404).json({ message: 'Student not found' });
         }
 
-        // Get student with populated events
+        // Get student with populated events and class
         const populatedStudent = await studentModel.findById(req.student._id)
             .populate({
                 path: 'eventsParticipated',
+                match: { status: 'Approved' },
                 options: { sort: { date: -1 } }
-            });
+            })
+            .populate('class', 'className');
 
         if (!populatedStudent) {
             return res.status(404).json({ message: 'Student data not found' });
@@ -150,10 +152,11 @@ module.exports.getStudentProfile = async (req, res, next) => {
 
         // Fetch all events (including pending) for this student
         const allEvents = await eventModel.find({
-            submittedBy: req.student._id
+            submittedBy: req.student._id,
+            status: 'Approved'
         }).sort({ date: -1 });
 
-        // Create response object with all events
+        // Create response object with approved events
         const responseData = {
             ...populatedStudent.toObject(),
             eventsParticipated: allEvents
@@ -226,6 +229,66 @@ module.exports.getstudentEventDetails = async (req, res, next) => {
         }
 
         res.status(200).json(student.eventsParticipated);
+    } catch (error) {
+        next(error);
+    }
+};
+
+module.exports.getAllStudentEvents = async (req, res, next) => {
+    try {
+        if (!req.student) {
+            return res.status(404).json({ message: 'Student not found' });
+        }
+
+        // Fetch all events for this student (including all statuses)
+        const allEvents = await eventModel.find({
+            submittedBy: req.student._id
+        }).sort({ date: -1 }); // Sort by date, newest first
+
+        if (!allEvents) {
+            return res.status(404).json({ message: 'No events found' });
+        }
+
+        res.status(200).json(allEvents);
+    } catch (error) {
+        next(error);
+    }
+};
+
+module.exports.getCurrentRank = async (req, res, next) => {
+    try {
+        if (!req.student) {
+            return res.status(404).json({ message: 'Student not found' });
+        }
+
+        // Get ALL students sorted by total points
+        const allStudents = await studentModel
+            .find({})
+            .sort({ totalPoints: -1 })
+            .select('_id totalPoints')
+            .lean();
+
+        // Calculate dense ranking
+        let currentRank = 1;
+        let currentPoints = null;
+        let studentRank = null;
+        let totalStudents = allStudents.length;
+
+        for (const student of allStudents) {
+            if (student.totalPoints !== currentPoints) {
+                currentPoints = student.totalPoints;
+                studentRank = currentRank++;
+            }
+            
+            if (student._id.toString() === req.student._id.toString()) {
+                break;
+            }
+        }
+
+        res.status(200).json({
+            rank: studentRank,
+            totalStudents: totalStudents
+        });
     } catch (error) {
         next(error);
     }

@@ -73,3 +73,7 @@ router.get('/logout', authMiddleware.authStudent, studentController.logoutStuden
 module.exports = router
 
 router.get('/events/:id',studentController.getstudentEventDetails);
+
+router.get('/events-history', authMiddleware.authStudent, studentController.getAllStudentEvents);
+
+router.get('/current-rank', authMiddleware.authStudent, studentController.getCurrentRank);

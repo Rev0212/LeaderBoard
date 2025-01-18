@@ -1,12 +1,38 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, FileText, Calendar, Trophy, CheckCircle, XCircle, Clock } from 'lucide-react';
 
-const StudentEventHistory = ({ studentData, handleBackToDashboard }) => {
-  console.log('All events:', studentData?.eventsParticipated);
+const StudentEventHistory = ({ handleBackToDashboard }) => {
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_BASE_URL}/student/events-history`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('student-token')}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch events');
+        }
+
+        const data = await response.json();
+        setEvents(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEvents();
+  }, []);
 
   const getStatusBadge = (status) => {
-    console.log('Processing status:', status);
-
     switch (status) {
       case 'Approved':
         return (
@@ -30,85 +56,65 @@ const StudentEventHistory = ({ studentData, handleBackToDashboard }) => {
           </span>
         );
       default:
-        console.log('Status not matched:', status);
-        return (
-          <span className="flex items-center gap-1 text-yellow-700 bg-yellow-100 px-3 py-1 rounded-full">
-            <Clock size={16} />
-            {status || 'Unknown'}
-          </span>
-        );
+        return null;
     }
   };
 
-  return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <button
-          onClick={handleBackToDashboard}
-          className="flex items-center gap-2 text-blue-600 hover:text-blue-700"
-        >
-          <ArrowLeft size={20} />
-          Back to Dashboard
-        </button>
-      </div>
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
 
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="p-4 bg-gray-50 border-b">
-          <h2 className="text-xl font-semibold text-gray-900">Event Submission History</h2>
+  return (
+    <div className="p-6">
+      <button
+        onClick={handleBackToDashboard}
+        className="flex items-center gap-2 text-blue-500 hover:underline mb-6"
+      >
+        <ArrowLeft size={20} />
+        Back to Dashboard
+      </button>
+
+      <div className="bg-white shadow-md rounded-lg overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-800">Event Submission History</h2>
         </div>
 
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Event Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Category
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Position
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Points
-                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Event Name</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Position</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Points</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {studentData?.eventsParticipated?.map((event) => {
-                console.log('Event status:', event.status);
-                return (
-                  <tr key={event._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{event.eventName}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">
-                        {new Date(event.date).toLocaleDateString()}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">{event.category}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">{event.positionSecured}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {getStatusBadge(event.status)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{event.pointsEarned || '0'}</div>
-                    </td>
-                  </tr>
-                );
-              })}
+              {events.map((event) => (
+                <tr key={event._id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">{event.eventName}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-500">
+                      {new Date(event.date).toLocaleDateString()}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-500">{event.category}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-500">{event.positionSecured}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {getStatusBadge(event.status)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{event.pointsEarned || '0'}</div>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
