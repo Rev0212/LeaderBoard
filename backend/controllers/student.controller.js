@@ -141,6 +141,7 @@ module.exports.getStudentProfile = async (req, res, next) => {
         const populatedStudent = await studentModel.findById(req.student._id)
             .populate({
                 path: 'eventsParticipated',
+                match: { status: 'Approved' },
                 options: { sort: { date: -1 } }
             })
             .populate('class', 'className');
@@ -151,10 +152,11 @@ module.exports.getStudentProfile = async (req, res, next) => {
 
         // Fetch all events (including pending) for this student
         const allEvents = await eventModel.find({
-            submittedBy: req.student._id
+            submittedBy: req.student._id,
+            status: 'Approved'
         }).sort({ date: -1 });
 
-        // Create response object with all events
+        // Create response object with approved events
         const responseData = {
             ...populatedStudent.toObject(),
             eventsParticipated: allEvents
