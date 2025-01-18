@@ -297,61 +297,123 @@ const ReportsPage = () => {
 
       case 'class-analysis':
         return (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-xl font-semibold text-gray-700 mb-4">Class Participation by Category</h2>
-                <div className="h-96">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={formatDataForChart(classParticipation)}
-                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis 
-                        dataKey="className" 
-                        angle={-45}
-                        textAnchor="end"
-                        height={60}
-                        interval={0}
-                      />
-                      <YAxis label={{ value: 'Points', angle: -90, position: 'insideLeft' }} />
-                      <Tooltip />
-                      <Legend wrapperStyle={{ paddingTop: "20px" }} />
-                      {Object.keys(formatDataForChart(classParticipation)[0] || {})
-                        .filter(key => !['className', 'totalPoints'].includes(key))
-                        .map((category, index) => (
-                          <Bar 
-                            key={category}
-                            dataKey={category}
-                            fill={COLORS[index % COLORS.length]}
-                            name={category}
-                          />
-                        ))}
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+          <div className="space-y-8">
+            {/* Class Performance Overview */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold text-gray-700 mb-4">Class Performance Overview</h2>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={classPerformance}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                      dataKey="_id" 
+                      label={{ value: 'Class', position: 'bottom', offset: 0 }}
+                    />
+                    <YAxis label={{ value: 'Total Points', angle: -90, position: 'insideLeft' }} />
+                    <Tooltip />
+                    <Bar dataKey="totalPoints" fill="#4F46E5" name="Total Points" />
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
+            </div>
 
-              <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-xl font-semibold text-gray-700 mb-4">Inactive Students</h2>
-                <div className="overflow-y-auto max-h-80">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Name
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Class
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Last Activity
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {inactiveStudents.map((student, index) => (
+            {/* Category Performance by Class */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold text-gray-700 mb-4">Category Performance by Class</h2>
+              <div className="h-96">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={formatDataForChart(classParticipation)}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                    layout="vertical"
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis type="number" />
+                    <YAxis 
+                      type="category" 
+                      dataKey="className" 
+                      width={100}
+                    />
+                    <Tooltip />
+                    <Legend />
+                    {Object.keys(formatDataForChart(classParticipation)[0] || {})
+                      .filter(key => !['className', 'totalPoints'].includes(key))
+                      .map((category, index) => (
+                        <Bar 
+                          key={category}
+                          dataKey={category}
+                          fill={COLORS[index % COLORS.length]}
+                          name={category}
+                          stackId="a"
+                        />
+                      ))}
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Class Participation Trends */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold text-gray-700 mb-4">Class Participation Rate</h2>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={classParticipation.map(item => ({
+                        name: item.className,
+                        value: item.categories.reduce((sum, cat) => sum + cat.participationCount, 0)
+                      }))}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                      outerRadius={120}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {classParticipation.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Inactive Students Table */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold text-gray-700 mb-4">Inactive Students</h2>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Name
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Class
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Last Activity
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Inactive Days
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {inactiveStudents.map((student, index) => {
+                      const lastActivity = student.lastActivity ? new Date(student.lastActivity) : null;
+                      const inactiveDays = lastActivity 
+                        ? Math.floor((new Date() - lastActivity) / (1000 * 60 * 60 * 24))
+                        : 'N/A';
+                      
+                      return (
                         <tr key={student._id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                             {student.name}
@@ -360,13 +422,16 @@ const ReportsPage = () => {
                             {student.className}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {student.lastActivity ? new Date(student.lastActivity).toLocaleDateString() : 'Never'}
+                            {lastActivity ? lastActivity.toLocaleDateString() : 'Never'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {inactiveDays !== 'N/A' ? `${inactiveDays} days` : 'N/A'}
                           </td>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
