@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, 
-  Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell
+  Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Legend
 } from 'recharts';
 import { ArrowLeft, Download, LogOut, Search } from 'react-feather';
 import { useAuth } from '../context/AuthContext';
@@ -11,6 +11,19 @@ import { useAuth } from '../context/AuthContext';
 const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+
+const CustomTooltip = ({ active, payload }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white p-4 border border-gray-200 rounded-lg shadow-sm">
+        <p className="text-gray-600">
+          {`${payload[0].name}: ${payload[0].value}`}
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
 
 const AdvisorDashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
@@ -167,32 +180,55 @@ const AdvisorDashboard = () => {
 
           <div className="bg-white p-6 rounded-lg shadow">
             <h2 className="text-xl font-semibold mb-4">Popular Categories</h2>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={dashboardData.popularCategories}
-                    dataKey="count"
-                    nameKey="_id"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={100}
-                    label
-                  >
-                    {dashboardData.popularCategories.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+            <div className="h-80 flex justify-center items-center">
+              <div className="w-full">
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={dashboardData.popularCategories}
+                      nameKey="_id"
+                      dataKey="count"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={120}
+                      fill="#8884d8"
+                      labelLine={false}
+                      label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+                        const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+                        const x = cx + radius * Math.cos(-midAngle * Math.PI / 180);
+                        const y = cy + radius * Math.sin(-midAngle * Math.PI / 180);
+                        return (
+                          <text 
+                            x={x} 
+                            y={y} 
+                            fill="white" 
+                            textAnchor="middle"
+                            dominantBaseline="middle"
+                          >
+                            {`${(percent * 100).toFixed(0)}%`}
+                          </text>
+                        );
+                      }}
+                    >
+                      {dashboardData.popularCategories.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend 
+                      verticalAlign="bottom"
+                      height={36}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           </div>
 
           {/* Category Performance by Class */}
           <div className="bg-white p-6 rounded-lg shadow col-span-2">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Category Performance by Class</h2>
+              <h2 className="text-xl font-semibold text-gray-700">Category Performance by Class</h2>
               <button
                 onClick={() => handleDownloadReport('category-performance')}
                 className="flex items-center gap-2 text-blue-600 hover:text-blue-700"
@@ -201,26 +237,41 @@ const AdvisorDashboard = () => {
                 Download
               </button>
             </div>
-            <div className="h-96">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={dashboardData.categoryPerformance}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="className" />
-                  <YAxis />
-                  <Tooltip />
-                  {Object.keys(dashboardData.categoryPerformance[0] || {})
-                    .filter(key => key !== 'className')
-                    .map((category, index) => (
-                      <Bar 
-                        key={category} 
-                        dataKey={category} 
-                        fill={COLORS[index % COLORS.length]} 
-                        stackId="a"
-                      />
-                    ))}
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead>
+                <tr>
+                  <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Class
+                  </th>
+                  <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Total Points
+                  </th>
+                  <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Categories Performance
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {dashboardData.categoryPerformance.map((classData, index) => (
+                  <tr key={index}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {classData.className || 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {classData.totalPoints}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500">
+                      {classData.categoriesPerformance.map((categoryText, idx) => (
+                        <div key={idx} className="mb-2">
+                          {categoryText}
+                        </div>
+                      ))}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
 
           {/* Inactive Students Section */}
