@@ -26,10 +26,19 @@ const AdvisorDashboard = () => {
   const [nameSearchQuery, setNameSearchQuery] = useState('');
   const [selectedClass, setSelectedClass] = useState('');
   const [inactiveDaysFilter, setInactiveDaysFilter] = useState(30);
+  const [uniqueClasses, setUniqueClasses] = useState([]);
 
   useEffect(() => {
     fetchDashboardData();
   }, [filterType]);
+
+  useEffect(() => {
+    if (dashboardData?.inactiveStudents) {
+      // Extract unique classes from inactive students data
+      const classes = [...new Set(dashboardData.inactiveStudents.map(student => student.className))].sort();
+      setUniqueClasses(classes);
+    }
+  }, [dashboardData]);
 
   const fetchDashboardData = async () => {
     try {
@@ -95,7 +104,7 @@ const AdvisorDashboard = () => {
   };
 
   // Filter inactive students
-  const filteredInactiveStudents = inactiveStudents.filter(student => {
+  const filteredInactiveStudents = dashboardData?.inactiveStudents?.filter(student => {
     const matchesName = student.name.toLowerCase().includes(nameSearchQuery.toLowerCase());
     const matchesClass = !selectedClass || student.className === selectedClass;
     const lastActivity = student.lastActivity ? new Date(student.lastActivity) : null;
@@ -103,7 +112,7 @@ const AdvisorDashboard = () => {
       ? Math.floor((new Date() - lastActivity) / (1000 * 60 * 60 * 24))
       : Number.POSITIVE_INFINITY;
     return matchesName && matchesClass && inactiveDays >= inactiveDaysFilter;
-  });
+  }) || [];
 
   if (loading) return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   if (error) return <div className="flex items-center justify-center min-h-screen text-red-600">Error: {error}</div>;
@@ -252,9 +261,9 @@ const AdvisorDashboard = () => {
                   onChange={(e) => setSelectedClass(e.target.value)}
                 >
                   <option value="">All Classes</option>
-                  {dashboardData.classPerformance.map((classData) => (
-                    <option key={classData.className} value={classData.className}>
-                      {classData.className}
+                  {uniqueClasses.map((className) => (
+                    <option key={className} value={className}>
+                      {className}
                     </option>
                   ))}
                 </select>
@@ -318,14 +327,14 @@ const AdvisorDashboard = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {dashboardData.inactiveStudents.map((student, index) => {
+                    {filteredInactiveStudents.map((student, index) => {
                       const lastActivity = student.lastActivity ? new Date(student.lastActivity) : null;
                       const inactiveDays = lastActivity 
                         ? Math.floor((new Date() - lastActivity) / (1000 * 60 * 60 * 24))
                         : 'N/A';
                       
                       return (
-                        <tr key={student._id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                        <tr key={student._id || index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                             {student.name}
                           </td>
