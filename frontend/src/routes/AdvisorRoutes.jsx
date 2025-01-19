@@ -23,7 +23,7 @@ export const AdvisorRoute = ({ children }) => {
 
 export const advisorRoutes = [
   {
-    path: '/advisor/dashboard',
+    path: '/advisor-dashboard',
     element: (
       <AdvisorRoute>
         <AdvisorDashboard />

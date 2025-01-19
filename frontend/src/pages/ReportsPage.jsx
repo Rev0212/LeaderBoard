@@ -13,7 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import LeaderboardTable from '../components/LeaderBoard';
 import ReportsDownloadSection from '../components/ReportsDownloadSection';
 
-const ReportsPage = () => {
+const ReportsPage = ({ isAdvisor, advisorId, visibleSections }) => {
   const [totalPrizeMoney, setTotalPrizeMoney] = useState(0);
   const [topStudents, setTopStudents] = useState([]);
   const [popularCategories, setPopularCategories] = useState([]);
@@ -37,18 +37,28 @@ const ReportsPage = () => {
   // Color schemes for charts
   const COLORS = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
 
-  // Sidebar navigation items
+  // Define sidebar items based on role
   const sidebarItems = [
-    { id: 'overview', label: 'Overview', icon: <TrendingUp size={20} /> },
+    ...(isAdvisor ? [] : [{ id: 'overview', label: 'Overview', icon: <TrendingUp size={20} /> }]),
     { id: 'categories', label: 'Categories', icon: <PieChartIcon size={20} /> },
     { id: 'class-analysis', label: 'Class Analysis', icon: <BarChart2 size={20} /> },
     { id: 'students', label: 'Students', icon: <Users size={20} /> },
     { id: 'downloads', label: 'Downloads', icon: <Download size={20} /> }
   ];
 
+  // Update the back button handler to be role-aware
   const handleBackToDashboard = () => {
-    navigate('/teacher-dashboard');
+    if (isAdvisor) {
+      navigate('/advisor-dashboard');
+    } else {
+      navigate('/teacher-dashboard');
+    }
   };
+
+  // Filter sidebar items based on visible sections if provided
+  const filteredSidebarItems = sidebarItems.filter(item => 
+    !visibleSections || visibleSections.includes(item.id)
+  );
 
   useEffect(() => {
     const fetchData = async () => {
@@ -565,16 +575,21 @@ const ReportsPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <div className="w-64 bg-white shadow-lg fixed h-full">
-        <div className="pt-16 p-6">
-          <button
-            onClick={handleBackToDashboard}
-            className="absolute top-4 left-4 flex items-center gap-2 text-blue-500 hover:underline"
-          >
-            <ArrowLeft size={20} />
-            Back to Dashboard
-          </button>
+        <div className={`${isAdvisor ? 'pt-6' : 'pt-16'} p-6`}>
+          {/* Only show back button if not advisor */}
+          {!isAdvisor && (
+            <button
+              onClick={handleBackToDashboard}
+              className="absolute top-4 left-4 flex items-center gap-2 text-blue-500 hover:underline"
+            >
+              <ArrowLeft size={20} />
+              Back to Dashboard
+            </button>
+          )}
 
-          <h1 className="text-xl font-bold text-gray-800 mb-6">Reports Dashboard</h1>
+          <h1 className="text-xl font-bold text-gray-800 mb-6">
+            {isAdvisor ? 'Advisor Dashboard' : 'Reports Dashboard'}
+          </h1>
           <nav className="space-y-2">
             {sidebarItems.map(item => (
               <button
