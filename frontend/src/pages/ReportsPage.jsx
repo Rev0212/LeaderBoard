@@ -260,13 +260,9 @@ const ReportsPage = () => {
                           {classData.totalPoints}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-500">
-                          {classData.categories.map((cat, idx) => (
+                          {classData.categoriesPerformance.map((categoryText, idx) => (
                             <div key={idx} className="mb-2">
-                              <span className="font-medium">{cat.category}:</span>{' '}
-                              {cat.points} points{' '}
-                              <span className="text-gray-400">
-                                ({cat.participationCount} participation{cat.participationCount !== 1 ? 's' : ''})
-                              </span>
+                              {categoryText}
                             </div>
                           ))}
                         </td>

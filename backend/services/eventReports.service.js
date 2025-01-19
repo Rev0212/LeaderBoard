@@ -240,82 +240,76 @@ class EventReportsService {
 
   // Get category-wise performance by class
   static async getCategoryPerformanceByClass(filterType) {
-    const matchStage = this.getMatchStage(filterType);
     try {
       const result = await Event.aggregate([
-        { $match: matchStage },
         {
           $lookup: {
             from: "students",
             localField: "submittedBy",
             foreignField: "_id",
-            as: "student"
+            as: "studentDetails"
           }
         },
-        { $unwind: "$student" },
+        {
+          $unwind: "$studentDetails"
+        },
         {
           $lookup: {
             from: "classes",
-            localField: "student.class",
+            localField: "studentDetails.class",
             foreignField: "_id",
-            as: "classInfo"
+            as: "classDetails"
           }
         },
-        { $unwind: "$classInfo" },
-        // First group by class and category
+        {
+          $unwind: "$classDetails"
+        },
         {
           $group: {
             _id: {
-              classId: "$classInfo._id",
-              className: "$classInfo.className", // Using className instead of name
+              className: "$classDetails.className",
               category: "$category"
             },
             totalPoints: { $sum: "$pointsEarned" },
-            participationCount: { $sum: 1 }
+            participation: { $count: {} }
           }
         },
-        // Then group by class
         {
           $group: {
-            _id: {
-              classId: "$_id.classId",
-              className: "$_id.className"
-            },
+            _id: "$_id.className",
             totalPoints: { $sum: "$totalPoints" },
-            categories: {
+            categoriesPerformance: {
               $push: {
                 category: "$_id.category",
                 points: "$totalPoints",
-                participationCount: "$participationCount"
+                participations: "$participation"
               }
             }
           }
         },
-        // Sort by total points
-        { $sort: { totalPoints: -1 } },
-        // Final structure
         {
           $project: {
             _id: 0,
-            className: { $ifNull: ["$_id.className", "N/A"] }, // Provide default value if className is null
+            className: "$_id",
             totalPoints: 1,
-            categories: {
-              $sortArray: {
-                input: "$categories",
-                sortBy: { points: -1 }
+            categoriesPerformance: {
+              $map: {
+                input: "$categoriesPerformance",
+                as: "categoryPerf",
+                in: {
+                  $concat: [
+                    "$$categoryPerf.category", ": ",
+                    { $toString: "$$categoryPerf.points" }, " points (",
+                    { $toString: "$$categoryPerf.participations" }, " participations)"
+                  ]
+                }
               }
             }
           }
         }
       ]);
 
-      // Add additional error checking for empty or null classNames
-      const processedResult = result.map(item => ({
-        ...item,
-        className: item.className || 'N/A'
-      }));
-
-      return processedResult;
+      return result;
     } catch (error) {
       console.error('Category Performance Error:', error);
       throw new Error(`Error getting category performance by class: ${error.message}`);
