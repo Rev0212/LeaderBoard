@@ -3,6 +3,8 @@ const Class = require('../models/class.model');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const blackListModel = require('../models/blacklistToken.model');
+const EventReportsService = require('../services/eventReports.service');
+const { convertToCSV } = require('../utils/csvConverter');
 
 const login = async (req, res) => {
   try {
@@ -105,8 +107,124 @@ const logoutAdvisor = async (req, res, next) => {
     }
 };
 
+// New report functions
+const getAdvisorReports = async (req, res) => {
+  try {
+    const { filterType = 'monthly' } = req.query;
+    const advisorId = req.advisor._id;
+
+    // Get advisor's assigned classes
+    const advisor = await AcademicAdvisor.findById(advisorId).populate('assignedClasses');
+    const classIds = advisor.assignedClasses.map(c => c._id);
+
+    // Get various reports
+    const [
+      classPerformance,
+      topStudents,
+      categoryPerformance,
+      popularCategories,
+      approvalRates,
+      inactiveStudents,
+      classParticipation
+    ] = await Promise.all([
+      EventReportsService.getClassPerformance(filterType),
+      EventReportsService.getTopStudents(10, filterType),
+      EventReportsService.getCategoryPerformanceByClass(filterType),
+      EventReportsService.getPopularCategories(10, filterType),
+      EventReportsService.getApprovalRates(filterType),
+      EventReportsService.getInactiveStudents(30), // Default 30 days
+      EventReportsService.getClassParticipation(filterType)
+    ]);
+
+    // Filter data based on advisor's assigned classes if not HOD
+    if (advisor.role !== 'hod') {
+      const filterByAssignedClasses = (data) => {
+        return data.filter(item => 
+          advisor.assignedClasses.some(c => 
+            c.className === item.className || c.name === item.className
+          )
+        );
+      };
+
+      res.status(200).json({
+        classPerformance: filterByAssignedClasses(classPerformance),
+        topStudents: topStudents.filter(student => 
+          advisor.assignedClasses.some(c => student.className === c.className)
+        ),
+        categoryPerformance: filterByAssignedClasses(categoryPerformance),
+        popularCategories,
+        approvalRates,
+        inactiveStudents: filterByAssignedClasses(inactiveStudents),
+        classParticipation: filterByAssignedClasses(classParticipation)
+      });
+    } else {
+      // HOD gets all data
+      res.status(200).json({
+        classPerformance,
+        topStudents,
+        categoryPerformance,
+        popularCategories,
+        approvalRates,
+        inactiveStudents,
+        classParticipation
+      });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const downloadAdvisorReport = async (req, res) => {
+  try {
+    const { reportType } = req.params;
+    const { filterType = 'monthly' } = req.query;
+    const advisorId = req.advisor._id;
+
+    // Get advisor's assigned classes
+    const advisor = await AcademicAdvisor.findById(advisorId).populate('assignedClasses');
+
+    let data;
+    switch (reportType) {
+      case 'class-performance':
+        data = await EventReportsService.getClassPerformance(filterType);
+        break;
+      case 'top-students':
+        data = await EventReportsService.getTopStudents(50, filterType);
+        break;
+      case 'category-performance':
+        data = await EventReportsService.getCategoryPerformanceByClass(filterType);
+        break;
+      case 'inactive-students':
+        data = await EventReportsService.getInactiveStudents(30);
+        break;
+      default:
+        throw new Error('Invalid report type');
+    }
+
+    // Filter data if not HOD
+    if (advisor.role !== 'hod') {
+      data = data.filter(item => 
+        advisor.assignedClasses.some(c => 
+          c.className === item.className || c.name === item.className
+        )
+      );
+    }
+
+    // Convert to CSV
+    const csv = await convertToCSV(data);
+    
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename=${reportType}-report.csv`);
+    res.send(csv);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   login,
   getReports,
-  logoutAdvisor
+  logoutAdvisor,
+  getAdvisorReports,
+  downloadAdvisorReport
 }; 
