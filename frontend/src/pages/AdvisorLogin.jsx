@@ -30,11 +30,14 @@ const AdvisorLogin = () => {
       }
 
       const data = await response.json();
-      login({
+      const userData = {
         ...data,
         token: data.token,
         role: data.role
-      });
+      };
+      
+      login(userData);
+      localStorage.setItem('advisor-user', JSON.stringify(userData));
       navigate('/advisor/dashboard');
     } catch (err) {
       setError(err.message);

@@ -3,19 +3,19 @@ import React, { createContext, useContext, useState } from 'react';
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    const savedUser = localStorage.getItem('advisor-user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
 
   const login = (userData) => {
-    setUser({
-      ...userData,
-      isAdvisor: userData.role === 'advisor' || userData.role === 'hod'
-    });
+    setUser(userData);
+    localStorage.setItem('advisor-user', JSON.stringify(userData));
   };
 
   const logout = () => {
     setUser(null);
-    // Clear cookies
-    document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    localStorage.removeItem('advisor-user');
   };
 
   return (

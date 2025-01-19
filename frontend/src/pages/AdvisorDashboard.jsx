@@ -24,9 +24,16 @@ const AdvisorDashboard = () => {
 
   const fetchClassData = async () => {
     try {
+      const savedUser = localStorage.getItem('advisor-user');
+      const userData = savedUser ? JSON.parse(savedUser) : null;
+      
+      if (!userData?.token) {
+        throw new Error('No authentication token found');
+      }
+
       const response = await fetch(`${VITE_BASE_URL}/api/advisor/reports`, {
         headers: {
-          'Authorization': `Bearer ${user?.token}`,
+          'Authorization': `Bearer ${userData.token}`,
           'Content-Type': 'application/json'
         },
         credentials: 'include'
@@ -38,7 +45,7 @@ const AdvisorDashboard = () => {
       
       const data = await response.json();
       setClassData(data.classes);
-      setUserRole(user?.role || '');
+      setUserRole(userData?.role || '');
     } catch (error) {
       setError(error.message);
       console.error('Error fetching class data:', error);
