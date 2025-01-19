@@ -37,9 +37,9 @@ const ReportsPage = ({ isAdvisor, advisorId, visibleSections }) => {
   // Color schemes for charts
   const COLORS = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
 
-  // Define sidebar items based on role
+  // Define sidebar items - keep overview for all users
   const sidebarItems = [
-    ...(isAdvisor ? [] : [{ id: 'overview', label: 'Overview', icon: <TrendingUp size={20} /> }]),
+    { id: 'overview', label: 'Overview', icon: <TrendingUp size={20} /> },
     { id: 'categories', label: 'Categories', icon: <PieChartIcon size={20} /> },
     { id: 'class-analysis', label: 'Class Analysis', icon: <BarChart2 size={20} /> },
     { id: 'students', label: 'Students', icon: <Users size={20} /> },
@@ -573,54 +573,50 @@ const ReportsPage = ({ isAdvisor, advisorId, visibleSections }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <div className="w-64 bg-white shadow-lg fixed h-full">
-        <div className={`${isAdvisor ? 'pt-6' : 'pt-16'} p-6`}>
-          {/* Only show back button if not advisor */}
-          {!isAdvisor && (
-            <button
-              onClick={handleBackToDashboard}
-              className="absolute top-4 left-4 flex items-center gap-2 text-blue-500 hover:underline"
-            >
-              <ArrowLeft size={20} />
-              Back to Dashboard
-            </button>
-          )}
-
-          <h1 className="text-xl font-bold text-gray-800 mb-6">
-            {isAdvisor ? 'Advisor Dashboard' : 'Reports Dashboard'}
-          </h1>
-          <nav className="space-y-2">
-            {sidebarItems.map(item => (
+    <div className="min-h-screen bg-gray-50">
+      <div className="flex">
+        {/* Sidebar */}
+        <div className="w-64 bg-white shadow-lg fixed h-full">
+          <div className={`${isAdvisor ? 'pt-6' : 'pt-16'} p-6`}>
+            {/* Only show back button if not advisor */}
+            {!isAdvisor && (
               <button
-                key={item.id}
-                onClick={() => setActiveSection(item.id)}
-                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                  activeSection === item.id 
-                    ? 'bg-blue-50 text-blue-600' 
-                    : 'text-gray-600 hover:bg-gray-50'
-                }`}
+                onClick={handleBackToDashboard}
+                className="absolute top-4 left-4 flex items-center gap-2 text-blue-500 hover:underline"
               >
-                {item.icon}
-                <span>{item.label}</span>
+                <ArrowLeft size={20} />
+                Back to Dashboard
               </button>
-            ))}
-          </nav>
-        </div>
-      </div>
+            )}
 
-      <div className="ml-64 flex-1 p-8">
-        {loading ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-lg text-gray-600">Loading reports...</div>
+            <h1 className="text-xl font-bold text-gray-800 mb-6">
+              {isAdvisor ? 'Advisor Dashboard' : 'Reports Dashboard'}
+            </h1>
+            <nav className="space-y-2">
+              {sidebarItems.map(item => (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveSection(item.id)}
+                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                    activeSection === item.id 
+                      ? 'bg-blue-50 text-blue-600' 
+                      : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  {item.icon}
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </nav>
           </div>
-        ) : error ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-lg text-red-600">{error}</div>
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 ml-64 p-8">
+          <div className="max-w-7xl mx-auto">
+            {renderContent()}
           </div>
-        ) : (
-          renderContent()
-        )}
+        </div>
       </div>
     </div>
   );
