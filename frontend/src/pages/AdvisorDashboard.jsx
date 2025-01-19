@@ -5,7 +5,7 @@ import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, 
   Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell
 } from 'recharts';
-import { ArrowLeft, Download, LogOut } from 'react-feather';
+import { ArrowLeft, Download, LogOut, Search } from 'react-feather';
 import { useAuth } from '../context/AuthContext';
 
 const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
@@ -19,6 +19,13 @@ const AdvisorDashboard = () => {
   const [filterType, setFilterType] = useState('monthly');
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+
+  // Add new state for category performance and inactive students
+  const [categoryByClass, setCategoryByClass] = useState([]);
+  const [inactiveStudents, setInactiveStudents] = useState([]);
+  const [nameSearchQuery, setNameSearchQuery] = useState('');
+  const [selectedClass, setSelectedClass] = useState('');
+  const [inactiveDaysFilter, setInactiveDaysFilter] = useState(30);
 
   useEffect(() => {
     fetchDashboardData();
@@ -86,6 +93,17 @@ const AdvisorDashboard = () => {
       alert('Error downloading report');
     }
   };
+
+  // Filter inactive students
+  const filteredInactiveStudents = inactiveStudents.filter(student => {
+    const matchesName = student.name.toLowerCase().includes(nameSearchQuery.toLowerCase());
+    const matchesClass = !selectedClass || student.className === selectedClass;
+    const lastActivity = student.lastActivity ? new Date(student.lastActivity) : null;
+    const inactiveDays = lastActivity 
+      ? Math.floor((new Date() - lastActivity) / (1000 * 60 * 60 * 24))
+      : Number.POSITIVE_INFINITY;
+    return matchesName && matchesClass && inactiveDays >= inactiveDaysFilter;
+  });
 
   if (loading) return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   if (error) return <div className="flex items-center justify-center min-h-screen text-red-600">Error: {error}</div>;
@@ -162,54 +180,170 @@ const AdvisorDashboard = () => {
             </div>
           </div>
 
+          {/* Category Performance by Class */}
           <div className="bg-white p-6 rounded-lg shadow col-span-2">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Top Students</h2>
+              <h2 className="text-xl font-semibold">Category Performance by Class</h2>
               <button
-                onClick={() => handleDownloadReport('top-students')}
+                onClick={() => handleDownloadReport('category-performance')}
                 className="flex items-center gap-2 text-blue-600 hover:text-blue-700"
               >
                 <Download size={16} />
                 Download
               </button>
             </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Rank
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Register Number
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Points
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {dashboardData.topStudents.map((student, index) => (
-                    <tr key={index}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {student.Rank}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {student['Register Number']}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {student.Name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {student.Points}
-                      </td>
-                    </tr>
+            <div className="h-96">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={dashboardData.categoryPerformance}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="className" />
+                  <YAxis />
+                  <Tooltip />
+                  {Object.keys(dashboardData.categoryPerformance[0] || {})
+                    .filter(key => key !== 'className')
+                    .map((category, index) => (
+                      <Bar 
+                        key={category} 
+                        dataKey={category} 
+                        fill={COLORS[index % COLORS.length]} 
+                        stackId="a"
+                      />
+                    ))}
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Inactive Students Section */}
+          <div className="bg-white p-6 rounded-lg shadow col-span-2">
+            <h2 className="text-xl font-semibold text-gray-700 mb-4">Inactive Students</h2>
+            
+            {/* Filters Section */}
+            <div className="mb-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* Student Name Search */}
+              <div className="w-full">
+                <label htmlFor="nameSearch" className="block text-sm font-medium text-gray-700 mb-1">
+                  Search by Student Name
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    id="nameSearch"
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10"
+                    placeholder="Enter student name..."
+                    value={nameSearchQuery}
+                    onChange={(e) => setNameSearchQuery(e.target.value)}
+                  />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <Search className="h-4 w-4 text-gray-400" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Class Filter Dropdown */}
+              <div className="w-full">
+                <label htmlFor="classFilter" className="block text-sm font-medium text-gray-700 mb-1">
+                  Filter by Class
+                </label>
+                <select
+                  id="classFilter"
+                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10"
+                  value={selectedClass}
+                  onChange={(e) => setSelectedClass(e.target.value)}
+                >
+                  <option value="">All Classes</option>
+                  {dashboardData.classPerformance.map((classData) => (
+                    <option key={classData.className} value={classData.className}>
+                      {classData.className}
+                    </option>
                   ))}
-                </tbody>
-              </table>
+                </select>
+              </div>
+
+              {/* Inactive Days Filter */}
+              <div className="w-full">
+                <label htmlFor="inactiveDays" className="block text-sm font-medium text-gray-700 mb-1">
+                  Inactive For At Least
+                </label>
+                <select
+                  id="inactiveDays"
+                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10"
+                  value={inactiveDaysFilter}
+                  onChange={(e) => setInactiveDaysFilter(Number(e.target.value))}
+                >
+                  <option value={7}>7 days</option>
+                  <option value={14}>14 days</option>
+                  <option value={30}>30 days</option>
+                  <option value={60}>60 days</option>
+                  <option value={90}>90 days</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Results count */}
+            <div className="text-sm text-gray-500 mb-4">
+              Found {filteredInactiveStudents.length} inactive students
+              {(nameSearchQuery || selectedClass || inactiveDaysFilter !== 30) && (
+                <button
+                  onClick={() => {
+                    setNameSearchQuery('');
+                    setSelectedClass('');
+                    setInactiveDaysFilter(30);
+                  }}
+                  className="ml-2 text-blue-600 hover:text-blue-800"
+                >
+                  Clear filters
+                </button>
+              )}
+            </div>
+
+            {/* Inactive Students Table */}
+            <div className="overflow-x-auto">
+              <div className="max-h-[400px] overflow-y-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50 sticky top-0 z-10">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 w-1/4">
+                        Name
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 w-1/4">
+                        Class
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 w-1/4">
+                        Last Activity
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 w-1/4">
+                        Inactive Days
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {dashboardData.inactiveStudents.map((student, index) => {
+                      const lastActivity = student.lastActivity ? new Date(student.lastActivity) : null;
+                      const inactiveDays = lastActivity 
+                        ? Math.floor((new Date() - lastActivity) / (1000 * 60 * 60 * 24))
+                        : 'N/A';
+                      
+                      return (
+                        <tr key={student._id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {student.name}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {student.className}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {lastActivity ? lastActivity.toLocaleDateString() : 'Never'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {inactiveDays !== 'N/A' ? `${inactiveDays} days` : 'N/A'}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
