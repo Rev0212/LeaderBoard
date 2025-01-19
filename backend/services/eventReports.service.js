@@ -294,7 +294,12 @@ class EventReportsService {
             totalPoints: 1,
             categoriesPerformance: {
               $map: {
-                input: "$categoriesPerformance",
+                input: {
+                  $sortArray: {
+                    input: "$categoriesPerformance",
+                    sortBy: { points: -1 }
+                  }
+                },
                 as: "categoryPerf",
                 in: {
                   $concat: [
@@ -306,6 +311,9 @@ class EventReportsService {
               }
             }
           }
+        },
+        {
+          $sort: { totalPoints: -1 }  // Sort classes by total points in descending order
         }
       ]);
 
