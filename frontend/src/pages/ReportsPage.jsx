@@ -131,7 +131,7 @@ const ReportsPage = () => {
 
   const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, name }) => {
     const RADIAN = Math.PI / 180;
-    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+    const radius = outerRadius * 0.7; // Adjust this value to move labels closer to or further from center
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
@@ -140,10 +140,10 @@ const ReportsPage = () => {
         x={x} 
         y={y} 
         fill="white" 
-        textAnchor={x > cx ? 'start' : 'end'} 
-        dominantBaseline="central"
+        textAnchor="middle" // Center the text horizontally
+        dominantBaseline="middle" // Center the text vertically
       >
-        {`${name} (${(percent * 100).toFixed(0)}%)`}
+        {`${(percent * 100).toFixed(0)}%`}
       </text>
     );
   };
