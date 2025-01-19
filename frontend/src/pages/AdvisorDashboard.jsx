@@ -5,7 +5,7 @@ import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, 
   Tooltip, ResponsiveContainer, CartesianGrid
 } from 'recharts';
-import { ArrowLeft, Download } from 'lucide-react';
+import { ArrowLeft, Download, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
@@ -56,14 +56,23 @@ const AdvisorDashboard = () => {
 
   const handleLogout = async () => {
     try {
-      await fetch(`${VITE_BASE_URL}/api/advisor/logout`, {
+      const savedUser = localStorage.getItem('advisor-user');
+      const userData = savedUser ? JSON.parse(savedUser) : null;
+      
+      const response = await fetch(`${VITE_BASE_URL}/api/advisor/logout`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${user.token}`
-        }
+          'Authorization': `Bearer ${userData?.token}`,
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
       });
-      logout();
-      navigate('/advisor/login');
+
+      if (response.ok) {
+        logout();
+        localStorage.removeItem('advisor-user');
+        navigate('/advisor/login');
+      }
     } catch (error) {
       console.error('Error logging out:', error);
     }
@@ -130,6 +139,13 @@ const AdvisorDashboard = () => {
           >
             <ArrowLeft size={20} />
             Back
+          </button>
+          <button
+            onClick={handleLogout}
+            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+          >
+            <LogOut size={20} />
+            Logout
           </button>
         </div>
 
