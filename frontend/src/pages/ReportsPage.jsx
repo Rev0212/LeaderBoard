@@ -131,7 +131,7 @@ const ReportsPage = () => {
 
   const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, name }) => {
     const RADIAN = Math.PI / 180;
-    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+    const radius = outerRadius * 0.7; // Adjust this value to move labels closer to or further from center
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
@@ -140,10 +140,10 @@ const ReportsPage = () => {
         x={x} 
         y={y} 
         fill="white" 
-        textAnchor={x > cx ? 'start' : 'end'} 
-        dominantBaseline="central"
+        textAnchor="middle" // Center the text horizontally
+        dominantBaseline="middle" // Center the text vertically
       >
-        {`${name} (${(percent * 100).toFixed(0)}%)`}
+        {`${(percent * 100).toFixed(0)}%`}
       </text>
     );
   };
@@ -260,13 +260,9 @@ const ReportsPage = () => {
                           {classData.totalPoints}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-500">
-                          {classData.categories.map((cat, idx) => (
+                          {classData.categoriesPerformance.map((categoryText, idx) => (
                             <div key={idx} className="mb-2">
-                              <span className="font-medium">{cat.category}:</span>{' '}
-                              {cat.points} points{' '}
-                              <span className="text-gray-400">
-                                ({cat.participationCount} participation{cat.participationCount !== 1 ? 's' : ''})
-                              </span>
+                              {categoryText}
                             </div>
                           ))}
                         </td>
