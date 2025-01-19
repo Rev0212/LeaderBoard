@@ -6,8 +6,9 @@ import {
 } from 'recharts';
 import { 
   TrendingUp, Award, PieChart as PieChartIcon, 
-  BarChart2, Users, Download, Search
+  BarChart2, Users, Download, Search, ArrowLeft
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 import LeaderboardTable from '../components/LeaderBoard';
 import ReportsDownloadSection from '../components/ReportsDownloadSection';
@@ -29,6 +30,7 @@ const ReportsPage = () => {
   const [nameSearchQuery, setNameSearchQuery] = useState('');
   const [selectedClass, setSelectedClass] = useState('');
   const [inactiveDaysFilter, setInactiveDaysFilter] = useState(30);
+  const navigate = useNavigate();
 
   const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -43,6 +45,10 @@ const ReportsPage = () => {
     { id: 'students', label: 'Students', icon: <Users size={20} /> },
     { id: 'downloads', label: 'Downloads', icon: <Download size={20} /> }
   ];
+
+  const handleBackToDashboard = () => {
+    navigate('/teacher-dashboard');
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -558,9 +564,16 @@ const ReportsPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
       <div className="w-64 bg-white shadow-lg fixed h-full">
-        <div className="p-6">
+        <div className="pt-16 p-6">
+          <button
+            onClick={handleBackToDashboard}
+            className="absolute top-4 left-4 flex items-center gap-2 text-blue-500 hover:underline"
+          >
+            <ArrowLeft size={20} />
+            Back to Dashboard
+          </button>
+
           <h1 className="text-xl font-bold text-gray-800 mb-6">Reports Dashboard</h1>
           <nav className="space-y-2">
             {sidebarItems.map(item => (
@@ -581,7 +594,6 @@ const ReportsPage = () => {
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="ml-64 flex-1 p-8">
         {loading ? (
           <div className="flex items-center justify-center h-full">
