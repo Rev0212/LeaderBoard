@@ -1,109 +1,135 @@
-Here’s a detailed schema for each collection based on the provided sample documents:
+### **1. Academic Advisors Collection (`academicadvisors`)**
+- **Purpose**: Stores details about academic advisors and their responsibilities.
+- **Schema**:
+  ```json
+  {
+    _id: ObjectId,                // Unique identifier for each advisor
+    name: String,                 // Full name of the advisor
+    email: String,                // Advisor's email address
+    password: String,             // Encrypted password
+    rawPassword: String,          // (Optional, insecure) Plaintext password
+    registerNo: String,           // Unique registration number
+    role: String,                 // Role (e.g., "hod" or "advisor")
+    department: String,           // Department name (e.g., "Computer Science")
+    assignedClasses: [ObjectId],  // List of references to `classes._id`, HODs wont be assigned any classes
+    profileImg: String            // URL of the advisor's profile image
+  }
+  ```
 
 ---
 
-Schema for `classes` Collection
-```json
-{
-  "_id": "ObjectId",
-  "className": "String",
-  "teacher": "ObjectId (Reference to teachers._id)",
-  "students": [
-    "ObjectId (Reference to students._id)"
-  ]
-}
-```
+### **2. Classes Collection (`classes`)**
+- **Purpose**: Contains information about academic classes.
+- **Schema**:
+  ```json
+  {
+    _id: ObjectId,                // Unique identifier for each class
+    className: String,            // Name of the class (e.g., "A1")
+    teacher: ObjectId,            // Reference to `teachers._id`
+    students: [ObjectId],         // List of references to student IDs
+    academicAdvisor: ObjectId     // Reference to `academicadvisors._id`
+  }
+  ```
 
 ---
 
-Schema for `events` Collection
-```json
-{
-  "_id": "ObjectId",
-  "eventName": "String",
-  "description": "String",
-  "date": "ISODate",
-  "proofUrl": "String (URL)",
-  "pdfDocument": "String (PDF File Name)",
-  "priceMoney": "Number",
-  "status": "String",
-  "category": "String",
-  "positionSecured": "String",
-  "pointsEarned": "Number",
-  "submittedBy": "ObjectId (Reference to students._id)",
-  "approvedBy": "ObjectId (Reference to teachers._id)"
-}
-```
+### **3. Admins Collection (`admins`)**
+- **Purpose**: Stores information about administrators managing the system.
+- **Schema**:
+  ```json
+  {
+    _id: ObjectId,                // Unique identifier for each admin
+    name: String,                 // Full name of the admin
+    email: String,                // Admin's email address
+    password: String,             // Encrypted password
+    rawPassword: String           // (Optional, insecure) Plaintext password
+  }
+  ```
 
 ---
 
-Schema for `students` Collection
-```json
-{
-  "_id": "ObjectId",
-  "name": "String",
-  "profileImg": "String (URL)",
-  "email": "String",
-  "registerNo": "String",
-  "password": "String (Encrypted)",
-  "rawPassword": "String",
-  "class": "ObjectId (Reference to classes._id)",
-  "totalPoints": "Number",
-  "eventsParticipated": [
-    "ObjectId (Reference to events._id)"
-  ],
-  "__v": "Number"
-}
-```
+### **4. Blacklist Tokens Collection (`blacklisttokens`)**
+- **Purpose**: Stores blacklisted JWT tokens to prevent reuse.
+- **Schema**:
+  ```json
+  {
+    _id: ObjectId,                // Unique identifier for each token entry
+    token: String,                // Blacklisted JWT token string
+    createdAt: Date,              // Timestamp when the token was blacklisted
+    __v: Number                   // Version key (default for MongoDB)
+  }
+  ```
 
 ---
 
-Schema for `teachers` Collection
-```json
-{
-  "_id": "ObjectId",
-  "name": "String",
-  "email": "String",
-  "password": "String (Encrypted)",
-  "rawPassword": "String",
-  "profileImg": "String (URL)",
-  "registerNo": "String",
-  "classes": [
-    "ObjectId (Reference to classes._id)"
-  ]
-}
-```
+### **5. Events Collection (`events`)**
+- **Purpose**: Contains details about completed or ongoing events.
+- **Schema**:
+  ```json
+  {
+    _id: ObjectId,                // Unique identifier for each event
+    eventName: String,            // Name of the event
+    description: String,          // Description of the event
+    date: Date,                   // Date of the event
+    proofUrl: String,             // URL to event-related proof (e.g., image or document)
+    pdfDocument: String,          // PDF document related to the event
+    priceMoney: Number,           // Prize money associated with the event
+    status: String,               // Event status (e.g., "Approved")
+    category: String,             // Category of the event (e.g., "Ideathon")
+    positionSecured: String,      // Position achieved (e.g., "Second")
+    pointsEarned: Number,         // Points earned from the event
+    submittedBy: ObjectId,        // Reference to the submitter (likely a student)
+    approvedBy: ObjectId          // Reference to the approver (e.g., teacher or admin)
+  }
+  ```
 
 ---
 
-Explanation of Fields
-
-1. ObjectId:
-   - Used as a unique identifier and often acts as a reference to related documents.
-
-2. String:
-   - Holds textual data such as names, descriptions, URLs, etc.
-
-3. ISODate:
-   - Used for storing date-time values.
-
-4. Array:
-   - Represents a list of items, such as references to other documents or simple values.
-
-5. Number:
-   - Used for numerical values, such as points or money.
+### **6. Teachers Collection (`teachers`)**
+- **Purpose**: Stores information about teachers and their classes.
+- **Schema**:
+  ```json
+  {
+    _id: ObjectId,                // Unique identifier for each teacher
+    name: String,                 // Full name of the teacher
+    email: String,                // Teacher's email address
+    password: String,             // Encrypted password
+    rawPassword: String,          // (Optional, insecure) Plaintext password
+    profileImg: String,           // URL to the teacher's profile image
+    registerNo: String,           // Unique registration number for the teacher
+    classes: [ObjectId]           // List of references to `classes._id`
+  }
+  ```
 
 ---
 
-Relationships Between Collections
+### **7. Upcoming Events Collection (`upcomingevents`)**
+- **Purpose**: Stores details about future events.
+- **Schema**:
+  ```json
+  {
+    _id: ObjectId,                // Unique identifier for each upcoming event
+    eventName: String,            // Name of the event
+    date: Date,                   // Scheduled date for the event
+    posterLink: String,           // URL to the event poster
+    registrationLink: String,     // URL for event registration
+    content: String,              // Additional content/resources for the event
+    createdAt: Date,              // Timestamp when the event was created
+    __v: Number                   // Version key (default for MongoDB)
+  }
+  ```
+
+
+
+### **Relationships Between Collections**
+- `academicadvisors.assignedClasses` → References `classes._id`.
 - `classes.teacher` → References `teachers._id`.
 - `classes.students` → References `students._id`.
+- `classes.academicAdvisor` → References `academicadvisors._id`.
 - `events.submittedBy` → References `students._id`.
-- `events.approvedBy` → References `teachers._id`.
+- `events.approvedBy` → References `teachers._id` or `admins._id`.
 - `students.class` → References `classes._id`.
 - `students.eventsParticipated` → References `events._id`.
 - `teachers.classes` → References `classes._id`.
 
 ---
-
-Let me know if you'd like to generate code for schema validation or more details!
