@@ -26,6 +26,7 @@ const LeaderboardTable = () => {
       });
       
       setLeaderboardData(response.data.data);
+      console.log(response)
       setTotalPages(response.data.pagination.totalPages);
       setError(null);
     } catch (err) {
@@ -137,6 +138,7 @@ const LeaderboardTable = () => {
                     )}
                   </div>
                   <span className="font-medium text-gray-900">{student.name}</span>
+                  <span className="font-medium text-gray-900">{`[${student.registerNo}]`}</span>
                 </div>
                 
                 <div className="flex items-center gap-2">

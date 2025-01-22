@@ -277,7 +277,7 @@ const StudentDashboard = () => {
               className="flex items-center gap-2 p-2 lg:p-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm lg:text-base"
             >
               <Plus size={18} />
-              <span className="hidden lg:inline">Add Event</span>
+              <span className="hidden lg:inline">Submit Participation</span>
             </button>
             <button
               onClick={handleLogoutClick}
