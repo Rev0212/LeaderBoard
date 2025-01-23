@@ -101,7 +101,7 @@ const LeaderboardTable = () => {
             <select
               value={itemsPerPage}
               onChange={handleItemsPerPageChange}
-              className="w-full sm:w-auto border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full  sm:w-auto border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value={10}>10 per page</option>
               <option value={20}>20 per page</option>
