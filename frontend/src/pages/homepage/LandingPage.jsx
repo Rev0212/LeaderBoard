@@ -9,6 +9,7 @@ const LandingPage = () => {
     const options = [
         {
             title: 'Student Login',
+            description: 'Access your personal performance dashboard',
             features: [
                 '🌟 View your current standing',
                 '📅 Submit events to boost your rank',
@@ -22,6 +23,7 @@ const LandingPage = () => {
         },
         {
             title: 'Teacher Login',
+            description: 'Manage and monitor student activities',
             features: [
                 '📊 View detailed reports',
                 '📈 Monitor student performance over time',
@@ -35,6 +37,7 @@ const LandingPage = () => {
         },
         {
             title: 'Admin Login',
+            description: 'Full platform administration access',
             features: [
                 '⚙️ Administer the entire leaderboard platform',
                 '📊 View analytics and reports',
@@ -59,46 +62,56 @@ const LandingPage = () => {
             }}
         >
             {/* SRM Logo */}
-            <div className="absolute top-0 left-0 p-4">
-                <img src={srmLogo} alt="SRM Logo" className="h-16" />
+            <div className="absolute top-0 left-0 p-3 mb-6">
+                <img src={srmLogo} alt="SRM Institute Logo" className="h-16" />
             </div>
 
             {/* Platform Name */}
-            <h1 className="text-3xl font-bold text-white mb-10 bg-black bg-opacity-50 p-4 rounded-lg">
+            <h1 
+                className="text-xl mt-12 font-bold text-white p-4 bg-black bg-opacity-50 text-center mb-6 m-3 rounded-lg" 
+                aria-label="SRM Institute of Science and Technology Leaderboard"
+            >
                 Welcome to the SRM Institute of Science and Technology Leaderboard
             </h1>
 
-            {/* Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl">
+            {/* Login Options */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full max-w-4xl">
                 {options.map((option, index) => (
-                    <div
-                        key={index}
-                        className="relative w-full h-64 perspective"
+                    <div 
+                        key={index} 
+                        className={`login-card bg-white bg-opacity-70 lg:bg-opacity-100 shadow-md rounded-lg p-4 m-3 flex flex-col ${option.hoverColor}`}
                     >
-                        <div
-                            className="card bg-white shadow-md rounded-lg p-6 flex flex-col items-center text-center border shadow-lg"
-                        >
-                            <div className="card-inner">
-                                <div className="card-front">
-                                    <div className="text-5xl mb-4">{option.icon}</div>
-                                    <h2 className="text-xl font-semibold text-gray-700 mb-2">{option.title}</h2>
-                                    <p className="text-gray-600 mb-4">{option.description}</p>
-                                </div>
-                                <div className="card-back bg whitetext-gray-700 p-4 rounded-lg">
-                                    <ul className="text-left text-gray-500 mb-4 space-y-2">
-                                        {option.features.map((feature, i) => (
-                                            <li key={i}>{feature}</li>
-                                        ))}
-                                    </ul>
-                                    <button
-                                        onClick={option.onClick}
-                                        className={`px-4 py-2 text-white rounded-lg ${option.buttonColor} transition`}
-                                    >
-                                        {option.buttonLabel}
-                                    </button>
-                                </div>
-                            </div>
+                        {/* Icon */}
+                        <div className="text-5xl flex justify-center mb-2">
+                            {option.icon}
                         </div>
+
+                        {/* Title */}
+                        <h2 className="text-xl font-semibold text-center mb-2">
+                            {option.title}
+                        </h2>
+
+                        {/* Description */}
+                        <p className="text-black text-center mb-4 text-lg">
+                            {option.description}
+                        </p>
+
+                        {/* Features */}
+                        <ul className="flex flex-col mb-4">
+                            {option.features.map((feature, i) => (
+                                <li key={i} className="text-black text-center">
+                                    {feature}
+                                </li>
+                            ))}
+                        </ul>
+
+                        {/* Button */}
+                        <button 
+                            onClick={option.onClick} 
+                            className={`mt-auto text-white py-2 rounded hover:opacity-90 transition duration-200 ${option.buttonColor}`}
+                        >
+                            {option.buttonLabel}    
+                        </button>
                     </div>
                 ))}
             </div>

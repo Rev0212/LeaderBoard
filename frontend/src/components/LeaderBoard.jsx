@@ -26,6 +26,7 @@ const LeaderboardTable = () => {
       });
       
       setLeaderboardData(response.data.data);
+      console.log(response)
       setTotalPages(response.data.pagination.totalPages);
       setError(null);
     } catch (err) {
@@ -100,7 +101,7 @@ const LeaderboardTable = () => {
             <select
               value={itemsPerPage}
               onChange={handleItemsPerPageChange}
-              className="w-full sm:w-auto border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full  sm:w-auto border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value={10}>10 per page</option>
               <option value={20}>20 per page</option>
@@ -137,6 +138,7 @@ const LeaderboardTable = () => {
                     )}
                   </div>
                   <span className="font-medium text-gray-900">{student.name}</span>
+                  <span className="font-medium text-gray-900">{`[${student.registerNo}]`}</span>
                 </div>
                 
                 <div className="flex items-center gap-2">

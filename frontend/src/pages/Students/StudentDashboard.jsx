@@ -243,10 +243,10 @@ const StudentDashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Sidebar */}
-      <div className="lg:fixed lg:top-0 lg:left-0 lg:h-full lg:w-64 bg-white shadow-lg p-4 lg:p-6">
-        <div className="flex lg:flex-col h-full">
-          <h1 className="text-xl lg:text-2xl font-bold text-gray-800 mb-4 lg:mb-8">Student Portal</h1>
-          <nav className="flex lg:flex-col gap-2 lg:gap-4">
+      <div className="bg-white shadow-lg p-4 lg:fixed lg:top-0 lg:left-0 lg:h-full lg:w-64 lg:p-6">
+        <div className="flex flex-row lg:flex-col items-center lg: lg:h-full">
+          <h1 className="text-lg lg:text-2xl font-bold text-gray-800  lg:mb-0 w-100 whitespace-nowrap">Student Portal</h1>
+          <nav className="flex flex-row items-right  lg:flex-col gap-2 lg:gap-2 w-full lg:w-auto">
             <button
               onClick={() => setCurrentView('profile')}
               className={`flex items-center gap-2 p-2 lg:p-3 rounded-lg hover:bg-gray-100 transition-colors text-sm lg:text-base ${
@@ -277,11 +277,11 @@ const StudentDashboard = () => {
               className="flex items-center gap-2 p-2 lg:p-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm lg:text-base"
             >
               <Plus size={18} />
-              <span className="hidden lg:inline">Add Event</span>
+              <span className="hidden lg:inline">Submit Participation</span>
             </button>
             <button
               onClick={handleLogoutClick}
-              className="flex items-center gap-2 p-2 lg:p-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm lg:text-base mt-auto"
+              className="flex items-center gap-2 p-2 lg:p-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm lg:text-base mt-auto lg:mt-0"
             >
               <LogOut size={18} />
               <span className="hidden lg:inline">Logout</span>
@@ -289,6 +289,8 @@ const StudentDashboard = () => {
           </nav>
         </div>
       </div>
+
+
 
       {/* Main Content */}
       {renderContent()}

@@ -54,7 +54,7 @@ exports.getLeaderboard = async (req, res) => {
       .sort({ totalPoints: -1 })
       .skip(skip)
       .limit(limit)
-      .select('name email totalPoints class')
+      .select('name email registerNo totalPoints class')
       .lean();
 
     // Add global ranks to the filtered results
