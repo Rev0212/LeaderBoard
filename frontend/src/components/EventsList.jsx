@@ -11,7 +11,7 @@ const EventsList = ({ studentData, handleBackToDashboard }) => {
         className="flex items-center gap-2 text-blue-500 hover:underline"
       >
         <ArrowLeft size={20} />
-        Back to Dashboard
+        Back to Dashboardsss
       </button>
 
       {/* Events List */}

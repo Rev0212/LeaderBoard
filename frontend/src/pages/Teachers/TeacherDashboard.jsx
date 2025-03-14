@@ -153,7 +153,7 @@ const TeacherDashboard = () => {
   
     // Default to dashboard content
     return (
-      <div className="lg:ml-64 p-4 lg:p-8">
+      <div className="p-4 lg:p-8">
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 mb-6 lg:mb-8">
           <div className="bg-white p-4 lg:p-6 rounded-lg shadow-md">

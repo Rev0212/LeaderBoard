@@ -13,8 +13,10 @@ import AdminDashboard from './pages/Admin/AdminDashBoard';
 import AdminLoginForm from './pages/Admin/AdminLogin'; // Admin Login Page
 import ReportsPage from './pages/ReportsPage';
 import EventTable from './pages/Teachers/TeacherEventVerify';
+import EventsList from './components/EventsList'
 import { Route, Routes, Link } from 'react-router-dom';
 import UpcomingEvents from './pages/UpcomingEvents';
+import StudentProfile from './pages/Students/StudentProfile';
 
 
 const App = () => {
@@ -29,11 +31,13 @@ const App = () => {
       <Route path="/teacher-login" element={<TeacherLoginForm/>}/>
       <Route path="/teacher-dashboard" element={<TeacherProtectWrapper><TeacherDashboard/></TeacherProtectWrapper>}/>
       <Route path="/student-login" element={<StudentLoginForm />} />
+      <Route path="/student-profile" element={<StudentProfile/>}/>
       <Route path='/event-submit' element={<StudentProtectWrapper><EventForm/></StudentProtectWrapper>}/>
-      <Route path='/student-dashboard' element={<StudentProtectWrapper><StudentDashboard/></StudentProtectWrapper>}/>
+      <Route path='/student-dashboard' element={<StudentDashboard/>}/>
       <Route path='/teacher-events' element={<TeacherProtectWrapper><EventTable/></TeacherProtectWrapper>}/>
       <Route path="/" element={<HomePage/>}/>
       <Route path="/upcoming-events" element={<UpcomingEvents />} />
+      <Route path='/student-events' element={<EventsList/>}/>
     </Routes>
   );
 };

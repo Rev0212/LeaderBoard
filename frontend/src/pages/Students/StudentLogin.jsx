@@ -83,8 +83,8 @@ const StudentLoginForm = () => {
   };
 
   const renderField = (name, label, type = 'text', placeholder) => (
-    <div>
-      <label htmlFor={name} className="block text-sm font-medium text-gray-700">
+    <div className="mb-4 w-full">
+      <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-2">
         {label}
       </label>
       <input
@@ -94,8 +94,10 @@ const StudentLoginForm = () => {
         value={formData[name]}
         onChange={handleChange}
         disabled={isLoading}
-        className="mt-1 px-4 py-2 w-full border rounded-lg focus:ring-blue-500 focus:border-blue-500 
-                 disabled:bg-gray-100 disabled:cursor-not-allowed"
+        className="w-full px-4 py-2 border rounded-lg 
+          focus:ring-blue-500 focus:border-blue-500
+          disabled:bg-gray-100 disabled:cursor-not-allowed 
+          sm:text-sm"
         placeholder={placeholder}
       />
       {errors[name] && (
@@ -103,37 +105,37 @@ const StudentLoginForm = () => {
       )}
     </div>
   );
-
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center py-10">
-      <div className="w-full max-w-xl px-6">
-        <div className="bg-white shadow-lg rounded-lg p-10">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
+    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-md space-y-8">
+        <div className="bg-white shadow-md rounded-lg p-6 sm:p-8">
+          <h2 className="text-center text-2xl font-bold text-gray-800 mb-6">
             Student Login
           </h2>
-          
+
           {apiError && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
               {apiError}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
             {renderField('email', 'Email', 'email', 'Enter your email')}
             {renderField('password', 'Password', 'password', 'Enter your password')}
 
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-blue-500 text-white py-3 rounded-lg hover:bg-blue-600 
-                       transition duration-200 disabled:bg-blue-300 disabled:cursor-not-allowed"
+              className="w-full bg-blue-500 text-white py-2 rounded-lg 
+                hover:bg-blue-600 transition duration-200 
+                disabled:bg-blue-300 disabled:cursor-not-allowed"
             >
-              {isLoading ? 'Submiting...' : 'Submit'}
+              {isLoading ? 'Submitting...' : 'Submit'}
             </button>
           </form>
 
           {successMessage && (
-            <div className="mt-6 p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg">
+            <div className="mt-4 p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg">
               {successMessage}
             </div>
           )}

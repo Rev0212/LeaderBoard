@@ -13,6 +13,9 @@ const studentSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Class'
     },
+    //added curnt year , course , isGraduvated Fields
+    year: { type: Number, required: true }, 
+    course: { type: String, required: true, enum: ['BTech', 'MTech'] },
     totalPoints: {
         type: Number,
         default: 0
@@ -20,7 +23,14 @@ const studentSchema = new mongoose.Schema({
     eventsParticipated: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Event'
-    }]
+    }],
+    isActive: { type: Boolean, default: true },
+    isGraduated: { type: Boolean, default: false },
+    isArchived:{ type: Boolean, default: false }
+});
+
+studentSchema.virtual('graduationYear').get(function () {
+    return this.course === 'MTech' ? 5 : 4; // MTech students graduate in year 5, others in year 4
 });
 
 // Instance Method: Generate Auth Token

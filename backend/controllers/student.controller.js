@@ -180,7 +180,6 @@ module.exports.updateStudentProfile = async (req, res, next) => {
     }
 }
 
-
 module.exports.changePassword = async (req, res, next) => {
     try {
         if (!req.student) {
@@ -293,3 +292,5 @@ module.exports.getCurrentRank = async (req, res, next) => {
         next(error);
     }
 };
+
+
