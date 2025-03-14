@@ -1,5 +1,6 @@
 // routes/classRoutes.js
 const express = require('express');
+const router = express.Router();
 const classController = require('../controllers/class.controller');
 const authMiddleware = require('../middlewares/auth.middlewares');
 const multer = require('multer');
@@ -12,7 +13,7 @@ if (!fs.existsSync(uploadPath)) {
     fs.mkdirSync(uploadPath);
 }
 
-// Set storage engine
+// Multer configuration
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         cb(null, uploadPath);
@@ -32,28 +33,17 @@ const upload = multer({
     }
 });
 
-const router = express.Router();
+// Public routes (no auth required)
+router.post('/bulk-create', upload.single('file'), classController.createClassesBulk);
 
-router.post('/create', authMiddleware.authAdmin, classController.createClass);
-router.put('/add-students', authMiddleware.authAdmin , classController.addStudentsToClass);
-router.put('/change-teacher', authMiddleware.authAdmin , classController.changeClassTeacher);
-router.get('/:classId',classController.getClassDetails);
-router.post('/create-in-bulk',(req, res, next) => {
-    upload.single('file')(req, res, (err) => {
-        if (err) {
-            return res.status(400).json({ message: err.message });
-        }
-        next();
-    });
-},classController.createClassesInBulk);
-router.put('/add-students-in-bulk',(req, res, next) => {
-    upload.single('file')(req, res, (err) => {
-        if (err) {
-            return res.status(400).json({ message: err.message });
-        }
-        next();
-    });
-}, classController.addStudentsToClassInBulk);
-
+// Protected routes (require auth)
+router.post('/create', authMiddleware.authTeacher, classController.createClass);
+router.get('/details/:classId', authMiddleware.authTeacher, classController.getClassDetails);
+router.put('/change-teacher', authMiddleware.authTeacher, classController.changeClassTeacher);
+router.post('/add-students', authMiddleware.authTeacher, classController.addStudentsToClass);
+router.get('/:classId/students', authMiddleware.authTeacher, classController.getStudentsByClass);
+router.post('/assign-advisor', authMiddleware.authAdmin, classController.assignAcademicAdvisor);
+router.get('/department/:departmentId', authMiddleware.authTeacher, classController.getClassesByDepartment);
+router.post('/bulk-add-students', upload.single('file'), authMiddleware.authTeacher, classController.addStudentsToClassInBulk);
 
 module.exports = router;

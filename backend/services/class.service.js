@@ -176,6 +176,104 @@ const addStudentsToClassInBulk = async (csvFilePath) => {
   });
 };
 
+exports.createClass = async (classData) => {
+    const { year, section, academicYear, department, facultyIds, academicAdvisorIds } = classData;
+    
+    // Check if class already exists
+    const existingClass = await classModel.findOne({
+        year,
+        section,
+        academicYear,
+        department
+    });
+    
+    if (existingClass) {
+        throw new Error('Class already exists');
+    }
+    
+    // Create class
+    const newClass = new classModel({
+        year,
+        section,
+        academicYear,
+        department,
+        facultyAssigned: facultyIds || [],
+        academicAdvisors: academicAdvisorIds || []
+    });
+    
+    await newClass.save();
+    
+    // Update teacher references
+    if (facultyIds && facultyIds.length > 0) {
+        await teacherModel.updateMany(
+            { _id: { $in: facultyIds } },
+            { $push: { classes: newClass._id } }
+        );
+    }
+    
+    if (academicAdvisorIds && academicAdvisorIds.length > 0) {
+        await teacherModel.updateMany(
+            { _id: { $in: academicAdvisorIds } },
+            { $push: { classes: newClass._id } }
+        );
+    }
+    
+    return newClass;
+};
+
+/**
+ * Assign academic advisor to class
+ */
+exports.assignAcademicAdvisor = async (classId, teacherId) => {
+    // Verify class exists
+    const classData = await classModel.findById(classId);
+    if (!classData) {
+        throw new Error('Class not found');
+    }
+    
+    // Verify teacher exists and has proper role
+    const teacher = await teacherModel.findById(teacherId);
+    if (!teacher) {
+        throw new Error('Teacher not found');
+    }
+    
+    if (teacher.role !== 'Academic Advisor' && teacher.role !== 'HOD') {
+        throw new Error('Only Academic Advisors or HODs can be assigned as advisors');
+    }
+    
+    // Check for duplicate assignment
+    if (classData.academicAdvisors.includes(teacherId)) {
+        throw new Error('Teacher is already assigned as an academic advisor to this class');
+    }
+    
+    // Update class and teacher
+    classData.academicAdvisors.push(teacherId);
+    await classData.save();
+    
+    if (!teacher.classes.includes(classId)) {
+        teacher.classes.push(classId);
+        await teacher.save();
+    }
+    
+    return classData;
+};
+
+/**
+ * Get classes by department
+ */
+exports.getClassesByDepartment = async (department) => {
+    return await classModel.find({ department })
+        .populate('facultyAssigned', 'name email registerNo')
+        .populate('academicAdvisors', 'name email registerNo');
+};
+
+/**
+ * Get students by class ID
+ */
+exports.getStudentsByClass = async (classId) => {
+    return await studentModel.find({ 'currentClass.ref': classId })
+        .select('-password -rawPassword');
+};
 
 module.exports = {
     createClass,
@@ -184,4 +282,7 @@ module.exports = {
     getClassDetails,
     createClassesInBulk,
     addStudentsToClassInBulk,
+    assignAcademicAdvisor: exports.assignAcademicAdvisor,
+    getClassesByDepartment: exports.getClassesByDepartment,
+    getStudentsByClass: exports.getStudentsByClass
 };

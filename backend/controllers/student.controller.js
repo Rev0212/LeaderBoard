@@ -7,98 +7,221 @@ const path = require('path');
 const multer = require('multer');
 const StudentBulkService = require('../services/studentsBulk.services');
 const eventModel = require('../models/event.model');
-
+const csv = require('csv-parser');
+const bcrypt = require('bcrypt'); // Add this import
 
 const uploadPath = path.join(__dirname, '../uploads');
 if (!fs.existsSync(uploadPath)) {
     fs.mkdirSync(uploadPath);
 }
 
-
-module.exports.registerStudentsBulk = async (req, res, next) => {
+exports.registerStudentsBulk = async (req, res) => {
     try {
         if (!req.file) {
-            return res.status(400).json({ message: 'Please upload a CSV file' });
+            return res.status(400).json({ message: 'No file uploaded' });
         }
 
-        const studentBulkService = new StudentBulkService();
-        const results = await studentBulkService.processCSV(req.file.path);
+        const results = {
+            successful: [],
+            failed: [],
+            failedEntries: []
+        };
 
-        // Clean up the uploaded file
+        const rows = [];
+        await new Promise((resolve, reject) => {
+            fs.createReadStream(req.file.path)
+                .pipe(csv())
+                .on('data', (data) => rows.push(data))
+                .on('end', resolve)
+                .on('error', reject);
+        });
+
+        for (const data of rows) {
+            try {
+                // Validate required fields
+                if (!data.name || !data.email || !data.password || 
+                    !data.registerNo || !data.course || !data.registrationYear) {
+                    results.failedEntries.push({
+                        student: data,
+                        error: 'Missing required fields'
+                    });
+                    continue;
+                }
+
+                // Validate course format
+                const validPrograms = ['BTech', 'MTech', 'MTech-Integrated'];
+                const validDepartments = ['CSE', 'ECE', 'EEE', 'MECH', 'CIVIL', 'IT'];
+                const courseParts = data.course.split('-');
+
+                if (courseParts.length !== 2 || 
+                    !validPrograms.includes(courseParts[0]) || 
+                    !validDepartments.includes(courseParts[1])) {
+                    results.failedEntries.push({
+                        student: data,
+                        error: 'Invalid course format. Should be Program-Department (e.g., BTech-CSE)'
+                    });
+                    continue;
+                }
+
+                const [program, department] = courseParts;
+
+                // Check if student already exists
+                const existingStudent = await studentModel.findOne({ 
+                    $or: [{ email: data.email }, { registerNo: data.registerNo }]
+                });
+
+                if (existingStudent) {
+                    results.failedEntries.push({
+                        student: data,
+                        error: 'Student with this email or register number already exists'
+                    });
+                    continue;
+                }
+
+                // Create student without class assignment
+                const hashedPassword = await bcrypt.hash(data.password, 10);
+                const student = new studentModel({
+                    name: data.name,
+                    email: data.email,
+                    password: hashedPassword,
+                    registerNo: data.registerNo,
+                    course: data.course,
+                    program,
+                    department,
+                    registrationYear: parseInt(data.registrationYear),
+                    year: 1 // Default to first year
+                });
+
+                await student.save();
+                results.successful.push({
+                    name: student.name,
+                    email: student.email,
+                    registerNo: student.registerNo
+                });
+            } catch (error) {
+                console.error('Error processing student:', error);
+                results.failedEntries.push({
+                    student: data,
+                    error: error.message
+                });
+            }
+        }
+
+        // Clean up uploaded file
         fs.unlinkSync(req.file.path);
 
-        res.status(200).json({
+        return res.status(200).json({
             message: 'Bulk registration completed',
-            successful: results.successful,
-            failed: results.failed.length,
-            failedEntries: results.failed,
-            students: results.successful // Includes raw passwords
+            successful: results.successful.length,
+            failed: results.failedEntries.length,
+            failedEntries: results.failedEntries,
+            students: results.successful
         });
     } catch (error) {
-        next(error);
+        console.error('Error in registerStudentsBulk:', error);
+        if (req.file) {
+            fs.unlinkSync(req.file.path);
+        }
+        return res.status(500).json({ message: 'Internal server error' });
     }
 };
 
-module.exports.registerStudent = async (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
+exports.registerStudent = async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const { 
+            name, email, password, registerNo, 
+            course, year, currentClassId 
+        } = req.body;
+
+        // Validate course format
+        const validPrograms = ['BTech', 'MTech', 'MTech-Integrated'];
+        const validDepartments = ['CSE', 'ECE', 'EEE', 'MECH', 'CIVIL', 'IT'];
+        
+        const courseParts = course.split('-');
+        if (courseParts.length !== 2 || !validPrograms.includes(courseParts[0]) || 
+            !validDepartments.includes(courseParts[1])) {
+            return res.status(400).json({ 
+                message: 'Invalid course format. Should be Program-Department (e.g., BTech-CSE)' 
+            });
+        }
+
+        // Extract program and department
+        const program = courseParts[0];
+        const department = courseParts[1];
+
+        // Check if student already exists
+        const existingStudent = await studentModel.findOne({ email });
+        if (existingStudent) {
+            return res.status(400).json({ message: 'Student with this email already exists' });
+        }
+
+        // Verify the class exists and get class details
+        const classData = await classModel.findById(currentClassId);
+        if (!classData) {
+            return res.status(404).json({ message: 'Class not found' });
+        }
+
+        // Hash the password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Create new student
+        const newStudent = new studentModel({
+            name,
+            email,
+            password: hashedPassword,
+            rawPassword: password, // For demo purposes only, remove in production
+            registerNo,
+            course,
+            program,
+            department,
+            currentClass: {
+                year: classData.year,
+                section: classData.section,
+                ref: currentClassId
+            }
+        });
+
+        await newStudent.save();
+
+        return res.status(201).json({ 
+            message: 'Student registered successfully',
+            course: newStudent.course,
+            department: newStudent.department
+        });
+    } catch (error) {
+        console.error('Error in registerStudent:', error);
+        return res.status(500).json({ message: 'Internal server error' });
     }
-
-    const { name, email, password, registerNo } = req.body;
-
-    const isUserAlready = await studentModel.findOne({ email });
-    if (isUserAlready) {
-        return res.status(400).json({ message: 'User already exists' });
-    }
-
-    const hashedPassword = await studentModel.hashedPassword(password);
-
-    const student = await studentService.createStudent({
-        name,
-        email,
-        password: hashedPassword,
-        rawPassword: password, // Save the raw password
-        registerNo
-    });
-
-    const token = student.generateAuthToken();
-    res.cookie('token', token);
-
-    res.status(201).json({ token, student });
 };
 
-// module.exports.registerStudent = async (req, res, next) => {
-
-//     const errors = validationResult(req);
-//     if (!errors.isEmpty()) {
-//         return res.status(400).json({ errors: errors.array() });
-//     }
-
-//     const { name, email, password,registerNo } = req.body;
-
-//     const isUserAlready = await studentModel.findOne({ email });
-
-//     if (isUserAlready) {
-//         return res.status(400).json({ message: 'User already exists' });
-//     }
-
-//     const hashedPassword = await studentModel.hashPassword(password);
-    
-
-//     const student = await studentService.createStudent({
-//         name,
-//         email,
-//         password: hashedPassword,
-//         registerNo
-//     });
-
-//     const token = student.generateAuthToken();
-    
-//     res.cookie('token', token);
-
-//     res.status(201).json({ token, student});
-// }
+exports.getStudentsByDepartment = async (req, res) => {
+    try {
+        const { department, course, year, section } = req.query;
+        
+        const filter = {};
+        if (department) filter.department = department;
+        if (course) filter.course = course;
+        if (year) filter['currentClass.year'] = parseInt(year);
+        if (section) filter['currentClass.section'] = section;
+        
+        const students = await studentModel.find(filter)
+            .select('-password -rawPassword')
+            .populate({
+                path: 'currentClass.ref',
+                select: 'year section academicYear'
+            });
+            
+        return res.status(200).json(students);
+    } catch (error) {
+        console.error('Error in getStudentsByDepartment:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+};
 
 module.exports.loginStudent = async (req, res, next) => {
 
