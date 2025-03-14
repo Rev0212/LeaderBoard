@@ -69,7 +69,6 @@ const submitEvent = async (req, res) => {
 
 // Teacher approves or rejects an event
 const reviewEvent = async (req, res) => {
-
     try {
         const { id } = req.params;
         const { status } = req.body;
@@ -79,7 +78,7 @@ const reviewEvent = async (req, res) => {
 
         // Ensure teacherId exists and is valid
         if (!req.teacher || !req.teacher._id) {
-            throw new Error("Teacher ID is missing .");
+            throw new Error("Teacher ID is missing.");
         }
 
         const teacherId = req.teacher._id;
@@ -99,17 +98,21 @@ const reviewEvent = async (req, res) => {
         }
 
         const studentId = event.submittedBy._id;
+        // Don't populate class since we're using currentClass
         const student = await studentModel.findById(studentId);
-        
 
         if (!student) {
             throw new Error("Student not found.");
         }
 
-        const studentClassId = student.class; // Assuming `classId` exists in the student model
+        // Check if student has currentClass assigned
+        if (!student.currentClass || !student.currentClass.ref) {
+            throw new Error("Student's class information is missing.");
+        }
 
-        // Check if the teacher's class IDs include the student's class ID
-        if (!teacherClassIds.includes(studentClassId.toString())) {
+        // Convert both IDs to strings for comparison
+        const studentClassId = student.currentClass.ref.toString();
+        if (!teacherClassIds.some(classId => classId.toString() === studentClassId)) {
             throw new Error("Teacher and student are not in the same class.");
         }
 
