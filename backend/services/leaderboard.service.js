@@ -5,7 +5,7 @@ const studentModel = require('../models/student.model');
  */
 exports.getLeaderboard = async (filterOptions, paginationOptions) => {
     const { department, course, year, section } = filterOptions;
-    const { limit = 10, page = 1, sortBy = 'points' } = paginationOptions;
+    const { limit = 10, page = 1, sortBy = 'totalPoints' } = paginationOptions; // Changed points to totalPoints
     
     const filter = {};
     if (department) filter.department = department;
@@ -13,27 +13,40 @@ exports.getLeaderboard = async (filterOptions, paginationOptions) => {
     if (year) filter['currentClass.year'] = parseInt(year);
     if (section) filter['currentClass.section'] = section;
     
-    const sortOrder = sortBy === 'points' ? -1 : 1; // Descending for points
-    const skip = (page - 1) * limit;
+    // Get all students sorted by points for ranking
+    const allStudents = await studentModel.find(filter)
+        .sort({ totalPoints: -1 })
+        .select('_id');
     
+    // Create a map of id to rank
+    const rankMap = new Map();
+    let currentRank = 1;
+    let previousPoints = null;
+    
+    // Get paginated students with full data
     const students = await studentModel.find(filter)
-        .sort({ [sortBy]: sortOrder })
-        .skip(skip)
+        .sort({ totalPoints: -1 })
+        .skip((page - 1) * limit)
         .limit(parseInt(limit))
-        .select('name registerNo currentClass points department course')
-        .populate({
-            path: 'currentClass.ref',
-            select: 'year section academicYear'
-        });
+        .select('name registerNo totalPoints');
         
     const total = await studentModel.countDocuments(filter);
     
+    // Add rank to each student
+    const studentsWithRank = students.map(student => ({
+        _id: student._id,
+        name: student.name,
+        registerNo: student.registerNo,
+        totalPoints: student.totalPoints || 0,
+        rank: currentRank++
+    }));
+
     return {
-        students,
+        data: studentsWithRank,
         pagination: {
             total,
-            page: parseInt(page),
-            pages: Math.ceil(total / limit)
+            currentPage: parseInt(page),
+            totalPages: Math.ceil(total / limit)
         }
     };
 };

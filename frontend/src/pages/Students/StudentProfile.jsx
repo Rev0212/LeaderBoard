@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { User,  Hash, Star, Calendar, Camera, ArrowLeft, Trash2 } from "lucide-react";
+import { User, Hash, Star, Calendar, Camera, ArrowLeft, Trash2, BookOpen, Building, GraduationCap } from "lucide-react";
 
 const MobileStudentProfile = () => {
   const navigate = useNavigate();
@@ -229,7 +229,21 @@ const MobileStudentProfile = () => {
           value={student?.eventsParticipated?.filter(event => event.status === 'Approved')?.length || 0} 
         />
         <InfoCard icon={<Star />} label="Total Points" value={student?.totalPoints || 0} />
-        <InfoCard icon={<Hash />} label="Class" value={student?.class?.className || "N/A"} />
+        <InfoCard 
+          icon={<GraduationCap />} 
+          label="Program" 
+          value={student?.program || "N/A"} 
+        />
+        <InfoCard 
+          icon={<Building />} 
+          label="Department" 
+          value={student?.department || "N/A"} 
+        />
+        <InfoCard 
+          icon={<BookOpen />} 
+          label="Current Class" 
+          value={`${student?.currentClass?.section || "N/A"}`} 
+        />
       </div>
 
       {/* Password Change Modal */}

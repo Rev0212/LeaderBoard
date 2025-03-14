@@ -14,7 +14,7 @@ exports.getLeaderboard = async (req, res) => {
     const paginationOptions = {
       limit: req.query.limit || 10,
       page: req.query.page || 1,
-      sortBy: req.query.sortBy || 'points'
+      sortBy: 'totalPoints'
     };
     
     const result = await leaderboardService.getLeaderboard(
@@ -25,7 +25,10 @@ exports.getLeaderboard = async (req, res) => {
     return res.status(200).json(result);
   } catch (error) {
     console.error('Error in getLeaderboard:', error);
-    return res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ 
+      message: 'Internal server error',
+      error: error.message 
+    });
   }
 };
 
