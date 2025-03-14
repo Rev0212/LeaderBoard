@@ -1,9 +1,11 @@
 const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
+const csv = require('csv-parser'); // Add this import
+const bcrypt = require('bcrypt'); // Add this if not already imported
 const teacherModel = require('../models/teacher.model');
 const teacherService = require('../services/teacher.service');
-const TeacherBulkService = require('../services/teacherBulk.services') 
+const TeacherBulkService = require('../services/teacherBulk.services');
 const BlacklistToken = require('../models/blacklistToken.model');
 const { validationResult } = require('express-validator');
 
@@ -13,61 +15,204 @@ if (!fs.existsSync(uploadPath)) {
     fs.mkdirSync(uploadPath);
 }
 
-
-module.exports.registerTeacher = async (req, res, next) => {
+exports.registerTeacher = async (req, res) => {
     try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
         }
 
-        const { name, email, registerNo, password } = req.body;
+        const { name, email, password, registerNo, department, role } = req.body;
 
-        const isUserAlready = await teacherModel.findOne({ email });
-
-        if (isUserAlready) {
-            return res.status(400).json({ message: 'User already exists' });
+        // Check if role is valid
+        const validRoles = ['Faculty', 'Academic Advisor', 'HOD'];
+        if (role && !validRoles.includes(role)) {
+            return res.status(400).json({ message: 'Invalid role specified' });
         }
 
+        // Check if HOD already exists for this department if registering as HOD
+        if (role === 'HOD') {
+            const existingHOD = await teacherModel.findOne({ department, role: 'HOD' });
+            if (existingHOD) {
+                return res.status(400).json({ 
+                    message: `HOD already exists for ${department} department` 
+                });
+            }
+        }
+
+        // Check if teacher already exists
+        const existingTeacher = await teacherModel.findOne({ email });
+        if (existingTeacher) {
+            return res.status(400).json({ message: 'Teacher with this email already exists' });
+        }
+
+        // Hash the password
         const hashedPassword = await teacherModel.hashedPassword(password);
 
-        const teacher = await teacherService.createTeacher({
+        // Create new teacher
+        const newTeacher = new teacherModel({
             name,
-            registerNo,
             email,
             password: hashedPassword,
-            rawPassword: password // Save raw password
+            rawPassword: password, // For demo purposes only, remove in production
+            registerNo,
+            department,
+            role: role || 'Faculty' // Default to Faculty if no role specified
         });
 
-        const token = teacher.generateAuthToken();
-        res.cookie('token', token);
+        await newTeacher.save();
 
-        res.status(201).json({ token, teacher });
+        return res.status(201).json({ 
+            message: 'Teacher registered successfully',
+            role: newTeacher.role,
+            department: newTeacher.department
+        });
     } catch (error) {
-        next(error);
+        console.error('Error in registerTeacher:', error);
+        return res.status(500).json({ message: 'Internal server error' });
     }
 };
 
-module.exports.registerTeachersBulk = async (req, res, next) => {
+exports.getTeachersByRole = async (req, res) => {
+    try {
+        const { role, department } = req.query;
+        
+        const filter = {};
+        if (role) filter.role = role;
+        if (department) filter.department = department;
+        
+        const teachers = await teacherModel.find(filter)
+            .select('-password -rawPassword')
+            .populate('classes');
+            
+        return res.status(200).json(teachers);
+    } catch (error) {
+        console.error('Error in getTeachersByRole:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+exports.getDepartmentClasses = async (req, res) => {
+    try {
+        // This route should only be accessible by HOD or Academic Advisors
+        const department = req.teacher.department;
+        
+        const classModel = require('../models/class.model');
+        const classes = await classModel.find({ department })
+            .populate('facultyAssigned', 'name email registerNo')
+            .populate('academicAdvisors', 'name email registerNo');
+            
+        return res.status(200).json(classes);
+    } catch (error) {
+        console.error('Error in getDepartmentClasses:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+exports.registerTeachersBulk = async (req, res) => {
     try {
         if (!req.file) {
-            return res.status(400).json({ message: 'Please upload a CSV file' });
+            return res.status(400).json({ message: 'No file uploaded' });
         }
-        const teacherBulkService = new TeacherBulkService();
-        const results = await teacherBulkService.processCSV(req.file.path);
 
-        // Clean up the uploaded file
+        const results = {
+            successful: [],
+            failed: []
+        };
+
+        const teachers = [];
+        
+        // Read CSV file
+        await new Promise((resolve, reject) => {
+            fs.createReadStream(req.file.path)
+                .pipe(csv())
+                .on('data', (data) => {
+                    console.log('Processing row:', data); // Add debugging
+                    // Validate required fields
+                    if (!data.name || !data.email || !data.password || 
+                        !data.registerNo || !data.department || !data.role) {
+                        results.failed.push({
+                            teacher: data,
+                            error: 'Missing required fields'
+                        });
+                        return;
+                    }
+
+                    // Validate department
+                    const validDepartments = ['CSE', 'ECE', 'EEE', 'MECH', 'CIVIL', 'IT'];
+                    if (!validDepartments.includes(data.department)) {
+                        results.failed.push({
+                            teacher: data,
+                            error: 'Invalid department'
+                        });
+                        return;
+                    }
+
+                    // Validate role
+                    const validRoles = ['Faculty', 'Academic Advisor', 'HOD'];
+                    if (!validRoles.includes(data.role)) {
+                        results.failed.push({
+                            teacher: data,
+                            error: 'Invalid role'
+                        });
+                        return;
+                    }
+
+                    teachers.push({
+                        name: data.name,
+                        email: data.email,
+                        password: data.password,
+                        registerNo: data.registerNo,
+                        department: data.department,
+                        role: data.role
+                    });
+                })
+                .on('end', () => {
+                    console.log('Finished reading CSV'); // Add debugging
+                    resolve();
+                })
+                .on('error', (error) => {
+                    console.error('CSV parsing error:', error); // Add debugging
+                    reject(error);
+                });
+        });
+
+        // Process valid teachers
+        for (const teacherData of teachers) {
+            try {
+                const hashedPassword = await bcrypt.hash(teacherData.password, 10);
+                const teacher = new teacherModel({
+                    ...teacherData,
+                    password: hashedPassword
+                });
+                await teacher.save();
+                results.successful.push({
+                    name: teacher.name,
+                    email: teacher.email,
+                    registerNo: teacher.registerNo
+                });
+            } catch (error) {
+                results.failed.push({
+                    teacher: teacherData,
+                    error: error.message
+                });
+            }
+        }
+
+        // Clean up uploaded file
         fs.unlinkSync(req.file.path);
 
-        res.status(200).json({
+        return res.status(200).json({
             message: 'Bulk registration completed',
-            successful: results.successful.length,
-            failed: results.failed.length,
-            failedEntries: results.failed,
-            teachers: results.successful // Includes raw passwords
+            results: {
+                successful: results.successful.length,
+                failed: results.failed.length,
+                details: results
+            }
         });
     } catch (error) {
-        next(error);
+        console.error('Error in registerTeachersBulk:', error);
+        return res.status(500).json({ message: 'Internal server error' });
     }
 };
 
@@ -163,5 +308,22 @@ module.exports.logoutTeacher = async (req, res, next) => {
         res.status(200).json({ message: 'Logged out successfully' });
     } catch (error) {
         next(error);
+    }
+};
+
+/**
+ * Get classes for academic advisor
+ * Access: Academic Advisors and HODs
+ */
+exports.getAdvisedClasses = async (req, res) => {
+    try {
+        const classes = await classModel.find({ academicAdvisors: req.teacher._id })
+            .populate('facultyAssigned', 'name email registerNo')
+            .populate('students', 'name email registerNo');
+
+        return res.status(200).json(classes);
+    } catch (error) {
+        console.error('Error in getAdvisedClasses:', error);
+        return res.status(500).json({ message: 'Internal server error' });
     }
 };

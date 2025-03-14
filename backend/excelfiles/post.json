@@ -1,0 +1,193 @@
+{
+  "info": {
+    "_postman_id": "your-collection-id",
+    "name": "LeaderBoard API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Teachers",
+      "item": [
+        {
+          "name": "Register Teacher",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"John Doe\",\n    \"email\": \"john.doe@example.com\",\n    \"password\": \"password123\",\n    \"registerNo\": \"FAC001\",\n    \"department\": \"CSE\",\n    \"role\": \"HOD\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/teachers/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teachers", "register"]
+            }
+          }
+        },
+        {
+          "name": "Bulk Create Teachers",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "./Teachers.csv"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/teachers/bulk-create",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "teachers", "bulk-create"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Classes",
+      "item": [
+        {
+          "name": "Create Class",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{teacherToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"year\": 1,\n    \"section\": \"A1\",\n    \"academicYear\": \"2023-2024\",\n    \"department\": \"CSE\",\n    \"facultyIds\": [\"{{facultyId}}\"],\n    \"academicAdvisorIds\": [\"{{advisorId}}\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/classes/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "classes", "create"]
+            }
+          }
+        },
+        {
+          "name": "Bulk Create Classes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "./Classes.csv"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/classes/bulk-create",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "classes", "bulk-create"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Students",
+      "item": [
+        {
+          "name": "Register Student",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"John Student\",\n    \"email\": \"john.s@example.com\",\n    \"password\": \"pass123\",\n    \"registerNo\": \"STU001\",\n    \"course\": \"BTech-CSE\",\n    \"year\": 1,\n    \"section\": \"A1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/students/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "students", "register"]
+            }
+          }
+        },
+        {
+          "name": "Add Students to Class",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{teacherToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"classId\": \"{{classId}}\",\n    \"studentIds\": [\"{{studentId1}}\", \"{{studentId2}}\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/classes/add-students",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "classes", "add-students"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ]
+}

@@ -1,20 +1,74 @@
 const { model } = require('mongoose')
 const teacherModel = require('../models/teacher.model')
+const classModel = require('../models/class.model');
+const bcrypt = require('bcrypt');
 
-module.exports.createTeacher = async ({ name, email, password, rawPassword, registerNo }) => {
-    if (!name || !email || !password) {
-        throw new Error("All fields are required");
+/**
+ * Create a new teacher with role-based validation
+ */
+exports.createTeacher = async (teacherData) => {
+    const { name, email, password, registerNo, department, role } = teacherData;
+    
+    // Check if HOD already exists for this department if registering as HOD
+    if (role === 'HOD') {
+        const existingHOD = await teacherModel.findOne({ department, role: 'HOD' });
+        if (existingHOD) {
+            throw new Error(`HOD already exists for ${department} department`);
+        }
     }
-
-    const teacher = await teacherModel.create({
+    
+    // Hash password
+    const hashedPassword = await teacherModel.hashedPassword(password);
+    
+    // Create teacher
+    const teacher = new teacherModel({
         name,
         email,
-        password, // Hashed password
-        rawPassword, // Unhashed password
-        registerNo
+        password: hashedPassword,
+        rawPassword: password, // For development only
+        registerNo,
+        department,
+        role: role || 'Faculty'
     });
-
+    
+    await teacher.save();
     return teacher;
+};
+
+/**
+ * Get teachers by role and/or department
+ */
+exports.getTeachersByRole = async (filter = {}) => {
+    return await teacherModel.find(filter)
+        .select('-password -rawPassword')
+        .populate('classes');
+};
+
+/**
+ * Get classes for a department (HOD access)
+ */
+exports.getDepartmentClasses = async (department) => {
+    return await classModel.find({ department })
+        .populate('facultyAssigned', 'name email registerNo')
+        .populate('academicAdvisors', 'name email registerNo');
+};
+
+/**
+ * Get classes advised by a teacher (Academic Advisor access)
+ */
+exports.getAdvisedClasses = async (teacherId) => {
+    const teacher = await teacherModel.findById(teacherId);
+    if (!teacher) throw new Error('Teacher not found');
+    
+    // If HOD, return all department classes
+    if (teacher.role === 'HOD') {
+        return await this.getDepartmentClasses(teacher.department);
+    }
+    
+    // If Academic Advisor, return only assigned classes
+    return await classModel.find({ academicAdvisors: teacherId })
+        .populate('facultyAssigned', 'name email registerNo')
+        .populate('academicAdvisors', 'name email registerNo');
 };
 
 module.exports.addProfileImg = async (registerNo, profileImg) => {

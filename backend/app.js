@@ -47,8 +47,10 @@ const eventReports = require('./routes/eventReports.routes');
 app.use('/reports', eventReports);
 
 const upcomingEventRoutes = require('./routes/upcomingEvent.routes');
-
 app.use('/upcoming-events', upcomingEventRoutes);
+
+const assignmentRoutes = require('./routes/assignment.routes');
+app.use('/assignment', assignmentRoutes);
 
 // console.log('Mounted upcoming events routes at /upcoming-events');
 

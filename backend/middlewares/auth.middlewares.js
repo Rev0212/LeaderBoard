@@ -90,3 +90,31 @@ module.exports.authAdmin = async (req, res, next) => {
         return res.status(401).json({ message: 'Unauthorized Error' });
     }
 }
+
+module.exports.authHOD = async (req, res, next) => {
+    try {
+        await module.exports.authTeacher(req, res, () => {
+            if (req.teacher && req.teacher.role === 'HOD') {
+                next();
+            } else {
+                return res.status(403).json({ message: 'Access denied. HOD role required.' });
+            }
+        });
+    } catch (err) {
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
+};
+
+module.exports.authAcademicAdvisor = async (req, res, next) => {
+    try {
+        await module.exports.authTeacher(req, res, () => {
+            if (req.teacher && (req.teacher.role === 'Academic Advisor' || req.teacher.role === 'HOD')) {
+                next();
+            } else {
+                return res.status(403).json({ message: 'Access denied. Academic Advisor role required.' });
+            }
+        });
+    } catch (err) {
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
+};

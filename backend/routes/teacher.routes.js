@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { body } = require("express-validator");
 const teacherController = require('../controllers/teacher.controller');
 const authMiddleware = require('../middlewares/auth.middlewares');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { body } = require('express-validator'); // Add this import
 
 // Ensure uploads directory exists
 const uploadPath = path.join(__dirname, '../uploads');
@@ -64,5 +64,12 @@ router.put('/add',teacherController.addProfileImg);
 router.put('/change-password', authMiddleware.authTeacher, teacherController.changePassword);
 
 router.get('/logout', authMiddleware.authTeacher, teacherController.logoutTeacher);
+
+// HOD specific routes
+router.get('/department-classes', authMiddleware.authHOD, teacherController.getDepartmentClasses);
+router.get('/department-teachers', authMiddleware.authHOD, teacherController.getTeachersByRole);
+
+// Academic Advisor specific routes
+router.get('/advised-classes', authMiddleware.authAcademicAdvisor, teacherController.getAdvisedClasses);
 
 module.exports = router;
