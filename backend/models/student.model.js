@@ -59,7 +59,6 @@ const studentSchema = new mongoose.Schema({
         academicYear: String, // e.g. "2022-2023"
         classRef: { type: mongoose.Schema.Types.ObjectId, ref: 'Class' }
     }],
-    points: { type: Number, default: 0 }, // For leaderboard
     achievements: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Achievement' }]
 }, { timestamps: true });
 
