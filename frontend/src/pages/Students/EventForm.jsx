@@ -244,7 +244,7 @@ const EventForm = () => {
     e.preventDefault();
     if (validateForm()) {
       setIsLoading(true);
-      setUploadStatus('Uploading files...');
+      // setUploadStatus('Uploading files...');
       
       try {
         // Upload image to Cloudinary

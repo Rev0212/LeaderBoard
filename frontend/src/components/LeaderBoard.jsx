@@ -25,11 +25,20 @@ const LeaderboardTable = () => {
         },
       });
       
-      setLeaderboardData(response.data.data);
-      setTotalPages(response.data.pagination.totalPages);
+      console.log('Leaderboard response:', response.data); // Add this for debugging
+      
+      if (response.data && Array.isArray(response.data.data)) {
+        setLeaderboardData(response.data.data);
+        setTotalPages(response.data.pagination.totalPages);
+      } else {
+        setLeaderboardData([]);
+        setTotalPages(1);
+        console.error('Invalid data format received:', response.data);
+      }
       setError(null);
     } catch (err) {
       setError('Failed to fetch leaderboard data');
+      setLeaderboardData([]);
       console.error('Error fetching leaderboard:', err);
     } finally {
       setLoading(false);
@@ -79,6 +88,15 @@ const LeaderboardTable = () => {
     return (
       <div className="flex justify-center items-center h-64 text-red-500">
         {error}
+      </div>
+    );
+  }
+
+  // Early return if no data
+  if (!leaderboardData || leaderboardData.length === 0) {
+    return (
+      <div className="flex justify-center items-center h-64 text-gray-500">
+        No leaderboard data available
       </div>
     );
   }
