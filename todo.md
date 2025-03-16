@@ -1,9 +1,6 @@
 Create the modal to show certificate new the pdf proof 
 
 
-class list not fetching
-
-
 teacher profile -> class assigned should be section name
 
 
