@@ -86,12 +86,20 @@ exports.changeClassTeacher = async (req, res) => {
 exports.getClassDetails = async (req, res) => {
     const { classId } = req.params;
     
-
     try {
-        const classDetails = await classService.getClassDetails(classId);
-        res.status(200).json({ class: classDetails });
+        const classDetails = await classModel.findById(classId)
+            .populate('facultyAssigned', 'name email registerNo')
+            .populate('academicAdvisors', 'name email registerNo')
+            .populate('students', 'name email registerNo');
+            
+        if (!classDetails) {
+            return res.status(404).json({ message: 'Class not found' });
+        }
+        
+        res.status(200).json(classDetails);
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        console.error('Error in getClassDetails:', error);
+        res.status(500).json({ message: 'Internal server error', error: error.message });
     }
 };
 

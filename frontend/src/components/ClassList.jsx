@@ -9,6 +9,7 @@ const ClassDetails = ({ classId, teacherData, handleBackToDashboard }) => {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [classDetails, setClassDetails] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -20,8 +21,9 @@ const ClassDetails = ({ classId, teacherData, handleBackToDashboard }) => {
       }
 
       try {
+        console.log("Fetching class details for ID:", classId);
         const response = await axios.get(
-          `${import.meta.env.VITE_BASE_URL}/class/${classId}`,
+          `${import.meta.env.VITE_BASE_URL}/class/details/${classId}`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -30,7 +32,16 @@ const ClassDetails = ({ classId, teacherData, handleBackToDashboard }) => {
           }
         );
         
-        if (response.data && response.data.class && response.data.class.students) {
+        console.log("Class API response:", response.data);
+        
+        // Store the full class details
+        setClassDetails(response.data);
+        
+        // Check if students array exists directly in the response
+        if (response.data && response.data.students) {
+          setStudents(response.data.students);
+        } else if (response.data && response.data.class && response.data.class.students) {
+          // Fallback for different response structure
           setStudents(response.data.class.students);
         } else {
           setStudents([]);
@@ -74,7 +85,15 @@ const ClassDetails = ({ classId, teacherData, handleBackToDashboard }) => {
         <ArrowLeft size={20} />
         Back to Dashboard
       </button>
-      <h1 className="text-2xl font-semibold text-gray-800 mb-4">Class Students</h1>
+      
+      {classDetails && (
+        <div className="mb-6 bg-white p-4 rounded-lg shadow">
+          <h1 className="text-2xl font-semibold text-gray-800 mb-2">{classDetails.className || `${classDetails.year}-${classDetails.section}-${classDetails.department}`}</h1>
+          <p className="text-gray-600">Academic Year: {classDetails.academicYear}</p>
+        </div>
+      )}
+      
+      <h2 className="text-xl font-semibold text-gray-800 mb-4">Class Students</h2>
 
       {students.length > 0 ? (
         <table className="table-auto w-full bg-white shadow-md rounded-lg border border-gray-200">
