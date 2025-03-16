@@ -12,7 +12,7 @@ import {
 import LeaderboardTable from '../components/LeaderBoard';
 import ReportsDownloadSection from '../components/ReportsDownloadSection';
 
-const ReportsPage = () => {
+const ReportsPage = ({ isEmbedded = false }) => {
   const [totalPrizeMoney, setTotalPrizeMoney] = useState(0);
   const [topStudents, setTopStudents] = useState([]);
   const [popularCategories, setPopularCategories] = useState([]);
@@ -556,7 +556,40 @@ const ReportsPage = () => {
     }
   };
 
-  return (
+  return isEmbedded ? (
+    <div className="bg-gray-50">
+      {loading ? (
+        <div className="flex items-center justify-center py-10">
+          <div className="text-lg text-gray-600">Loading reports...</div>
+        </div>
+      ) : error ? (
+        <div className="flex items-center justify-center py-10">
+          <div className="text-lg text-red-600">{error}</div>
+        </div>
+      ) : (
+        <div className="p-6">
+          {/* Navigation tabs */}
+          <div className="mb-6 flex overflow-x-auto gap-2 pb-2">
+            {sidebarItems.map(item => (
+              <button
+                key={item.id}
+                onClick={() => setActiveSection(item.id)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
+                  activeSection === item.id 
+                    ? 'bg-blue-100 text-blue-600' 
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                {item.icon}
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </div>
+          {renderContent()}
+        </div>
+      )}
+    </div>
+  ) : (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
       <div className="w-64 bg-white shadow-lg fixed h-full">

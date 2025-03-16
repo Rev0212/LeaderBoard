@@ -79,7 +79,25 @@ const TeacherLoginForm = () => {
         email: '',
         password: '',
       });
-      navigate('/teacher-dashboard');
+
+      // Get user profile to determine role
+      const profileResponse = await axios.get(
+        `${VITE_BASE_URL}/teacher/profile`,
+        {
+            headers: {
+                Authorization: `Bearer ${response.data.token}`,
+                "Content-Type": "application/json"
+            }
+        }
+      );
+      
+      // Redirect based on role
+      const role = profileResponse.data.role;
+      if (role === 'HOD' || role === 'Academic Advisor') {
+          navigate("/advisor-hod-dashboard");
+      } else {
+          navigate("/teacher-dashboard");
+      }
     } catch (error) {
       setApiError(error.response?.data?.message || 'An error occurred during registration');
     } finally {
