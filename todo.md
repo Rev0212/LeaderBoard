@@ -19,6 +19,16 @@ teacher dashboard events list Invalid Date
 from teacher class list when we click a students view event it takes to the page but the problem is when we click back it comes to dashboard and not class list
 
 
+student upcoming event back button and update the ui
+and 
+add upcoming evnts for faculty also 
+
+when logging in teacher login
+    if !faculty 
+        redriect to hod & academic adivisor page which is same (only filter by assigned class)
+    else
+        faculty
+
 CHANGE GIT
 AkhilAndroid to A Akhil
 Revanth Rev0212
