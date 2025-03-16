@@ -20,11 +20,11 @@ student upcoming event back button and update the ui
 and 
 add upcoming evnts for faculty also 
 
-when logging in teacher login
+<!-- when logging in teacher login
     if !faculty 
         redriect to hod & academic adivisor page which is same (only filter by assigned class)
     else
-        faculty
+        faculty -->
 
 CHANGE GIT
 AkhilAndroid to A Akhil
