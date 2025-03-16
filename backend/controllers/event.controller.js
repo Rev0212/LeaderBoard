@@ -144,6 +144,7 @@ const reviewEvent = async (req, res) => {
     }
 };
 
+// Replace the existing getEvents function
 const getEvents = async (req, res) => {
     if (!req.teacher) {
         return res.status(403).json({ message: 'Unauthorized access' });
@@ -151,22 +152,44 @@ const getEvents = async (req, res) => {
 
     try {
         const teacher = req.teacher;
+        console.log("Fetching events for teacher:", teacher._id);
+        console.log("Teacher classes:", teacher.classes);
+        
+        // Check if teacher has classes
+        if (!teacher.classes || teacher.classes.length === 0) {
+            console.log("Teacher has no classes assigned");
+            return res.status(200).json([]);
+        }
 
-        // Find events for students in the teacher's classes
+        // Get student IDs from teacher's classes - FIX THIS QUERY
+        const studentsInClasses = await studentModel.find({ 
+            // The problem is here - student schema uses 'currentClass.ref', not 'class'
+            'currentClass.ref': { $in: teacher.classes }
+            // You could also try just 'class' if that's what's being used
+            // 'class': { $in: teacher.classes }
+        }).select('_id');
+        
+        console.log(`Found ${studentsInClasses.length} students in teacher's classes`);
+        
+        if (studentsInClasses.length === 0) {
+            console.log("No students found in teacher's classes");
+            return res.status(200).json([]);
+        }
+
+        // Get events from these students
         const events = await eventModel.find({
-            // Populate the submittedBy field to access student's class
-            submittedBy: { 
-                $in: await studentModel.find({ 
-                    class: { $in: teacher.classes } 
-                }).select('_id') 
-            },
-            status:"Pending"
-        }).populate('submittedBy').populate('approvedBy');
-        const pendingEvents = events.status 
+            submittedBy: { $in: studentsInClasses.map(s => s._id) },
+            status: "Pending"
+        })
+        .populate('submittedBy')
+        .populate('approvedBy');
+        
+        console.log(`Found ${events.length} pending events`);
+        
         res.status(200).json(events);
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Internal server error' });
+        console.error("Error in getEvents:", error);
+        res.status(500).json({ message: 'Internal server error', error: error.message });
     }
 };
 

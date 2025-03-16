@@ -66,6 +66,12 @@ studentSchema.virtual('graduationYear').get(function () {
     return this.course === 'MTech' ? 5 : 4; // MTech students graduate in year 5, others in year 4
 });
 
+// Add this pre-save hook to log class assignments
+studentSchema.pre('save', function(next) {
+  console.log('Saving student with class: ', this.class || this.currentClass?.ref || 'No class assigned');
+  next();
+});
+
 // Instance Method: Generate Auth Token
 studentSchema.methods.generateAuthToken = function () {
     const token = jwt.sign({ _id: this._id }, process.env.JWT_SECRET, { expiresIn: '24h' });
@@ -137,6 +143,16 @@ studentSchema.pre('save', function(next) {
     }
     next();
 });
+
+// Add a static method to help with debugging
+studentSchema.statics.checkClassAssignments = async function() {
+  const students = await this.find({}).select('name registerNo class currentClass');
+  console.log('Students with class assignments:');
+  students.forEach(s => {
+    console.log(`Student ${s.name} (${s.registerNo}): Class = ${s.class || s.currentClass?.ref || 'None'}`);
+  });
+  return students;
+};
 
 const studentModel = mongoose.model('student', studentSchema);
 

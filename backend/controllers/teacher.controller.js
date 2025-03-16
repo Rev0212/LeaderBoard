@@ -1,12 +1,14 @@
 const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
-const csv = require('csv-parser'); // Add this import
-const bcrypt = require('bcrypt'); // Add this if not already imported
+const csv = require('csv-parser');
+const bcrypt = require('bcrypt');
 const teacherModel = require('../models/teacher.model');
 const teacherService = require('../services/teacher.service');
 const TeacherBulkService = require('../services/teacherBulk.services');
 const BlacklistToken = require('../models/blacklistToken.model');
+const studentModel = require('../models/student.model'); // Add this import
+const classModel = require('../models/class.model'); // Make sure class model is imported
 const { validationResult } = require('express-validator');
 
 // Ensure uploads directory exists

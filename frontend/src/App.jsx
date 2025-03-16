@@ -1,5 +1,5 @@
 import React from 'react';
-import LandingPage from './pages/homepage/LandingPage'; // New Landing Page
+import LandingPage from './pages/homepage/LandingPage';
 import StudentLoginForm from './pages/Students/StudentLogin';
 import StudentDashboard from './pages/Students/StudentDashboard';
 import EventForm from './pages/Students/EventForm';
@@ -10,14 +10,14 @@ import TeacherDashboard from './pages/Teachers/TeacherDashboard';
 import TeacherProtectWrapper from './Wrappers/TeacherWrapper';
 import EventHistoryTable from './components/EventList'
 import AdminDashboard from './pages/Admin/AdminDashBoard';
-import AdminLoginForm from './pages/Admin/AdminLogin'; // Admin Login Page
+import AdminLoginForm from './pages/Admin/AdminLogin';
 import ReportsPage from './pages/ReportsPage';
 import EventTable from './pages/Teachers/TeacherEventVerify';
 import EventsList from './components/EventsList'
 import { Route, Routes, Link } from 'react-router-dom';
 import UpcomingEvents from './pages/UpcomingEvents';
 import StudentProfile from './pages/Students/StudentProfile';
-
+import StudentEventHistory from './components/StudentEventHistory';
 
 const App = () => {
   return (
@@ -37,10 +37,9 @@ const App = () => {
       <Route path='/teacher-events' element={<TeacherProtectWrapper><EventTable/></TeacherProtectWrapper>}/>
       <Route path="/" element={<HomePage/>}/>
       <Route path="/upcoming-events" element={<UpcomingEvents />} />
-      <Route path='/student-events' element={<EventsList/>}/>
+      <Route path='/student-events' element={<StudentProtectWrapper><StudentEventHistory handleBackToDashboard={() => window.history.back()} /></StudentProtectWrapper>}/>
     </Routes>
   );
 };
-
 
 export default App;
