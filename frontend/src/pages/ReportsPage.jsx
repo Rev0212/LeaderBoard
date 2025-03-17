@@ -44,57 +44,57 @@ const ReportsPage = ({ isEmbedded = false }) => {
     { id: 'downloads', label: 'Downloads', icon: <Download size={20} /> }
   ];
 
+  // Add this function to create placeholder data when needed
+  const createPlaceholderData = () => {
+    return [
+      { name: 'No Data Available', value: 1 }
+    ];
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchReportsData = async () => {
+      setLoading(true);
+      setError(null);
+      
       try {
-        setLoading(true);
-        setError(null); // Reset error state
+        console.log('Fetching reports data from:', baseURL);
         
-        // Fetch prize money
-        const prizeMoneyResponse = await axios.get(`${baseURL}/reports/total-prize-money`);
-        setTotalPrizeMoney(prizeMoneyResponse.data.totalPrizeMoney);
+        // Fetch total prize money
+        const totalPrizeMoneyResponse = await axios.get(`${baseURL}/reports/total-prize-money`);
+        console.log('Total Prize Money Response:', totalPrizeMoneyResponse.data);
+        setTotalPrizeMoney(totalPrizeMoneyResponse.data.totalPrizeMoney || 0);
 
         // Fetch top students
-        const topStudentsResponse = await axios.get(`${baseURL}/reports/top-students`);
-        const formattedStudentData = topStudentsResponse.data.topStudents.map(student => ({
-          submittedBy: student._id,
-          totalPoints: student.totalPoints,
-        }));
-        setTopStudents(formattedStudentData);
+        const topStudentsResponse = await axios.get(`${baseURL}/reports/top-students?limit=10`);
+        console.log('Top Students Response:', topStudentsResponse.data);
+        setTopStudents(topStudentsResponse.data.topStudents || []);
 
-        // Fetch and format categories
-        const categoriesResponse = await axios.get(`${baseURL}/reports/popular-categories`);
-        const formattedCategories = categoriesResponse.data.popularCategories.map(category => ({
-          name: category._id,
-          value: category.count
-        }));
-        setPopularCategories(formattedCategories);
+        // Fetch popular categories
+        const categoriesResponse = await axios.get(`${baseURL}/reports/popular-categories?limit=5`);
+        console.log('Popular Categories Response:', categoriesResponse.data);
+        
+        // Set placeholder data if empty
+        const categoryData = categoriesResponse.data.popularCategories || [];
+        setPopularCategories(categoryData.length > 0 ? categoryData : createPlaceholderData());
 
         // Fetch approval rates
         const approvalResponse = await axios.get(`${baseURL}/reports/approval-rates`);
-        const formattedApprovalRates = approvalResponse.data.approvalRates.map(rate => ({
-          name: rate.status,
-          value: rate.count
-        }));
-        setApprovalRates(formattedApprovalRates);
-
-        // Fetch trends
-        const trendsResponse = await axios.get(`${baseURL}/reports/trends/monthly`);
-        setTrends(trendsResponse.data.trends);
+        console.log('Approval Rates Response:', approvalResponse.data);
+        setApprovalRates(approvalResponse.data.approvalRates || []);
 
         // Fetch class performance
-        const classPerformanceResponse = await axios.get(`${baseURL}/reports/class-performance`);
-        console.log('Class Performance Response:', classPerformanceResponse.data); // Add logging
-        setClassPerformance(classPerformanceResponse.data.performance || []);
+        const classResponse = await axios.get(`${baseURL}/reports/class-performance`);
+        console.log('Class Performance Response:', classResponse.data);
+        setClassPerformance(classResponse.data.performance || []);
 
-        // Fetch detailed student performance
+        // Fetch student performance
         const studentPerformanceResponse = await axios.get(`${baseURL}/reports/detailed-student-performance`);
-        console.log('Student Performance Response:', studentPerformanceResponse.data); // Add logging
+        console.log('Student Performance Response:', studentPerformanceResponse.data);
         setStudentPerformance(studentPerformanceResponse.data.performance || []);
 
         // Fetch category performance by class
         const categoryResponse = await axios.get(`${baseURL}/reports/category-performance-by-class`);
-        console.log('Category Performance Response:', categoryResponse.data); // Add logging
+        console.log('Category Performance Response:', categoryResponse.data);
         setCategoryByClass(categoryResponse.data.performance || []);
 
         // Fetch inactive students
@@ -106,14 +106,15 @@ const ReportsPage = ({ isEmbedded = false }) => {
         setClassParticipation(classParticipationResponse.data.participation || []);
 
       } catch (err) {
-        console.error('Error details:', err.response?.data || err.message); // Add detailed error logging
+        console.error('Error fetching reports:', err);
+        console.error('Error details:', err.response?.data || err.message);
         setError(err.response?.data?.message || 'Failed to load report data');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
+    fetchReportsData();
   }, [baseURL]);
 
   const CustomTooltip = ({ active, payload, label }) => {
