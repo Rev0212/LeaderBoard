@@ -227,12 +227,13 @@ const TeacherProfile = ({ teacherData, handleBackToDashboard }) => {
             />
           </div>
 
-          <div className="mt-8 pt-6 border-t border-gray-200">
-            <p className="text-sm text-gray-500">
-              Teacher ID: <span className="font-mono">{teacherData?._id}</span>
-            </p>
-          </div>
-        </div>
+          {/* Remove the Teacher ID display */}
+          {/* <div className="mt-8 pt-6 border-t border-gray-200">
+              <p className="text-sm text-gray-500">
+                  Teacher ID: <span className="font-mono">{teacherData?._id}</span>
+              </p>
+          </div> */}
+        </div> 
 
         {showChangePasswordForm && (
           <div className="fixed inset-0 flex items-center justify-center z-50">

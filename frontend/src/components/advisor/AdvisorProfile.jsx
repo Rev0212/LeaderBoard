@@ -198,11 +198,11 @@ const AdvisorProfile = ({ userData, handleBackToDashboard }) => {
                       : "Not available"
                   }
                 />
-                <InfoRow
+                 {/*<InfoRow
                   icon={<Hash />}
                   label="ID"
                   value={userData?._id}
-                />
+                />*/}
               </div>
 
               {/* Change Password Form */}
