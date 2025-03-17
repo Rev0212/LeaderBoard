@@ -9,6 +9,7 @@ import {
   Building,
   Hash,
   CheckCircle, // Added missing import
+  BarChart,
 } from "lucide-react";
 import TeacherProfile from "../../components/TeacherProfile";
 import ClassDetails from "../../components/ClassList";
@@ -201,6 +202,10 @@ const TeacherDashboard = () => {
     setSelectedPDF(null);
   };
 
+  const handleViewReports = () => {
+    navigate('/reports');
+  };
+
   const renderContent = () => {
     if (currentView === "profile") {
       return (
@@ -328,6 +333,50 @@ const TeacherDashboard = () => {
             )}
           </div>
         </div>
+
+        {/* Add Reports Card in Dashboard */}
+        <div className="bg-white rounded-lg shadow-md mt-8">
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <BarChart className="h-6 w-6 text-blue-600" />
+                <h2 className="text-xl font-semibold text-gray-800">Reports Overview</h2>
+              </div>
+              <button
+                onClick={handleViewReports}
+                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+              >
+                View All Reports
+              </button>
+            </div>
+          </div>
+          
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div 
+                className="border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                onClick={handleViewReports}
+              >
+                <h3 className="font-medium text-gray-900">Student Leaderboard</h3>
+                <p className="text-sm text-gray-500 mt-1">View top-performing students</p>
+              </div>
+              <div 
+                className="border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                onClick={handleViewReports}
+              >
+                <h3 className="font-medium text-gray-900">Class Performance</h3>
+                <p className="text-sm text-gray-500 mt-1">Compare performance across classes</p>
+              </div>
+              <div 
+                className="border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                onClick={handleViewReports}
+              >
+                <h3 className="font-medium text-gray-900">Download Reports</h3>
+                <p className="text-sm text-gray-500 mt-1">Get detailed CSV reports</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   };
@@ -366,6 +415,13 @@ const TeacherDashboard = () => {
             >
               <Users size={18} />
               Class List
+            </button>
+            <button
+              onClick={handleViewReports}
+              className="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              <BarChart size={18} />
+              Reports
             </button>
             <button
               onClick={handleLogoutClick}

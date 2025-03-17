@@ -1,18 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import { 
   BarChart, Bar, LineChart, Line, PieChart, Pie, 
   XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Legend, CartesianGrid, LabelList
 } from 'recharts';
 import { 
   TrendingUp, Award, PieChart as PieChartIcon, 
-  BarChart2, Users, Download, Search
+  BarChart2, Users, Download, Search, ArrowLeft
 } from 'lucide-react';
 
 import LeaderboardTable from '../components/LeaderBoard';
 import ReportsDownloadSection from '../components/ReportsDownloadSection';
 
 const ReportsPage = ({ isEmbedded = false }) => {
+  const navigate = useNavigate();
   const [totalPrizeMoney, setTotalPrizeMoney] = useState(0);
   const [topStudents, setTopStudents] = useState([]);
   const [popularCategories, setPopularCategories] = useState([]);
@@ -29,6 +31,7 @@ const ReportsPage = ({ isEmbedded = false }) => {
   const [nameSearchQuery, setNameSearchQuery] = useState('');
   const [selectedClass, setSelectedClass] = useState('');
   const [inactiveDaysFilter, setInactiveDaysFilter] = useState(30);
+  const [userRole, setUserRole] = useState('');
 
   const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -113,6 +116,10 @@ const ReportsPage = ({ isEmbedded = false }) => {
         setLoading(false);
       }
     };
+
+    // Determine user type from local storage or other auth mechanism
+    const role = localStorage.getItem('userRole') || '';
+    setUserRole(role);
 
     fetchReportsData();
   }, [baseURL]);
@@ -557,6 +564,16 @@ const ReportsPage = ({ isEmbedded = false }) => {
     }
   };
 
+  const handleBackNavigation = () => {
+    if (userRole === 'Admin') {
+      navigate('/admin-dashboard');
+    } else if (userRole === 'HOD' || userRole === 'Advisor') {
+      navigate('/advisor-hod');
+    } else {
+      navigate('/teacher-dashboard');
+    }
+  };
+
   return isEmbedded ? (
     <div className="bg-gray-50">
       {loading ? (
@@ -591,42 +608,50 @@ const ReportsPage = ({ isEmbedded = false }) => {
       )}
     </div>
   ) : (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
-      <div className="w-64 bg-white shadow-lg fixed h-full">
-        <div className="p-6">
-          <h1 className="text-xl font-bold text-gray-800 mb-6">Reports Dashboard</h1>
-          <nav className="space-y-2">
-            {sidebarItems.map(item => (
-              <button
-                key={item.id}
-                onClick={() => setActiveSection(item.id)}
-                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                  activeSection === item.id 
-                    ? 'bg-blue-50 text-blue-600' 
-                    : 'text-gray-600 hover:bg-gray-50'
-                }`}
-              >
-                {item.icon}
-                <span>{item.label}</span>
-              </button>
-            ))}
-          </nav>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="ml-64 flex-1 p-8">
+    <div className="min-h-screen bg-gray-50">
+      {/* Add back navigation */}
+      <div className="p-4 lg:p-8">
+        <button
+          onClick={handleBackNavigation}
+          className="flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-6"
+        >
+          <ArrowLeft size={18} />
+          <span>Back to Dashboard</span>
+        </button>
+        
+        {/* Rest of your reports UI */}
         {loading ? (
-          <div className="flex items-center justify-center h-full">
+          <div className="flex items-center justify-center h-64">
             <div className="text-lg text-gray-600">Loading reports...</div>
           </div>
         ) : error ? (
-          <div className="flex items-center justify-center h-full">
+          <div className="flex items-center justify-center h-64">
             <div className="text-lg text-red-600">{error}</div>
           </div>
         ) : (
-          renderContent()
+          <div>
+            {/* Your reports content */}
+            {/* Navigation tabs */}
+            <div className="mb-6 flex overflow-x-auto gap-2 pb-2">
+              {sidebarItems.map(item => (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveSection(item.id)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
+                    activeSection === item.id 
+                      ? 'bg-blue-100 text-blue-600' 
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  {item.icon}
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </div>
+            
+            {/* Reports content sections */}
+            {renderContent()}
+          </div>
         )}
       </div>
     </div>

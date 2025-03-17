@@ -85,6 +85,14 @@ const AdvisorHodDashboard = () => {
     }
   };
 
+  const handleReportsClick = () => {
+    // Option 1: Change view within the dashboard
+    setCurrentView("reports");
+    
+    // Option 2: Navigate to dedicated reports page
+    // navigate("/reports");
+  };
+
   const renderContent = () => {
     if (loading) {
       return (
