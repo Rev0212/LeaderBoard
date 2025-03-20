@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import {
   Bell,
@@ -10,9 +10,12 @@ import {
   Hash,
   CheckCircle, // Added missing import
   BarChart,
+  Calendar,
+  ExternalLink,
 } from "lucide-react";
 import TeacherProfile from "../../components/TeacherProfile";
 import ClassDetails from "../../components/ClassList";
+import UpcomingEventsList from "../../components/UpcomingEventsList";
 
 const TeacherDashboard = () => {
   const [events, setEvents] = useState([]);
@@ -20,8 +23,60 @@ const TeacherDashboard = () => {
   const [currentView, setCurrentView] = useState("dashboard"); // Track current view
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [selectedPDF, setSelectedPDF] = useState(null);
+  const [loading, setLoading] = useState(false); // Add loading state
+  const [upcomingEvents, setUpcomingEvents] = useState([]);
+  const location = useLocation();
 
   const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
+
+  const refreshTeacherData = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token") || localStorage.getItem("teacher-token");
+      
+      if (!token) {
+        console.error("No auth token found");
+        return;
+      }
+      
+      const response = await axios.get(`${VITE_BASE_URL}/teacher/profile`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      setTeacherData(response.data);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error refreshing teacher data:", error);
+      setLoading(false);
+    }
+  };
+
+  const fetchUpcomingEvents = async () => {
+    try {
+      const token = localStorage.getItem("token") || localStorage.getItem("teacher-token");
+      const response = await axios.get(`${VITE_BASE_URL}/upcoming-events`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      setUpcomingEvents(response.data);
+    } catch (err) {
+      console.error("Error fetching upcoming events:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (location.state?.currentView === "classList") {
+      setCurrentView("classList");
+      refreshTeacherData(); // Make sure this function exists to refresh data
+      
+      // Clear the state after using it
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -70,6 +125,8 @@ const TeacherDashboard = () => {
     };
 
     fetchEvents();
+    refreshTeacherData();
+    fetchUpcomingEvents();
   }, [VITE_BASE_URL]);
 
   useEffect(() => {
@@ -206,6 +263,10 @@ const TeacherDashboard = () => {
     navigate('/reports');
   };
 
+  const handleViewAllUpcomingEvents = () => {
+    navigate('/upcoming-events');
+  };
+
   const renderContent = () => {
     if (currentView === "profile") {
       return (
@@ -222,7 +283,28 @@ const TeacherDashboard = () => {
           classId={teacherData?.classes?.[0]?._id}
           teacherData={teacherData}
           handleBackToDashboard={() => setCurrentView("dashboard")}
+          // Add any missing props that the ClassDetails component might need
+          // For example, if it requires a full list of classes:
+          classes={teacherData?.classes || []}
         />
+      );
+    }
+
+    if (currentView === "upcomingEvents") {
+      return (
+        <div className="p-6">
+          <button
+            onClick={() => setCurrentView("dashboard")}
+            className="flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-6"
+          >
+            <ArrowLeft size={18} />
+            <span>Back to Dashboard</span>
+          </button>
+          <UpcomingEventsList 
+            showBackButton={false}
+            title="Upcoming Events" 
+          />
+        </div>
       );
     }
   
@@ -333,50 +415,6 @@ const TeacherDashboard = () => {
             )}
           </div>
         </div>
-
-        {/* Add Reports Card in Dashboard */}
-        <div className="bg-white rounded-lg shadow-md mt-8">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <BarChart className="h-6 w-6 text-blue-600" />
-                <h2 className="text-xl font-semibold text-gray-800">Reports Overview</h2>
-              </div>
-              <button
-                onClick={handleViewReports}
-                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-              >
-                View All Reports
-              </button>
-            </div>
-          </div>
-          
-          <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div 
-                className="border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer"
-                onClick={handleViewReports}
-              >
-                <h3 className="font-medium text-gray-900">Student Leaderboard</h3>
-                <p className="text-sm text-gray-500 mt-1">View top-performing students</p>
-              </div>
-              <div 
-                className="border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer"
-                onClick={handleViewReports}
-              >
-                <h3 className="font-medium text-gray-900">Class Performance</h3>
-                <p className="text-sm text-gray-500 mt-1">Compare performance across classes</p>
-              </div>
-              <div 
-                className="border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer"
-                onClick={handleViewReports}
-              >
-                <h3 className="font-medium text-gray-900">Download Reports</h3>
-                <p className="text-sm text-gray-500 mt-1">Get detailed CSV reports</p>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     );
   };
@@ -422,6 +460,13 @@ const TeacherDashboard = () => {
             >
               <BarChart size={18} />
               Reports
+            </button>
+            <button
+              onClick={() => navigate('/upcoming-events')}
+              className="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              <Calendar size={18} />
+              Upcoming Events
             </button>
             <button
               onClick={handleLogoutClick}

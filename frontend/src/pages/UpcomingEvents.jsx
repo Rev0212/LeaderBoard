@@ -1,59 +1,83 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Calendar, Link as LinkIcon } from 'lucide-react';
+import { Calendar, LinkIcon, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const UpcomingEvents = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
+
+  // Function to check if the user is a teacher
+  const isTeacher = () => {
+    return localStorage.getItem('token') || localStorage.getItem('teacher-token');
+  };
 
   useEffect(() => {
     const fetchEvents = async () => {
       try {
+        setLoading(true);
         const response = await axios.get(`${VITE_BASE_URL}/upcoming-events`);
         setEvents(response.data);
+        setLoading(false);
       } catch (err) {
-        setError('Failed to fetch upcoming events');
-      } finally {
+        console.error('Error fetching events:', err);
+        setError('Failed to load upcoming events');
         setLoading(false);
       }
     };
 
     fetchEvents();
-  }, []);
+  }, [VITE_BASE_URL]);
 
-  const getGdriveImageUrl = (driveLink) => {
-    try {
-      let fileId;
-      
-      if (driveLink.includes('/file/d/')) {
-        fileId = driveLink.split('/file/d/')[1].split('/')[0];
-      } else if (driveLink.includes('id=')) {
-        fileId = driveLink.split('id=')[1].split('&')[0];
-      } else {
-        const match = driveLink.match(/[-\w]{25,}/);
-        fileId = match ? match[0] : null;
-      }
-
-      if (!fileId) {
-        return '/placeholder-image.jpg';
-      }
-
-      // Use the preview URL format
-      return `https://drive.google.com/file/d/${fileId}/preview`;
-    } catch (error) {
-      console.error('Error parsing Google Drive URL:', error);
-      return '/placeholder-image.jpg';
+  // Function to handle navigation back to appropriate dashboard
+  const handleBack = () => {
+    if (isTeacher()) {
+      navigate('/teacher-dashboard');
+    } else {
+      navigate('/student-dashboard');
     }
   };
 
-  if (loading) return <div className="text-center py-10">Loading...</div>;
-  if (error) return <div className="text-center py-10 text-red-500">{error}</div>;
+  const getGdriveImageUrl = (url) => {
+    // Return the URL as is or process it if needed
+    return url;
+  };
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4">
+          <p>{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Add back button */}
+      <button
+        onClick={handleBack}
+        className="flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-6"
+      >
+        <ArrowLeft size={18} />
+        <span>Back to Dashboard</span>
+      </button>
+      
       <h1 className="text-3xl font-bold text-gray-900 mb-8">Upcoming Events</h1>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -104,4 +128,4 @@ const UpcomingEvents = () => {
   );
 };
 
-export default UpcomingEvents; 
+export default UpcomingEvents;

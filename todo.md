@@ -1,13 +1,13 @@
 Create the modal to show certificate new the pdf proof 
 
 
-teacher profile -> class assigned should be section name
+#teacher profile -> class assigned should be section name
 
 
-teacher profile remove Teacher ID from bottom
+#teacher profile remove Teacher ID from bottom
 
 
-student dashboard ->upcoming events backbutton
+#student dashboard ->upcoming events backbutton
 
 
 homepage edit it
@@ -16,7 +16,7 @@ HOD MAM add year filter
 
 add review comments
 
-teacher dashboard events list Invalid Date
+#teacher dashboard events list Invalid Date
 
 from teacher class list when we click a students view event it takes to the page but the problem is when we click back it comes to dashboard and not class list
 
