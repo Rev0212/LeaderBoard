@@ -6,382 +6,175 @@ const mongoose = require('mongoose');
 
 class RoleBasedEventReportsService {
   /**
-   * Get role-based access filters for a teacher
-   * @param {Object} teacher - Teacher object with role and other properties
-   * @returns {Object} Access filters based on teacher role
+   * Get role-based filters based on teacher's role and department
    */
   static async getRoleBasedFilters(teacher) {
-    if (!teacher) {
-      throw new Error('Teacher not authenticated');
-    }
-
-    // Default empty filter
-    let filters = { status: 'Approved' }; // Base filter for approved events
+    console.log("Teacher role:", teacher.role);
+    console.log("Teacher department:", teacher.department);
     
-    // Get accessible class IDs based on role
-    let accessibleClassIds = [];
-
-    switch (teacher.role) {
-      case 'faculty':
-        // Faculty can only see reports for classes they teach
-        accessibleClassIds = teacher.classes || [];
-        break;
-        
-      case 'advisor':
-        // Advisor can see reports for classes they are assigned to
-        const advisorClasses = await Class.find({ 
-          academicAdvisor: teacher._id 
-        }).select('_id');
-        
-        accessibleClassIds = advisorClasses.map(c => c._id);
-        break;
-        
+    // Base filters - only include approved events
+    let filters = { status: 'Approved' };
+    
+    // Different filtering logic based on role
+    switch(teacher.role) {
       case 'HOD':
         // HOD can see all classes in their department
-        const departmentClasses = await Class.find({ 
-          department: teacher.department 
-        }).select('_id');
-        
-        accessibleClassIds = departmentClasses.map(c => c._id);
+        console.log("Using HOD filters for", teacher.department);
+        filters.department = teacher.department;
         break;
         
-      case 'admin':
-        // Admin can see everything
-        return filters;
+      case 'Academic Advisor':
+        // Academic advisor sees classes they advise
+        console.log("Using Academic Advisor filters");
         
+        // Get classes where teacher is academic advisor
+        const advisorClasses = await Class.find({ 
+          academicAdvisors: teacher._id 
+        }).select('_id');
+        
+        if (advisorClasses.length === 0) {
+          console.log("Warning: No classes found for Academic Advisor");
+        } else {
+          console.log(`Found ${advisorClasses.length} classes for advisor`);
+          filters.classIds = advisorClasses.map(c => c._id);
+        }
+        break;
+        
+      case 'Faculty':
       default:
-        // No access
-        return { _id: "nonexistent" }; 
+        // Faculty sees only their assigned classes
+        console.log("Using Faculty filters");
+        
+        // Get classes where teacher is assigned
+        const facultyClasses = await Class.find({ 
+          facultyAssigned: teacher._id 
+        }).select('_id');
+        
+        // If teacher has no classes, they see nothing
+        if (facultyClasses.length === 0) {
+          console.log("Warning: No classes found for Faculty member");
+          
+          // Fallback: check if teacher has classes in the teacher.classes array
+          if (teacher.classes && teacher.classes.length > 0) {
+            console.log(`Using ${teacher.classes.length} classes from teacher's classes array`);
+            filters.classIds = teacher.classes;
+          } else {
+            // Return dummy filter that won't match anything if no classes found
+            console.log("No classes found, using dummy filter");
+            return { _id: mongoose.Types.ObjectId("000000000000000000000000") };
+          }
+        } else {
+          console.log(`Found ${facultyClasses.length} classes for faculty`);
+          filters.classIds = facultyClasses.map(c => c._id);
+        }
     }
-
-    // We'll need these class IDs to filter students later
-    filters.accessibleClassIds = accessibleClassIds;
     
     return filters;
   }
 
   /**
-   * Apply user-provided filters on top of role-based filters
-   * @param {Object} baseFilters - Role-based access filters
-   * @param {Object} userFilters - User provided filters like year, class, etc.
+   * Get available classes for the given teacher's role/department
    */
-  static applyUserFilters(baseFilters, userFilters = {}) {
-    const finalFilters = { ...baseFilters };
-    
-    // Filter by studentYear if provided
-    if (userFilters.studentYear) {
-      finalFilters.studentYear = userFilters.studentYear;
-    }
-    
-    // Filter by specific class if provided
-    if (userFilters.classId) {
-      // Make sure the requested class is in the allowed classes
-      if (finalFilters.accessibleClassIds && 
-          finalFilters.accessibleClassIds.length > 0 && 
-          !finalFilters.accessibleClassIds.some(id => 
-            id.toString() === userFilters.classId.toString()
-          )) {
-        throw new Error('You do not have access to this class');
-      }
-      
-      finalFilters.specificClassId = userFilters.classId;
-    }
-    
-    // Filter by category if provided
-    if (userFilters.category) {
-      finalFilters.category = userFilters.category;
-    }
-    
-    // Filter by date range if provided
-    if (userFilters.startDate && userFilters.endDate) {
-      finalFilters.dateRange = {
-        $gte: new Date(userFilters.startDate),
-        $lte: new Date(userFilters.endDate)
-      };
-    }
-    
-    return finalFilters;
-  }
-
-  /**
-   * Helper function to get student class map including access control
-   */
-  static async getStudentClassMap(filters) {
+  static async getAvailableClasses(teacher) {
     try {
-      // Get accessible classes based on role
       let classQuery = {};
       
-      if (filters.specificClassId) {
-        // Looking for a specific class
-        classQuery._id = filters.specificClassId;
-      } else if (filters.accessibleClassIds && filters.accessibleClassIds.length > 0) {
-        // Filter to role-accessible classes
-        classQuery._id = { $in: filters.accessibleClassIds };
+      // If HOD, show classes in their department
+      if (teacher.role === 'HOD') {
+        classQuery.department = teacher.department;
+      } 
+      // If Academic Advisor, show classes they advise
+      else if (teacher.role === 'Academic Advisor') {
+        const advisedClassIds = await Class.find({
+          academicAdvisors: teacher._id
+        }).distinct('_id');
+        
+        if (advisedClassIds.length > 0) {
+          classQuery._id = { $in: advisedClassIds };
+        }
+      } 
+      // If Faculty, show their assigned classes
+      else {
+        const assignedClassIds = await Class.find({
+          facultyAssigned: teacher._id
+        }).distinct('_id');
+        
+        if (assignedClassIds.length === 0 && teacher.classes && teacher.classes.length > 0) {
+          // Fallback to teacher.classes if facultyAssigned is empty
+          classQuery._id = { $in: teacher.classes };
+        } else if (assignedClassIds.length > 0) {
+          classQuery._id = { $in: assignedClassIds };
+        }
       }
       
-      // Apply department filter if it exists
-      if (filters.department) {
-        classQuery.department = filters.department;
+      // For admin or if filters would return nothing, return all classes
+      if (teacher.role === 'admin' || 
+         (Object.keys(classQuery).length === 0 && 
+          teacher.role !== 'Faculty')) {
+        console.log("Returning all classes");
+        return await Class.find({}).lean();
       }
       
-      // Apply year filter if it exists
-      if (filters.studentYear) {
-        classQuery.year = filters.studentYear;
-      }
-      
-      // Get filtered classes
       const classes = await Class.find(classQuery).lean();
-      console.log(`Found ${classes.length} accessible classes`);
+      console.log(`Found ${classes.length} classes for teacher`);
       
-      // Create a map of class ID to class name
-      const classIdToNameMap = new Map(
-        classes.map(cls => [cls._id.toString(), cls.className])
-      );
-      
-      // Get students in those classes
-      const students = await Student.find({
-        'currentClass.ref': { $in: classes.map(c => c._id) }
-      }).lean();
-      
-      // Create a map of student ID to class name and details
-      const studentToClassMap = new Map();
-      
-      students.forEach(student => {
-        if (student.currentClass && student.currentClass.ref) {
-          const classId = student.currentClass.ref.toString();
-          const className = classIdToNameMap.get(classId) || 'Unknown Class';
-          studentToClassMap.set(student._id.toString(), className);
-        }
-      });
-      
-      console.log(`Created student-class map with ${studentToClassMap.size} entries`);
-      return studentToClassMap;
+      return classes;
     } catch (error) {
-      console.error('Error creating student class map:', error);
-      return new Map();
-    }
-  }
-
-  /**
-   * REPORT: Get total prize money won (with role-based access)
-   */
-  static async getTotalPrizeMoney(teacher, userFilters = {}) {
-    try {
-      console.log('Getting total prize money with role-based access');
-      
-      // Get role-based access filters
-      const baseFilters = await this.getRoleBasedFilters(teacher);
-      const filters = this.applyUserFilters(baseFilters, userFilters);
-      
-      // Get student-class map for filtering
-      const studentClassMap = await this.getStudentClassMap(filters);
-      
-      // Get IDs of accessible students
-      const accessibleStudentIds = Array.from(studentClassMap.keys()).map(id => 
-        mongoose.Types.ObjectId(id)
-      );
-      
-      if (accessibleStudentIds.length === 0) {
-        return 0;
-      }
-      
-      // Build the query
-      let matchStage = { 
-        status: 'Approved',
-        submittedBy: { $in: accessibleStudentIds }
-      };
-      
-      // Add date range if specified
-      if (filters.dateRange) {
-        matchStage.date = filters.dateRange;
-      }
-      
-      // Add category if specified
-      if (filters.category) {
-        matchStage.category = filters.category;
-      }
-      
-      const result = await Event.aggregate([
-        { $match: matchStage },
-        { $group: { _id: null, totalPrizeMoney: { $sum: "$priceMoney" } } }
-      ]);
-      
-      console.log('Total prize money result:', result);
-      return result.length > 0 ? result[0].totalPrizeMoney : 0;
-    } catch (error) {
-      console.error('Error getting total prize money:', error);
-      return 0;
-    }
-  }
-
-  /**
-   * REPORT: Get total prize money won by class (with role-based access)
-   */
-  static async getTotalPrizeMoneyByClass(teacher, userFilters = {}) {
-    try {
-      console.log('Getting prize money by class with role-based access');
-      
-      // Get role-based access filters
-      const baseFilters = await this.getRoleBasedFilters(teacher);
-      const filters = this.applyUserFilters(baseFilters, userFilters);
-      
-      // Get student-class map for filtering
-      const studentClassMap = await this.getStudentClassMap(filters);
-      
-      // Get IDs of accessible students
-      const accessibleStudentIds = Array.from(studentClassMap.keys()).map(id => 
-        mongoose.Types.ObjectId(id)
-      );
-      
-      if (accessibleStudentIds.length === 0) {
-        return [];
-      }
-      
-      // Build the query
-      let matchStage = { 
-        status: 'Approved',
-        submittedBy: { $in: accessibleStudentIds }
-      };
-      
-      // Add date range if specified
-      if (filters.dateRange) {
-        matchStage.date = filters.dateRange;
-      }
-      
-      // Add category if specified
-      if (filters.category) {
-        matchStage.category = filters.category;
-      }
-      
-      // Get events submitted by accessible students
-      const events = await Event.find(matchStage)
-        .populate('submittedBy')
-        .lean();
-      
-      // Group results by class
-      const classPrizeMoney = {};
-      
-      events.forEach(event => {
-        if (!event.submittedBy) return;
-        
-        const studentId = event.submittedBy._id.toString();
-        const className = studentClassMap.get(studentId);
-        
-        if (!className) return;
-        
-        if (!classPrizeMoney[className]) {
-          classPrizeMoney[className] = 0;
-        }
-        
-        classPrizeMoney[className] += (event.priceMoney || 0);
-      });
-      
-      // Format the result
-      const result = Object.entries(classPrizeMoney).map(([className, totalPrizeMoney]) => ({
-        className,
-        totalPrizeMoney
-      })).sort((a, b) => b.totalPrizeMoney - a.totalPrizeMoney);
-      
-      console.log('Class prize money result:', result);
-      return result;
-    } catch (error) {
-      console.error('Error getting class prize money:', error);
+      console.error('Error getting available classes:', error);
       return [];
     }
   }
 
   /**
-   * REPORT: Get top students (with role-based access)
+   * Get top students based on teacher's role/department
    */
-  static async getTopStudents(teacher, userFilters = {}) {
+  static async getTopStudents(teacher, limit = 10) {
     try {
-      const limit = userFilters.limit || 10;
-      console.log('Getting top students with role-based access, limit:', limit);
+      // Get class IDs accessible to this teacher
+      const filters = await this.getRoleBasedFilters(teacher);
+      const classes = await this.getAvailableClasses(teacher);
       
-      // Get role-based access filters
-      const baseFilters = await this.getRoleBasedFilters(teacher);
-      const filters = this.applyUserFilters(baseFilters, userFilters);
-      
-      // Get student-class map for filtering
-      const studentClassMap = await this.getStudentClassMap(filters);
-      
-      // Get IDs of accessible students
-      const accessibleStudentIds = Array.from(studentClassMap.keys()).map(id => 
-        mongoose.Types.ObjectId(id)
-      );
-      
-      if (accessibleStudentIds.length === 0) {
+      if (classes.length === 0) {
+        console.log("No classes found, returning empty result");
         return [];
       }
       
-      // Build the query
-      let matchStage = { 
-        status: 'Approved',
-        submittedBy: { $in: accessibleStudentIds }
-      };
+      // Get class IDs
+      const classIds = classes.map(c => c._id);
       
-      // Add date range if specified
-      if (filters.dateRange) {
-        matchStage.date = filters.dateRange;
-      }
+      // Find students in those classes
+      const students = await Student.find({
+        $or: [
+          { 'currentClass.ref': { $in: classIds } },
+          { 'class': { $in: classIds } }
+        ]
+      })
+      .sort({ totalPoints: -1 })
+      .limit(limit)
+      .select('name registerNo totalPoints currentClass department')
+      .lean();
       
-      // Add category if specified
-      if (filters.category) {
-        matchStage.category = filters.category;
-      }
+      console.log(`Found ${students.length} top students`);
       
-      // Get student performance data
-      const result = await Event.aggregate([
-        { $match: matchStage },
-        {
-          $lookup: {
-            from: 'students',
-            localField: 'submittedBy',
-            foreignField: '_id',
-            as: 'student'
+      // Enhance student data with class name
+      const studentsWithClass = await Promise.all(students.map(async student => {
+        let className = "Unknown";
+        const classId = student.currentClass?.ref || student.class;
+        
+        if (classId) {
+          const classDetails = await Class.findById(classId).select('className').lean();
+          if (classDetails) {
+            className = classDetails.className;
           }
-        },
-        { $unwind: '$student' },
-        {
-          $group: {
-            _id: '$student._id',
-            name: { $first: '$student.name' },
-            registerNo: { $first: '$student.registerNo' },
-            totalPoints: { $sum: '$pointsEarned' }
-          }
-        },
-        { $sort: { totalPoints: -1 } },
-        { $limit: limit }
-      ]);
-      
-      // Add class names from our mapping
-      const studentsWithClass = result.map(student => ({
-        ...student,
-        className: studentClassMap.get(student._id.toString()) || 'Unknown Class'
-      }));
-      
-      // Calculate ranks
-      let currentRank = 1;
-      let currentPoints = null;
-      let rankedStudents = [];
-      
-      studentsWithClass.forEach((student, index) => {
-        if (student.totalPoints !== currentPoints) {
-          currentPoints = student.totalPoints;
-          currentRank = index + 1;
         }
         
-        rankedStudents.push({
-          "Rank": currentRank,
-          "Register Number": student.registerNo || 'N/A',
-          "Name": student.name || 'Unknown',
-          "Class": student.className,
-          "Points": student.totalPoints || 0
-        });
-      });
+        return {
+          ...student,
+          className
+        };
+      }));
       
-      console.log(`Returning ${rankedStudents.length} ranked students`);
-      return rankedStudents;
+      return studentsWithClass;
     } catch (error) {
       console.error('Error getting top students:', error);
       return [];
@@ -389,263 +182,161 @@ class RoleBasedEventReportsService {
   }
 
   /**
-   * REPORT: Get top performers by category (with role-based access)
+   * Get popular categories based on event submissions
    */
-  static async getTopPerformersByCategory(teacher, userFilters = {}) {
+  static async getPopularCategories(teacher, limit = 5) {
     try {
-      const category = userFilters.category;
-      const limit = userFilters.limit || 10;
+      // Get class IDs accessible to this teacher
+      const classes = await this.getAvailableClasses(teacher);
       
-      console.log('Getting top performers for category with role-based access:', category);
-      
-      // Get role-based access filters
-      const baseFilters = await this.getRoleBasedFilters(teacher);
-      const filters = this.applyUserFilters(baseFilters, userFilters);
-      
-      // Get student-class map for filtering
-      const studentClassMap = await this.getStudentClassMap(filters);
-      
-      // Get IDs of accessible students
-      const accessibleStudentIds = Array.from(studentClassMap.keys()).map(id => 
-        mongoose.Types.ObjectId(id)
-      );
-      
-      if (accessibleStudentIds.length === 0) {
+      if (classes.length === 0) {
+        console.log("No classes found, returning empty result");
         return [];
       }
       
-      // Build the query
-      let matchStage = { 
-        status: 'Approved',
-        submittedBy: { $in: accessibleStudentIds }
-      };
+      // Get class IDs
+      const classIds = classes.map(c => c._id);
       
-      // Add category filter
-      if (category) {
-        matchStage.category = category;
+      // Find students in those classes
+      const students = await Student.find({
+        $or: [
+          { 'currentClass.ref': { $in: classIds } },
+          { 'class': { $in: classIds } }
+        ]
+      }).select('_id').lean();
+      
+      const studentIds = students.map(s => s._id);
+      
+      if (studentIds.length === 0) {
+        console.log("No students found, returning empty result");
+        return [];
       }
       
-      // Add date range if specified
-      if (filters.dateRange) {
-        matchStage.date = filters.dateRange;
-      }
-      
-      const result = await Event.aggregate([
-        { $match: matchStage },
+      // Find approved events submitted by these students
+      const categoryAggregation = await Event.aggregate([
         {
-          $lookup: {
-            from: 'students',
-            localField: 'submittedBy',
-            foreignField: '_id',
-            as: 'student'
-          }
-        },
-        { $unwind: '$student' },
-        {
-          $group: {
-            _id: {
-              studentId: '$student._id',
-              category: '$category'
-            },
-            name: { $first: '$student.name' },
-            totalPoints: { $sum: '$pointsEarned' }
+          $match: {
+            submittedBy: { $in: studentIds },
+            status: 'Approved'
           }
         },
         {
           $group: {
-            _id: '$_id.category',
-            students: {
-              $push: {
-                studentId: '$_id.studentId',
-                name: '$name',
-                points: '$totalPoints'
-              }
-            }
-          }
-        },
-        {
-          $project: {
-            category: '$_id',
-            students: {
-              $slice: [
-                {
-                  $sortArray: {
-                    input: '$students',
-                    sortBy: { points: -1 }
-                  }
-                },
-                limit
-              ]
-            },
-            _id: 0
-          }
-        }
-      ]);
-      
-      // Add class information to each student
-      const finalResult = result.map(categoryData => {
-        const studentsWithClass = categoryData.students.map(student => ({
-          ...student,
-          className: studentClassMap.get(student.studentId.toString()) || 'Unknown Class'
-        }));
-        
-        return {
-          category: categoryData.category,
-          students: studentsWithClass
-        };
-      });
-      
-      console.log(`Found top performers for ${result.length} categories`);
-      return finalResult;
-    } catch (error) {
-      console.error('Error getting top performers by category:', error);
-      return [];
-    }
-  }
-
-  /**
-   * REPORT: Get popular categories (with role-based access)
-   */
-  static async getPopularCategories(teacher, userFilters = {}) {
-    try {
-      const limit = userFilters.limit || 10;
-      console.log('Getting popular categories with role-based access');
-      
-      // Get role-based access filters
-      const baseFilters = await this.getRoleBasedFilters(teacher);
-      const filters = this.applyUserFilters(baseFilters, userFilters);
-      
-      // Get student-class map for filtering
-      const studentClassMap = await this.getStudentClassMap(filters);
-      
-      // Get IDs of accessible students
-      const accessibleStudentIds = Array.from(studentClassMap.keys()).map(id => 
-        mongoose.Types.ObjectId(id)
-      );
-      
-      if (accessibleStudentIds.length === 0) {
-        return [{ name: 'No Data', value: 1 }];
-      }
-      
-      // Build the query
-      let matchStage = { 
-        status: 'Approved',
-        submittedBy: { $in: accessibleStudentIds }
-      };
-      
-      // Add date range if specified
-      if (filters.dateRange) {
-        matchStage.date = filters.dateRange;
-      }
-      
-      const result = await Event.aggregate([
-        { $match: matchStage },
-        {
-          $group: {
-            _id: '$category',
+            _id: "$category",
             count: { $sum: 1 },
-            totalPoints: { $sum: '$pointsEarned' }
+            totalPoints: { $sum: "$pointsEarned" }
           }
         },
-        { $sort: { count: -1 } },
-        { $limit: limit },
+        {
+          $sort: { count: -1 }
+        },
+        {
+          $limit: limit
+        },
         {
           $project: {
-            name: '$_id',
-            value: '$count',
-            points: '$totalPoints',
+            category: "$_id",
+            count: 1,
+            totalPoints: 1,
             _id: 0
           }
         }
       ]);
       
-      console.log('Popular categories result:', result);
-      return result.length > 0 ? result : [{ name: 'No Data', value: 1 }];
+      console.log(`Found ${categoryAggregation.length} popular categories`);
+      
+      // If no categories found, create a placeholder
+      if (categoryAggregation.length === 0) {
+        return [
+          { 
+            category: "No Data", 
+            count: 0, 
+            totalPoints: 0 
+          }
+        ];
+      }
+      
+      return categoryAggregation;
     } catch (error) {
       console.error('Error getting popular categories:', error);
-      return [{ name: 'Error', value: 1 }];
+      // Return placeholder data
+      return [
+        { 
+          category: "Error occurred", 
+          count: 0, 
+          totalPoints: 0 
+        }
+      ];
     }
   }
 
   /**
-   * REPORT: Get class performance (with role-based access)
+   * Get class performance metrics
    */
-  static async getClassPerformance(teacher, userFilters = {}) {
+  static async getClassPerformance(teacher) {
     try {
-      console.log('Getting class performance with role-based access');
+      // Get classes accessible to this teacher
+      const classes = await this.getAvailableClasses(teacher);
       
-      // Get role-based access filters
-      const baseFilters = await this.getRoleBasedFilters(teacher);
-      const filters = this.applyUserFilters(baseFilters, userFilters);
-      
-      // Get student-class map for filtering
-      const studentClassMap = await this.getStudentClassMap(filters);
-      
-      // Get IDs of accessible students
-      const accessibleStudentIds = Array.from(studentClassMap.keys()).map(id => 
-        mongoose.Types.ObjectId(id)
-      );
-      
-      if (accessibleStudentIds.length === 0) {
+      if (classes.length === 0) {
+        console.log("No classes found, returning empty result");
         return [];
       }
       
-      // Build the query
-      let matchStage = { 
-        status: 'Approved',
-        submittedBy: { $in: accessibleStudentIds }
-      };
+      // Create a map of classId -> className for reference
+      const classMap = classes.reduce((map, cls) => {
+        map[cls._id.toString()] = cls.className;
+        return map;
+      }, {});
       
-      // Add date range if specified
-      if (filters.dateRange) {
-        matchStage.date = filters.dateRange;
-      }
+      // Initialize performance data for each class
+      const classPerformance = classes.map(cls => ({
+        className: cls.className,
+        totalPoints: 0,
+        totalActivities: 0,
+        averagePoints: 0,
+        studentCount: 0
+      }));
       
-      // Add category if specified
-      if (filters.category) {
-        matchStage.category = filters.category;
-      }
+      // Get class IDs
+      const classIds = classes.map(c => c._id);
       
-      // Get events with student data
-      const approvedEvents = await Event.find(matchStage)
-        .populate('submittedBy', 'name')
-        .lean();
-      
-      console.log(`Found ${approvedEvents.length} approved events`);
-      
-      // Group events by class
-      const classPerformance = new Map();
-      
-      for (const event of approvedEvents) {
-        if (!event.submittedBy) continue;
+      // Get students for each class and count them
+      for (const [index, cls] of classes.entries()) {
+        const students = await Student.find({
+          $or: [
+            { 'currentClass.ref': cls._id },
+            { 'class': cls._id }
+          ]
+        }).select('_id totalPoints').lean();
         
-        const studentId = event.submittedBy._id.toString();
-        const className = studentClassMap.get(studentId);
+        classPerformance[index].studentCount = students.length;
         
-        if (!className) continue;
+        // Calculate total points from student records
+        const totalPoints = students.reduce((sum, student) => 
+          sum + (student.totalPoints || 0), 0);
+          
+        classPerformance[index].totalPoints = totalPoints;
         
-        const points = event.pointsEarned || 0;
-        
-        if (!classPerformance.has(className)) {
-          classPerformance.set(className, { totalPoints: 0, eventCount: 0 });
+        // Get event count by students in this class
+        const studentIds = students.map(s => s._id);
+        if (studentIds.length > 0) {
+          const activities = await Event.countDocuments({
+            submittedBy: { $in: studentIds },
+            status: 'Approved'
+          });
+          
+          classPerformance[index].totalActivities = activities;
+          
+          // Calculate average points per student (if there are students)
+          if (students.length > 0) {
+            classPerformance[index].averagePoints = Math.round(totalPoints / students.length);
+          }
         }
-        
-        const data = classPerformance.get(className);
-        data.totalPoints += points;
-        data.eventCount += 1;
       }
       
-      // Convert to the expected format
-      const result = Array.from(classPerformance.entries())
-        .map(([className, data]) => ({
-          _id: className,
-          totalPoints: data.totalPoints,
-          eventCount: data.eventCount
-        }))
-        .sort((a, b) => b.totalPoints - a.totalPoints);
-      
-      console.log('Class performance result:', result);
-      return result;
+      // Sort by total points descending
+      return classPerformance.sort((a, b) => b.totalPoints - a.totalPoints);
     } catch (error) {
       console.error('Error getting class performance:', error);
       return [];
@@ -653,271 +344,204 @@ class RoleBasedEventReportsService {
   }
 
   /**
-   * REPORT: Get detailed student performance (with role-based access)
+   * Get approval rates statistics
    */
-  static async getDetailedStudentPerformance(teacher, userFilters = {}) {
+  static async getApprovalRates(teacher) {
     try {
-      const limit = userFilters.limit || 10;
-      console.log('Getting detailed student performance with role-based access');
+      // Get class IDs accessible to this teacher
+      const classes = await this.getAvailableClasses(teacher);
       
-      // Get role-based access filters
-      const baseFilters = await this.getRoleBasedFilters(teacher);
-      const filters = this.applyUserFilters(baseFilters, userFilters);
-      
-      // Get student-class map for filtering
-      const studentClassMap = await this.getStudentClassMap(filters);
-      
-      // Get IDs of accessible students
-      const accessibleStudentIds = Array.from(studentClassMap.keys()).map(id => 
-        mongoose.Types.ObjectId(id)
-      );
-      
-      if (accessibleStudentIds.length === 0) {
+      if (classes.length === 0) {
+        console.log("No classes found, returning empty result");
         return [];
       }
       
-      // Build the query
-      let matchStage = { 
-        status: 'Approved',
-        submittedBy: { $in: accessibleStudentIds }
-      };
+      // Get class IDs
+      const classIds = classes.map(c => c._id);
       
-      // Add date range if specified
-      if (filters.dateRange) {
-        matchStage.date = filters.dateRange;
-      }
-      
-      // Add category if specified
-      if (filters.category) {
-        matchStage.category = filters.category;
-      }
-      
-      const result = await Event.aggregate([
-        { $match: matchStage },
-        {
-          $lookup: {
-            from: "students",
-            localField: "submittedBy",
-            foreignField: "_id",
-            as: "studentInfo"
-          }
-        },
-        { $unwind: "$studentInfo" },
-        {
-          $group: {
-            _id: "$studentInfo._id",
-            name: { $first: "$studentInfo.name" },
-            registerNo: { $first: "$studentInfo.registerNo" },
-            totalPoints: { $sum: "$pointsEarned" },
-            eventCount: { $sum: 1 },
-            categories: {
-              $push: {
-                category: "$category",
-                points: "$pointsEarned",
-                eventTitle: "$title"
-              }
-            }
-          }
-        },
-        { $sort: { totalPoints: -1 } },
-        { $limit: limit }
-      ]);
-      
-      // Add class information
-      const studentsWithClass = result.map(student => ({
-        ...student,
-        className: studentClassMap.get(student._id.toString()) || 'Unknown Class'
-      }));
-      
-      console.log('Detailed student performance result:', studentsWithClass);
-      return studentsWithClass;
-    } catch (error) {
-      console.error('Error getting detailed student performance:', error);
-      return [];
-    }
-  }
-
-  /**
-   * REPORT: Get category-wise performance by class (with role-based access)
-   */
-  static async getCategoryPerformanceByClass(teacher, userFilters = {}) {
-    try {
-      console.log('Getting category performance by class with role-based access');
-      
-      // Get role-based access filters
-      const baseFilters = await this.getRoleBasedFilters(teacher);
-      const filters = this.applyUserFilters(baseFilters, userFilters);
-      
-      // Get student-class map for filtering
-      const studentClassMap = await this.getStudentClassMap(filters);
-      
-      // Get IDs of accessible students
-      const accessibleStudentIds = Array.from(studentClassMap.keys()).map(id => 
-        mongoose.Types.ObjectId(id)
-      );
-      
-      if (accessibleStudentIds.length === 0) {
-        return [];
-      }
-      
-      // Build the query
-      let matchStage = { 
-        status: 'Approved',
-        submittedBy: { $in: accessibleStudentIds }
-      };
-      
-      // Add date range if specified
-      if (filters.dateRange) {
-        matchStage.date = filters.dateRange;
-      }
-      
-      // Get events with student data and category
-      const approvedEvents = await Event.find(matchStage)
-        .populate('submittedBy', 'name')
-        .lean();
-      
-      // Group events by class and category
-      const classCategoryPerformance = new Map();
-      
-      for (const event of approvedEvents) {
-        if (!event.submittedBy) continue;
-        
-        const studentId = event.submittedBy._id.toString();
-        const className = studentClassMap.get(studentId);
-        
-        if (!className) continue;
-        
-        const category = event.category;
-        const points = event.pointsEarned || 0;
-        
-        if (!classCategoryPerformance.has(className)) {
-          classCategoryPerformance.set(className, { totalPoints: 0, categories: new Map() });
-        }
-        
-        const classData = classCategoryPerformance.get(className);
-        classData.totalPoints += points;
-        
-        if (!classData.categories.has(category)) {
-          classData.categories.set(category, { points: 0, count: 0 });
-        }
-        
-        const categoryData = classData.categories.get(category);
-        categoryData.points += points;
-        categoryData.count += 1;
-      }
-      
-      // Convert to the expected format
-      const result = Array.from(classCategoryPerformance.entries())
-        .map(([className, data]) => {
-          const categories = Array.from(data.categories.entries())
-            .map(([category, catData]) => ({
-              category,
-              points: catData.points,
-              count: catData.count
-            }));
-          
-          return {
-            className,
-            totalPoints: data.totalPoints,
-            categories
-          };
-        })
-        .sort((a, b) => b.totalPoints - a.totalPoints);
-      
-      // Transform data for frontend display with categories performance text
-      const finalResult = result.map(item => ({
-        ...item,
-        categoriesPerformance: item.categories
-          .sort((a, b) => b.points - a.points)
-          .map(cat => `${cat.category}: ${cat.points} points (${cat.count} events)`)
-      }));
-      
-      console.log('Category performance by class result:', finalResult);
-      return finalResult;
-    } catch (error) {
-      console.error('Error getting category performance by class:', error);
-      return [];
-    }
-  }
-
-  /**
-   * REPORT: Get inactive students (with role-based access)
-   */
-  static async getInactiveStudents(teacher, userFilters = {}) {
-    try {
-      const inactivePeriodDays = userFilters.days || 30;
-      console.log('Getting inactive students with role-based access for', inactivePeriodDays, 'days');
-      
-      // Get role-based access filters
-      const baseFilters = await this.getRoleBasedFilters(teacher);
-      const filters = this.applyUserFilters(baseFilters, userFilters);
-      
-      // Set cutoff date
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - inactivePeriodDays);
-      
-      // Get student-class map for filtering
-      const studentClassMap = await this.getStudentClassMap(filters);
-      
-      // Get IDs of accessible students
-      const accessibleStudentIds = Array.from(studentClassMap.keys()).map(id => 
-        mongoose.Types.ObjectId(id)
-      );
-      
-      if (accessibleStudentIds.length === 0) {
-        return [];
-      }
-      
-      // Get students from the map
+      // Find students in those classes
       const students = await Student.find({
-        _id: { $in: accessibleStudentIds }
-      }).lean();
+        $or: [
+          { 'currentClass.ref': { $in: classIds } },
+          { 'class': { $in: classIds } }
+        ]
+      }).select('_id').lean();
       
-      console.log(`Found ${students.length} accessible students`);
+      const studentIds = students.map(s => s._id);
       
-      // Get active student IDs (those who submitted events after cutoff)
-      const activeStudentIds = await Event.distinct('submittedBy', {
-        submittedBy: { $in: accessibleStudentIds },
-        date: { $gte: cutoffDate }
-      });
+      if (studentIds.length === 0) {
+        console.log("No students found, returning empty result");
+        return [];
+      }
       
-      console.log(`Found ${activeStudentIds.length} active students`);
-      
-      // Find inactive students
-      const inactiveStudents = students.filter(student => 
-        !activeStudentIds.some(id => id.equals(student._id))
-      );
-      
-      // Get last activity dates for inactive students
-      const studentLastActivities = await Event.aggregate([
+      // Get status counts for events
+      const statusCounts = await Event.aggregate([
         {
           $match: {
-            submittedBy: { $in: inactiveStudents.map(s => s._id) }
+            submittedBy: { $in: studentIds }
           }
         },
         {
           $group: {
-            _id: '$submittedBy',
-            lastActivity: { $max: '$date' }
+            _id: "$status",
+            count: { $sum: 1 }
           }
         }
       ]);
       
-      const activitiesMap = new Map(
-        studentLastActivities.map(item => [item._id.toString(), item.lastActivity])
-      );
-      
-      // Format the result with last activity date and proper class name
-      const result = inactiveStudents.map(student => ({
-        _id: student._id,
-        name: student.name,
-        registerNo: student.registerNo,
-        className: studentClassMap.get(student._id.toString()) || 'Unknown Class',
-        lastActivity: activitiesMap.get(student._id.toString()) || null
+      // Transform to expected format
+      const result = statusCounts.map(item => ({
+        status: item._id,
+        count: item.count
       }));
       
-      console.log(`Returning ${result.length} inactive students`);
+      // Calculate totals for percentages
+      const total = result.reduce((sum, item) => sum + item.count, 0);
+      
+      // Add percentage to each status
+      result.forEach(item => {
+        item.percentage = total > 0 ? Math.round((item.count / total) * 100) : 0;
+      });
+      
+      // If no data found, return placeholder
+      if (result.length === 0) {
+        return [
+          { status: 'Approved', count: 0, percentage: 0 },
+          { status: 'Pending', count: 0, percentage: 0 },
+          { status: 'Rejected', count: 0, percentage: 0 }
+        ];
+      }
+      
+      // Ensure all statuses are present
+      const statuses = ['Approved', 'Pending', 'Rejected'];
+      statuses.forEach(status => {
+        if (!result.some(item => item.status === status)) {
+          result.push({ status, count: 0, percentage: 0 });
+        }
+      });
+      
       return result;
+    } catch (error) {
+      console.error('Error getting approval rates:', error);
+      return [
+        { status: 'Approved', count: 0, percentage: 0 },
+        { status: 'Pending', count: 0, percentage: 0 },
+        { status: 'Rejected', count: 0, percentage: 0 }
+      ];
+    }
+  }
+
+  /**
+   * Get inactive students (students with no recent activity)
+   */
+  static async getInactiveStudents(teacher, inactiveDays = 30) {
+    try {
+      // Get class IDs accessible to this teacher
+      const classes = await this.getAvailableClasses(teacher);
+      
+      if (classes.length === 0) {
+        console.log("No classes found, returning empty result");
+        return [];
+      }
+      
+      // Get class IDs
+      const classIds = classes.map(c => c._id);
+      
+      // Create a map of classId -> className for reference
+      const classMap = classes.reduce((map, cls) => {
+        map[cls._id.toString()] = cls.className;
+        return map;
+      }, {});
+      
+      // Find students in those classes
+      const students = await Student.find({
+        $or: [
+          { 'currentClass.ref': { $in: classIds } },
+          { 'class': { $in: classIds } }
+        ]
+      }).select('name registerNo currentClass class department updatedAt')
+      .lean();
+      
+      const studentIds = students.map(s => s._id);
+      
+      if (studentIds.length === 0) {
+        console.log("No students found, returning empty result");
+        return [];
+      }
+      
+      // Get latest event date for each student
+      const now = new Date();
+      const latestEvents = await Event.aggregate([
+        {
+          $match: {
+            submittedBy: { $in: studentIds }
+          }
+        },
+        {
+          $sort: { createdAt: -1 }
+        },
+        {
+          $group: {
+            _id: "$submittedBy",
+            lastActivity: { $first: "$createdAt" }
+          }
+        }
+      ]);
+      
+      // Create map of student ID to last activity date
+      const lastActivityMap = latestEvents.reduce((map, item) => {
+        map[item._id.toString()] = item.lastActivity;
+        return map;
+      }, {});
+      
+      // Calculate inactive days for each student
+      const inactiveStudents = await Promise.all(students.map(async student => {
+        // Get the class name
+        let className = "Unknown";
+        const classId = student.currentClass?.ref || student.class;
+        
+        if (classId) {
+          className = classMap[classId.toString()] || "Unknown";
+        }
+        
+        // Get the last activity date (from events or account updates)
+        const lastEventDate = lastActivityMap[student._id.toString()];
+        const lastUpdateDate = student.updatedAt;
+        
+        // Use the most recent date
+        let lastActivity = lastEventDate;
+        if (!lastActivity || (lastUpdateDate && lastUpdateDate > lastActivity)) {
+          lastActivity = lastUpdateDate;
+        }
+        
+        // If no activity at all, use a placeholder date from 60 days ago
+        if (!lastActivity) {
+          const placeholder = new Date();
+          placeholder.setDate(placeholder.getDate() - 60);
+          lastActivity = placeholder;
+        }
+        
+        // Calculate days since last activity
+        const diffTime = Math.abs(now - new Date(lastActivity));
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        return {
+          _id: student._id,
+          name: student.name,
+          registerNo: student.registerNo,
+          className,
+          department: student.department,
+          lastActivity,
+          inactiveDays: diffDays
+        };
+      }));
+      
+      // Filter to students inactive for more than the specified days
+      const filteredInactive = inactiveStudents
+        .filter(student => student.inactiveDays >= inactiveDays)
+        .sort((a, b) => b.inactiveDays - a.inactiveDays);
+      
+      return filteredInactive;
     } catch (error) {
       console.error('Error getting inactive students:', error);
       return [];
@@ -925,189 +549,232 @@ class RoleBasedEventReportsService {
   }
 
   /**
-   * REPORT: Get class-wise participation (with role-based access)
+   * Get detailed student performance data
    */
-  static async getClassParticipation(teacher, userFilters = {}) {
+  static async getDetailedStudentPerformance(teacher) {
     try {
-      console.log('Getting class participation with role-based access');
+      // Get class IDs accessible to this teacher
+      const classes = await this.getAvailableClasses(teacher);
       
-      // Get role-based access filters
-      const baseFilters = await this.getRoleBasedFilters(teacher);
-      const filters = this.applyUserFilters(baseFilters, userFilters);
-      
-      // Get student-class map for filtering
-      const studentClassMap = await this.getStudentClassMap(filters);
-      
-      // Get IDs of accessible students
-      const accessibleStudentIds = Array.from(studentClassMap.keys()).map(id => 
-        mongoose.Types.ObjectId(id)
-      );
-      
-      if (accessibleStudentIds.length === 0) {
+      if (classes.length === 0) {
+        console.log("No classes found, returning empty result");
         return [];
       }
       
-      // Get unique class names
-      const uniqueClassNames = [...new Set(Array.from(studentClassMap.values()))];
+      // Get class IDs
+      const classIds = classes.map(c => c._id);
       
-      // For each class, calculate participation stats
-      const result = [];
+      // Create a map of classId -> className for reference
+      const classMap = classes.reduce((map, cls) => {
+        map[cls._id.toString()] = cls.className;
+        return map;
+      }, {});
       
-      for (const className of uniqueClassNames) {
-        // Get students in this class
-        const studentsInClass = Array.from(studentClassMap.entries())
-          .filter(([_, cls]) => cls === className)
-          .map(([id, _]) => mongoose.Types.ObjectId(id));
+      // Find students in those classes
+      const students = await Student.find({
+        $or: [
+          { 'currentClass.ref': { $in: classIds } },
+          { 'class': { $in: classIds } }
+        ]
+      }).select('name registerNo totalPoints currentClass class department')
+      .lean();
+      
+      // Enhanced student data with activity counts and class names
+      const enhancedStudents = await Promise.all(students.map(async student => {
+        // Get the class name
+        let className = "Unknown";
+        const classId = student.currentClass?.ref || student.class;
         
-        // Get total students in class
-        const totalStudents = studentsInClass.length;
+        if (classId) {
+          className = classMap[classId.toString()] || "Unknown";
+        }
         
-        // Get participating students (those who submitted at least one approved event)
-        const participatingStudentIds = await Event.distinct('submittedBy', {
-          status: 'Approved',
-          submittedBy: { $in: studentsInClass }
+        // Get activity count
+        const activityCount = await Event.countDocuments({
+          submittedBy: student._id,
+          status: 'Approved'
         });
         
-        const participatingStudents = participatingStudentIds.length;
+        // Get category breakdown
+        const categoryBreakdown = await Event.aggregate([
+          {
+            $match: {
+              submittedBy: student._id,
+              status: 'Approved'
+            }
+          },
+          {
+            $group: {
+              _id: "$category",
+              count: { $sum: 1 },
+              points: { $sum: "$pointsEarned" }
+            }
+          },
+          {
+            $project: {
+              category: "$_id",
+              count: 1,
+              points: 1,
+              _id: 0
+            }
+          }
+        ]);
         
-        // Get total events for this class
-        const eventCount = await Event.countDocuments({
-          status: 'Approved',
-          submittedBy: { $in: studentsInClass }
-        });
-        
-        // Calculate participation rate
-        const participationRate = totalStudents > 0 
-          ? (participatingStudents / totalStudents * 100).toFixed(2) 
-          : 0;
-        
-        result.push({
+        return {
+          _id: student._id,
+          name: student.name,
+          registerNo: student.registerNo,
           className,
-          totalStudents,
-          participatingStudents,
-          participationRate,
-          eventCount
-        });
-      }
+          department: student.department,
+          totalPoints: student.totalPoints || 0,
+          activityCount,
+          categoryBreakdown
+        };
+      }));
       
-      // Sort by participation rate
-      result.sort((a, b) => b.participationRate - a.participationRate);
-      
-      console.log('Class participation result:', result);
-      return result;
+      // Sort by total points descending
+      return enhancedStudents.sort((a, b) => b.totalPoints - a.totalPoints);
     } catch (error) {
-      console.error('Error getting class participation:', error);
+      console.error('Error getting detailed student performance:', error);
       return [];
     }
   }
 
   /**
-   * REPORT: Get approval rates (with role-based access)
+   * Get category performance by class
    */
-  static async getApprovalRates(teacher, userFilters = {}) {
+  static async getCategoryPerformanceByClass(teacher) {
     try {
-      console.log('Getting approval rates with role-based access');
+      // Get class IDs accessible to this teacher
+      const classes = await this.getAvailableClasses(teacher);
       
-      // Get role-based access filters
-      const baseFilters = await this.getRoleBasedFilters(teacher);
-      const filters = this.applyUserFilters(baseFilters, userFilters);
-      
-      // Get student-class map for filtering
-      const studentClassMap = await this.getStudentClassMap(filters);
-      
-      // Get IDs of accessible students
-      const accessibleStudentIds = Array.from(studentClassMap.keys()).map(id => 
-        mongoose.Types.ObjectId(id)
-      );
-      
-      if (accessibleStudentIds.length === 0) {
-        return [{ name: 'No Data', value: 1 }];
+      if (classes.length === 0) {
+        console.log("No classes found, returning empty result");
+        return [];
       }
       
-      // For approval rates, we need ALL events (not just approved ones)
-      // and only filter by submitter and date range
-      let matchStage = {
-        submittedBy: { $in: accessibleStudentIds }
-      };
+      // Create result structure
+      const result = [];
       
-      // Add date range if specified
-      if (filters.dateRange) {
-        matchStage.date = filters.dateRange;
+      // Process each class
+      for (const cls of classes) {
+        // Find students in this class
+        const students = await Student.find({
+          $or: [
+            { 'currentClass.ref': cls._id },
+            { 'class': cls._id }
+          ]
+        }).select('_id').lean();
+        
+        const studentIds = students.map(s => s._id);
+        
+        if (studentIds.length === 0) continue;
+        
+        // Get category breakdown for this class
+        const categoryBreakdown = await Event.aggregate([
+          {
+            $match: {
+              submittedBy: { $in: studentIds },
+              status: 'Approved'
+            }
+          },
+          {
+            $group: {
+              _id: "$category",
+              count: { $sum: 1 },
+              points: { $sum: "$pointsEarned" }
+            }
+          },
+          {
+            $project: {
+              category: "$_id",
+              count: 1,
+              points: 1,
+              _id: 0
+            }
+          }
+        ]);
+        
+        // Skip classes with no activities
+        if (categoryBreakdown.length === 0) continue;
+        
+        // Add to result
+        result.push({
+          className: cls.className,
+          categories: categoryBreakdown
+        });
       }
       
-      const result = await Event.aggregate([
-        { $match: matchStage },
-        {
-          $group: {
-            _id: '$status',
-            count: { $sum: 1 }
-          }
-        },
-        {
-          $project: {
-            name: '$_id',
-            value: '$count',
-            _id: 0
-          }
-        }
-      ]);
-      
-      console.log('Approval rates result:', result);
-      return result.length > 0 ? result : [{ name: 'No Data', value: 1 }];
+      return result;
     } catch (error) {
-      console.error('Error getting approval rates:', error);
-      return [{ name: 'Error', value: 1 }];
+      console.error('Error getting category performance by class:', error);
+      return [];
     }
   }
 
   /**
-   * REPORT: Get event trends over time (with role-based access)
+   * Get participation trends over time
    */
-  static async getTrends(teacher, userFilters = {}) {
+  static async getTrends(teacher) {
     try {
-      console.log('Getting event trends with role-based access');
+      // Get class IDs accessible to this teacher
+      const classes = await this.getAvailableClasses(teacher);
       
-      // Get role-based access filters
-      const baseFilters = await this.getRoleBasedFilters(teacher);
-      const filters = this.applyUserFilters(baseFilters, userFilters);
-      
-      // Get student-class map for filtering
-      const studentClassMap = await this.getStudentClassMap(filters);
-      
-      // Get IDs of accessible students
-      const accessibleStudentIds = Array.from(studentClassMap.keys()).map(id => 
-        mongoose.Types.ObjectId(id)
-      );
-      
-      if (accessibleStudentIds.length === 0) {
+      if (classes.length === 0) {
+        console.log("No classes found, returning empty result");
         return [];
       }
       
-      // Build the query
-      let matchStage = { 
-        status: 'Approved',
-        submittedBy: { $in: accessibleStudentIds }
-      };
+      // Get class IDs
+      const classIds = classes.map(c => c._id);
       
-      // Add category if specified
-      if (filters.category) {
-        matchStage.category = filters.category;
+      // Find students in those classes
+      const students = await Student.find({
+        $or: [
+          { 'currentClass.ref': { $in: classIds } },
+          { 'class': { $in: classIds } }
+        ]
+      }).select('_id').lean();
+      
+      const studentIds = students.map(s => s._id);
+      
+      if (studentIds.length === 0) {
+        console.log("No students found, returning empty result");
+        return [];
       }
       
-      const result = await Event.aggregate([
-        { $match: matchStage },
+      // Get trends for the last 6 months
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+      
+      const trends = await Event.aggregate([
+        {
+          $match: {
+            submittedBy: { $in: studentIds },
+            status: 'Approved',
+            date: { $gte: sixMonthsAgo }
+          }
+        },
         {
           $group: {
             _id: {
-              year: { $year: "$date" },
-              month: { $month: "$date" }
+              month: { $month: "$date" },
+              year: { $year: "$date" }
             },
-            count: { $sum: 1 }
+            count: { $sum: 1 },
+            points: { $sum: "$pointsEarned" }
           }
         },
-        { $sort: { "_id.year": 1, "_id.month": 1 } },
+        {
+          $sort: {
+            "_id.year": 1,
+            "_id.month": 1
+          }
+        },
         {
           $project: {
+            month: "$_id.month",
+            year: "$_id.year",
             date: {
               $dateToString: {
                 format: "%Y-%m",
@@ -1121,13 +788,34 @@ class RoleBasedEventReportsService {
               }
             },
             count: 1,
+            points: 1,
             _id: 0
           }
         }
       ]);
       
-      console.log('Trends result:', result);
-      return result;
+      // If no trends found, create placeholder data for the last 6 months
+      if (trends.length === 0) {
+        const placeholderTrends = [];
+        const currentDate = new Date();
+        
+        for (let i = 0; i < 6; i++) {
+          const date = new Date();
+          date.setMonth(currentDate.getMonth() - i);
+          
+          placeholderTrends.push({
+            month: date.getMonth() + 1,
+            year: date.getFullYear(),
+            date: date.toISOString().slice(0, 7),
+            count: 0,
+            points: 0
+          });
+        }
+        
+        return placeholderTrends.reverse();
+      }
+      
+      return trends;
     } catch (error) {
       console.error('Error getting trends:', error);
       return [];
@@ -1135,32 +823,110 @@ class RoleBasedEventReportsService {
   }
 
   /**
-   * Get available classes for report filtering (based on teacher role)
+   * Get class participation data
    */
-  static async getAvailableClasses(teacher) {
+  static async getClassParticipation(teacher) {
     try {
-      console.log('Getting available classes for teacher role:', teacher.role);
+      // Get class IDs accessible to this teacher
+      const classes = await this.getAvailableClasses(teacher);
       
-      // Get role-based access filters
-      const baseFilters = await this.getRoleBasedFilters(teacher);
-      
-      // Get classes based on role
-      let classQuery = {};
-      
-      if (baseFilters.accessibleClassIds && baseFilters.accessibleClassIds.length > 0) {
-        classQuery._id = { $in: baseFilters.accessibleClassIds };
+      if (classes.length === 0) {
+        console.log("No classes found, returning empty result");
+        return [];
       }
       
-      // Get filtered classes
-      const classes = await Class.find(classQuery)
-        .select('_id className section year department')
-        .sort({ year: -1, className: 1 })
-        .lean();
+      // Get participation data for each month in the last 6 months
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
       
-      console.log(`Found ${classes.length} accessible classes`);
-      return classes;
+      // Create a result structure with one entry per month
+      const monthlyData = [];
+      const currentDate = new Date();
+      
+      for (let i = 0; i < 6; i++) {
+        const date = new Date();
+        date.setMonth(currentDate.getMonth() - i);
+        
+        monthlyData.push({
+          month: date.getMonth() + 1,
+          year: date.getFullYear(),
+          date: date.toISOString().slice(0, 7),
+          classes: {}
+        });
+      }
+      
+      // Process each class
+      for (const cls of classes) {
+        // Find students in this class
+        const students = await Student.find({
+          $or: [
+            { 'currentClass.ref': cls._id },
+            { 'class': cls._id }
+          ]
+        }).select('_id').lean();
+        
+        const studentIds = students.map(s => s._id);
+        
+        if (studentIds.length === 0) continue;
+        
+        // Get monthly activity counts for this class
+        const monthlyActivities = await Event.aggregate([
+          {
+            $match: {
+              submittedBy: { $in: studentIds },
+              status: 'Approved',
+              date: { $gte: sixMonthsAgo }
+            }
+          },
+          {
+            $group: {
+              _id: {
+                month: { $month: "$date" },
+                year: { $year: "$date" }
+              },
+              count: { $sum: 1 }
+            }
+          },
+          {
+            $sort: {
+              "_id.year": 1,
+              "_id.month": 1
+            }
+          }
+        ]);
+        
+        // Add this class's data to the monthly structure
+        monthlyActivities.forEach(item => {
+          const monthData = monthlyData.find(
+            md => md.month === item._id.month && md.year === item._id.year
+          );
+          
+          if (monthData) {
+            monthData.classes[cls.className] = item.count;
+          }
+        });
+      }
+      
+      // Ensure all classes are represented in all months (with 0 if no activity)
+      const classNames = classes.map(c => c.className);
+      
+      monthlyData.forEach(monthData => {
+        classNames.forEach(className => {
+          if (!monthData.classes[className]) {
+            monthData.classes[className] = 0;
+          }
+        });
+      });
+      
+      // Convert to format expected by frontend
+      const result = monthlyData.map(monthData => ({
+        date: monthData.date,
+        ...monthData.classes
+      }));
+      
+      return result.reverse(); // Most recent first
     } catch (error) {
-      console.error('Error getting available classes:', error);
+      console.error('Error getting class participation:', error);
       return [];
     }
   }

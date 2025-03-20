@@ -31,8 +31,6 @@ app.use('/student', studentRoutes);
 const teacherRoutes = require('./routes/teacher.routes');
 app.use('/teacher', teacherRoutes);
 
-
-
 const adminRoutes = require("./routes/admin.routes")
 app.use('/admin',adminRoutes)
 
@@ -42,23 +40,18 @@ app.use('/class',classRoutes)
 const leaderboardRoutes = require('./routes/leaderboard.routes')
 app.use('/leaderboard',leaderboardRoutes)
 
-
-
 const upcomingEventRoutes = require('./routes/upcomingEvent.routes');
 app.use('/upcoming-events', upcomingEventRoutes);
 
 const assignmentRoutes = require('./routes/assignment.routes');
 app.use('/assignment', assignmentRoutes);
 
-
+// Import routes
 const roleBasedEventReportsRoutes = require('./routes/roleBasedEventReports.routes');
 
-// Mount routes
+// Mount API routes
 app.use('/reports', roleBasedEventReportsRoutes);
 
-// console.log('Mounted upcoming events routes at /upcoming-events');
-
 connectToDb();
-
 
 module.exports = app;

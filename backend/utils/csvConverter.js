@@ -1,53 +1,69 @@
 /**
- * Converts an array of objects to CSV format
+ * Convert data array to CSV string
  * @param {Array} data - Array of objects to convert
- * @returns {String} CSV formatted string
+ * @returns {String} - CSV formatted string
  */
-const convertToCSV = async (data) => {
-  if (!Array.isArray(data) || data.length === 0) {
-    return 'No data available';
-  }
-  
-  try {
-    // Get headers from the first object
-    const headers = Object.keys(data[0]);
-    
-    // Create CSV header row
-    const headerRow = headers.join(',');
-    
-    // Create data rows
-    const rows = data.map(obj => {
-      return headers.map(header => {
-        // Handle special cases
-        let value = obj[header];
-        
-        // Convert arrays to string
-        if (Array.isArray(value)) {
-          value = `"${value.join('; ')}"`;
-        }
-        // Convert objects to string
-        else if (typeof value === 'object' && value !== null) {
-          value = `"${JSON.stringify(value)}"`;
-        }
-        // Escape quotes in strings
-        else if (typeof value === 'string') {
-          value = `"${value.replace(/"/g, '""')}"`;
-        }
-        // Convert undefined/null to empty string
-        else if (value === undefined || value === null) {
-          value = '';
-        }
-        
-        return value;
-      }).join(',');
-    });
-    
-    // Combine header and rows
-    return [headerRow, ...rows].join('\n');
-  } catch (error) {
-    console.error('Error converting to CSV:', error);
-    return 'Error generating CSV';
-  }
-};
+exports.convertToCSV = (data) => {
+  return new Promise((resolve, reject) => {
+    try {
+      if (!data || !Array.isArray(data) || data.length === 0) {
+        return resolve('No data');
+      }
 
-module.exports = { convertToCSV };
+      // Special handling for nested data structures
+      const flattenedData = data.map(item => {
+        const flattened = {};
+        
+        // Handle top-level properties
+        Object.keys(item).forEach(key => {
+          if (typeof item[key] === 'object' && item[key] !== null && !Array.isArray(item[key])) {
+            // For nested objects, flatten with dot notation
+            Object.keys(item[key]).forEach(nestedKey => {
+              flattened[`${key}.${nestedKey}`] = item[key][nestedKey];
+            });
+          } else if (Array.isArray(item[key])) {
+            // For arrays, concatenate with semicolons
+            flattened[key] = item[key].join('; ');
+          } else {
+            // For primitive values
+            flattened[key] = item[key];
+          }
+        });
+        
+        return flattened;
+      });
+
+      // Get all unique headers
+      const headers = Array.from(
+        new Set(
+          flattenedData.flatMap(item => Object.keys(item))
+        )
+      );
+
+      // Create CSV header row
+      const headerRow = headers.join(',');
+
+      // Create data rows
+      const rows = flattenedData.map(item => {
+        return headers.map(header => {
+          const value = item[header] === undefined ? '' : item[header];
+          
+          // Handle strings that need quotes (contain commas, quotes, or newlines)
+          if (typeof value === 'string' && (value.includes(',') || value.includes('"') || value.includes('\n'))) {
+            return `"${value.replace(/"/g, '""')}"`;
+          }
+          
+          return value;
+        }).join(',');
+      });
+
+      // Combine header and rows
+      const csv = [headerRow, ...rows].join('\n');
+      resolve(csv);
+      
+    } catch (error) {
+      console.error('Error converting to CSV:', error);
+      reject(error);
+    }
+  });
+};

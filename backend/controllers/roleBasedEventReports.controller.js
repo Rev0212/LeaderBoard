@@ -3,47 +3,50 @@ const { convertToCSV } = require('../utils/csvConverter');
 
 class RoleBasedEventReportsController {
   /**
-   * Helper method to handle API responses
-   */
-  static async handleResponse(res, next, serviceMethod, ...args) {
-    try {
-      const data = await serviceMethod(...args);
-      return res.status(200).json({ success: true, data });
-    } catch (error) {
-      console.error(`Error in ${serviceMethod.name}:`, error);
-      next(error);
-    }
-  }
-
-  /**
    * Get total prize money won
    */
   static async getTotalPrizeMoney(req, res, next) {
     try {
+      console.log('Getting total prize money with teacher ID:', req.teacher._id);
       const totalPrizeMoney = await RoleBasedEventReportsService.getTotalPrizeMoney(
-        req.teacher, // This is set by the authTeacher middleware
+        req.teacher,
         req.query
       );
-      res.status(200).json({ success: true, totalPrizeMoney });
+      
+      res.status(200).json({ 
+        success: true, 
+        totalPrizeMoney 
+      });
     } catch (error) {
       console.error('Error in getTotalPrizeMoney controller:', error);
-      next(error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to get total prize money'
+      });
     }
   }
 
   /**
-   * Get total prize money by class
+   * Get total prize money by class (HOD only)
    */
   static async getTotalPrizeMoneyByClass(req, res, next) {
     try {
-      const result = await RoleBasedEventReportsService.getTotalPrizeMoneyByClass(
-        req.teacher, 
+      console.log('Getting prize money by class with teacher role:', req.teacher.role);
+      const prizeMoneyByClass = await RoleBasedEventReportsService.getTotalPrizeMoneyByClass(
+        req.teacher,
         req.query
       );
-      res.status(200).json({ success: true, data: result });
+      
+      res.status(200).json({ 
+        success: true, 
+        prizeMoneyByClass 
+      });
     } catch (error) {
       console.error('Error in getTotalPrizeMoneyByClass controller:', error);
-      next(error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to get prize money by class'
+      });
     }
   }
 
@@ -52,14 +55,24 @@ class RoleBasedEventReportsController {
    */
   static async getTopStudents(req, res, next) {
     try {
+      console.log('Getting top students with teacher ID:', req.teacher._id);
+      const limit = parseInt(req.query.limit) || 10;
+      
       const topStudents = await RoleBasedEventReportsService.getTopStudents(
-        req.teacher, 
-        req.query
+        req.teacher,
+        limit
       );
-      res.status(200).json({ success: true, topStudents });
+      
+      res.status(200).json({ 
+        success: true, 
+        topStudents 
+      });
     } catch (error) {
       console.error('Error in getTopStudents controller:', error);
-      next(error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to get top students'
+      });
     }
   }
 
@@ -68,20 +81,25 @@ class RoleBasedEventReportsController {
    */
   static async getTopPerformersByCategory(req, res, next) {
     try {
-      // Add the category from URL params to the query filters
-      const filters = { 
-        ...req.query,
-        category: req.params.category 
-      };
+      const { category } = req.params;
+      console.log(`Getting top performers for category: ${category}`);
       
       const topPerformers = await RoleBasedEventReportsService.getTopPerformersByCategory(
-        req.teacher, 
-        filters
+        req.teacher,
+        category,
+        req.query
       );
-      res.status(200).json({ success: true, topPerformers });
+      
+      res.status(200).json({ 
+        success: true, 
+        topPerformers 
+      });
     } catch (error) {
       console.error('Error in getTopPerformersByCategory controller:', error);
-      next(error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to get top performers'
+      });
     }
   }
 
@@ -90,14 +108,24 @@ class RoleBasedEventReportsController {
    */
   static async getPopularCategories(req, res, next) {
     try {
+      console.log('Getting popular categories');
+      const limit = parseInt(req.query.limit) || 5;
+      
       const popularCategories = await RoleBasedEventReportsService.getPopularCategories(
-        req.teacher, 
-        req.query
+        req.teacher,
+        limit
       );
-      res.status(200).json({ success: true, popularCategories });
+      
+      res.status(200).json({ 
+        success: true, 
+        popularCategories 
+      });
     } catch (error) {
       console.error('Error in getPopularCategories controller:', error);
-      next(error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to get popular categories'
+      });
     }
   }
 
@@ -106,14 +134,22 @@ class RoleBasedEventReportsController {
    */
   static async getClassPerformance(req, res, next) {
     try {
+      console.log('Getting class performance with teacher:', req.teacher.name);
+      
       const performance = await RoleBasedEventReportsService.getClassPerformance(
-        req.teacher, 
-        req.query
+        req.teacher
       );
-      res.status(200).json({ success: true, performance });
+      
+      res.status(200).json({ 
+        success: true, 
+        performance 
+      });
     } catch (error) {
       console.error('Error in getClassPerformance controller:', error);
-      next(error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to get class performance'
+      });
     }
   }
 
@@ -122,14 +158,22 @@ class RoleBasedEventReportsController {
    */
   static async getDetailedStudentPerformance(req, res, next) {
     try {
+      console.log('Getting detailed student performance');
+      
       const performance = await RoleBasedEventReportsService.getDetailedStudentPerformance(
-        req.teacher, 
-        req.query
+        req.teacher
       );
-      res.status(200).json({ success: true, performance });
+      
+      res.status(200).json({ 
+        success: true, 
+        performance 
+      });
     } catch (error) {
       console.error('Error in getDetailedStudentPerformance controller:', error);
-      next(error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to get detailed student performance'
+      });
     }
   }
 
@@ -138,14 +182,22 @@ class RoleBasedEventReportsController {
    */
   static async getCategoryPerformanceByClass(req, res, next) {
     try {
+      console.log('Getting category performance by class');
+      
       const performance = await RoleBasedEventReportsService.getCategoryPerformanceByClass(
-        req.teacher, 
-        req.query
+        req.teacher
       );
-      res.status(200).json({ success: true, performance });
+      
+      res.status(200).json({ 
+        success: true, 
+        performance 
+      });
     } catch (error) {
       console.error('Error in getCategoryPerformanceByClass controller:', error);
-      next(error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to get category performance by class'
+      });
     }
   }
 
@@ -154,14 +206,24 @@ class RoleBasedEventReportsController {
    */
   static async getInactiveStudents(req, res, next) {
     try {
+      console.log('Getting inactive students');
+      const inactiveDays = parseInt(req.query.inactiveDays) || 30;
+      
       const inactiveStudents = await RoleBasedEventReportsService.getInactiveStudents(
-        req.teacher, 
-        req.query
+        req.teacher,
+        inactiveDays
       );
-      res.status(200).json({ success: true, inactiveStudents });
+      
+      res.status(200).json({ 
+        success: true, 
+        inactiveStudents 
+      });
     } catch (error) {
       console.error('Error in getInactiveStudents controller:', error);
-      next(error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to get inactive students'
+      });
     }
   }
 
@@ -170,14 +232,22 @@ class RoleBasedEventReportsController {
    */
   static async getClassParticipation(req, res, next) {
     try {
+      console.log('Getting class participation');
+      
       const participation = await RoleBasedEventReportsService.getClassParticipation(
-        req.teacher, 
-        req.query
+        req.teacher
       );
-      res.status(200).json({ success: true, participation });
+      
+      res.status(200).json({ 
+        success: true, 
+        participation 
+      });
     } catch (error) {
       console.error('Error in getClassParticipation controller:', error);
-      next(error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to get class participation'
+      });
     }
   }
 
@@ -186,14 +256,22 @@ class RoleBasedEventReportsController {
    */
   static async getApprovalRates(req, res, next) {
     try {
+      console.log('Getting approval rates');
+      
       const approvalRates = await RoleBasedEventReportsService.getApprovalRates(
-        req.teacher, 
-        req.query
+        req.teacher
       );
-      res.status(200).json({ success: true, approvalRates });
+      
+      res.status(200).json({ 
+        success: true, 
+        approvalRates 
+      });
     } catch (error) {
       console.error('Error in getApprovalRates controller:', error);
-      next(error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to get approval rates'
+      });
     }
   }
 
@@ -202,14 +280,22 @@ class RoleBasedEventReportsController {
    */
   static async getTrends(req, res, next) {
     try {
+      console.log('Getting trends data');
+      
       const trends = await RoleBasedEventReportsService.getTrends(
-        req.teacher, 
-        req.query
+        req.teacher
       );
-      res.status(200).json({ success: true, trends });
+      
+      res.status(200).json({ 
+        success: true, 
+        trends 
+      });
     } catch (error) {
       console.error('Error in getTrends controller:', error);
-      next(error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to get trends'
+      });
     }
   }
 
@@ -218,11 +304,22 @@ class RoleBasedEventReportsController {
    */
   static async getAvailableClasses(req, res, next) {
     try {
-      const classes = await RoleBasedEventReportsService.getAvailableClasses(req.teacher);
-      res.status(200).json({ success: true, classes });
+      console.log('Getting available classes for teacher:', req.teacher.name);
+      
+      const classes = await RoleBasedEventReportsService.getAvailableClasses(
+        req.teacher
+      );
+      
+      res.status(200).json({ 
+        success: true, 
+        classes 
+      });
     } catch (error) {
       console.error('Error in getAvailableClasses controller:', error);
-      next(error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to get available classes'
+      });
     }
   }
 
@@ -234,39 +331,66 @@ class RoleBasedEventReportsController {
       const { reportType } = req.params;
       console.log('Downloading report:', reportType);
       
-      let data;
+      // Create a utility function to convert data to CSV if you don't have one
+      if (typeof convertToCSV !== 'function') {
+        // Simple implementation if convertToCSV is not available
+        const convertToCSV = (data) => {
+          if (!data || !data.length) return '';
+          
+          const headers = Object.keys(data[0]).join(',');
+          const rows = data.map(item => 
+            Object.values(item).map(val => 
+              typeof val === 'string' ? `"${val.replace(/"/g, '""')}"` : val
+            ).join(',')
+          );
+          
+          return [headers, ...rows].join('\n');
+        };
+      }
+      
+      let data = [];
+      
+      // Get the appropriate data based on report type
       switch (reportType) {
         case 'top-students':
-          data = await RoleBasedEventReportsService.getTopStudents(req.teacher, { ...req.query, limit: 200 });
+          data = await RoleBasedEventReportsService.getTopStudents(req.teacher, 100);
           break;
         case 'class-performance':
-          data = await RoleBasedEventReportsService.getClassPerformance(req.teacher, req.query);
+          data = await RoleBasedEventReportsService.getClassPerformance(req.teacher);
           break;
         case 'category-performance':
-          data = await RoleBasedEventReportsService.getCategoryPerformanceByClass(req.teacher, req.query);
+          data = await RoleBasedEventReportsService.getCategoryPerformanceByClass(req.teacher);
           break;
         case 'popular-categories':
-          data = await RoleBasedEventReportsService.getPopularCategories(req.teacher, { ...req.query, limit: 50 });
+          data = await RoleBasedEventReportsService.getPopularCategories(req.teacher, 50);
           break;
         case 'approval-rates':
-          data = await RoleBasedEventReportsService.getApprovalRates(req.teacher, req.query);
+          data = await RoleBasedEventReportsService.getApprovalRates(req.teacher);
           break;
         case 'inactive-students':
-          data = await RoleBasedEventReportsService.getInactiveStudents(req.teacher, req.query);
+          data = await RoleBasedEventReportsService.getInactiveStudents(req.teacher);
           break;
         default:
-          throw new Error('Invalid report type');
+          return res.status(400).json({
+            success: false,
+            message: 'Invalid report type'
+          });
       }
 
-      // Convert data to CSV format
+      // Convert data to CSV
       const csv = await convertToCSV(data);
       
+      // Send as downloadable file
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', `attachment; filename=${reportType}-report.csv`);
       res.send(csv);
+      
     } catch (error) {
       console.error('Error in downloadReport controller:', error);
-      next(error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to download report'
+      });
     }
   }
 }

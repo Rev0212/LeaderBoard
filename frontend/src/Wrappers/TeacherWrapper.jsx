@@ -19,6 +19,7 @@ const reportsApi = axios.create({
   api.interceptors.request.use(config => {
     const token = localStorage.getItem("token");
     if (token) {
+      // Ensure the Authorization header is properly formatted
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -52,11 +53,23 @@ const TeacherProtectWrapper = ({ children }) => {
     // Function to ensure reports endpoints have auth
     const getReports = async (endpoint, params = {}) => {
         try {
+            console.log(`Making reports request to: ${endpoint} with token: ${token?.substring(0, 10)}...`);
             // Make sure we're using the configured reportsApi with auth headers
-            const response = await reportsApi.get(endpoint, { params });
+            const response = await reportsApi.get(endpoint, { 
+                params,
+                headers: {
+                    'Authorization': `Bearer ${token}` // Explicitly set the token here as well
+                }
+            });
             return { success: true, data: response.data };
         } catch (error) {
             console.error(`Error fetching from ${endpoint}:`, error);
+            // Log more detailed error information
+            if (error.response) {
+                console.error('Response data:', error.response.data);
+                console.error('Response status:', error.response.status);
+            }
+            
             if (error.response?.status === 401) {
                 // If unauthorized, redirect to login
                 localStorage.removeItem("token");
