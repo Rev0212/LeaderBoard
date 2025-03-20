@@ -47,7 +47,7 @@ const classSchema = new mongoose.Schema({
   }],
   students: [{ 
     type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Student' 
+    ref: 'student'  // Changed from 'Student' to 'student'
   }],
   facultyAssigned: [{
     type: mongoose.Schema.Types.ObjectId,

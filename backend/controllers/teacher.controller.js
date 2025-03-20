@@ -1,12 +1,14 @@
 const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
-const csv = require('csv-parser'); // Add this import
-const bcrypt = require('bcrypt'); // Add this if not already imported
+const csv = require('csv-parser');
+const bcrypt = require('bcrypt');
 const teacherModel = require('../models/teacher.model');
 const teacherService = require('../services/teacher.service');
 const TeacherBulkService = require('../services/teacherBulk.services');
 const BlacklistToken = require('../models/blacklistToken.model');
+const studentModel = require('../models/student.model'); // Add this import
+const classModel = require('../models/class.model'); // Make sure class model is imported
 const { validationResult } = require('express-validator');
 
 // Ensure uploads directory exists
@@ -317,13 +319,37 @@ module.exports.logoutTeacher = async (req, res, next) => {
  */
 exports.getAdvisedClasses = async (req, res) => {
     try {
-        const classes = await classModel.find({ academicAdvisors: req.teacher._id })
+        const teacher = req.teacher;
+        console.log("Teacher ID:", teacher._id);
+        console.log("Teacher role:", teacher.role);
+        
+        let classes = [];
+        
+        // HODs can see all classes in their department
+        if (teacher.role === 'HOD') {
+            classes = await classModel.find({ department: teacher.department })
+                .populate('facultyAssigned', 'name email registerNo')
+                .populate('academicAdvisors', 'name email registerNo');
+            
+            console.log(`Found ${classes.length} classes for HOD in department ${teacher.department}`);
+        } 
+        // For Academic Advisors and Faculty, find classes where they're listed
+        else {
+            classes = await classModel.find({ 
+                $or: [
+                    { academicAdvisors: teacher._id },
+                    { facultyAssigned: teacher._id }
+                ]
+            })
             .populate('facultyAssigned', 'name email registerNo')
-            .populate('students', 'name email registerNo');
-
+            .populate('academicAdvisors', 'name email registerNo');
+            
+            console.log(`Found ${classes.length} classes for teacher (${teacher.role})`);
+        }
+        
         return res.status(200).json(classes);
     } catch (error) {
         console.error('Error in getAdvisedClasses:', error);
-        return res.status(500).json({ message: 'Internal server error' });
+        return res.status(500).json({ message: 'Internal server error', error: error.message });
     }
 };

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { User, Mail, Hash, Star, Calendar, ArrowLeft, Camera, Trash2 } from 'lucide-react';
+import { User, Mail, Hash, Star, Calendar, ArrowLeft, Camera, Trash2, Building, GraduationCap, Users } from 'lucide-react';
 
 const TeacherProfile = ({ teacherData, handleBackToDashboard }) => {
-   console.log(teacherData)
-  const [profileImg, setProfileImg] = useState(teacherData?.profileImg || null);
+  // Add loading state to handle null data
+  const [loading, setLoading] = useState(!teacherData);
+  const [profileImg, setProfileImg] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [showChangePasswordForm, setShowChangePasswordForm] = useState(false);
   const [passwordData, setPasswordData] = useState({
@@ -16,7 +17,10 @@ const TeacherProfile = ({ teacherData, handleBackToDashboard }) => {
   const [passwordSuccess, setPasswordSuccess] = useState("");
 
   useEffect(() => {
-    setProfileImg(teacherData?.profileImg || null);
+    if (teacherData) {
+      setLoading(false);
+      setProfileImg(teacherData.profileImg || null);
+    }
   }, [teacherData]);
 
   const handleAddImage = async (event) => {
@@ -32,31 +36,39 @@ const TeacherProfile = ({ teacherData, handleBackToDashboard }) => {
         const cloudinaryResponse = await fetch(
           `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`,
           {
-            method: "PUT",
+            method: "POST", // Changed from PUT to POST as Cloudinary typically uses POST
             body: formData,
           }
         );
 
         const responseData = await cloudinaryResponse.json();
         console.log("Image upload response:", responseData);
-        const imageUrl = responseData.url;
-        console.log(teacherData.registerNo, imageUrl);
+        
+        if (responseData.secure_url) {
+          const imageUrl = responseData.secure_url; // Use secure_url if available
+          console.log("Teacher registerNo:", teacherData?.registerNo, "Image URL:", imageUrl);
 
-        setProfileImg(imageUrl);
+          setProfileImg(imageUrl);
 
-        await axios.put(
-          `${import.meta.env.VITE_BASE_URL}/teacher/add`,
-          {
-            profileImg: imageUrl,
-            registerNo: teacherData.registerNo
-          },
-          {
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${localStorage.getItem("teacher-token")}`,
+          // Make sure VITE_BASE_URL is accessible
+          const baseUrl = import.meta.env.VITE_BASE_URL;
+          
+          await axios.put(
+            `${baseUrl}/teacher/add`,
+            {
+              profileImg: imageUrl,
+              registerNo: teacherData.registerNo
             },
-          }
-        );
+            {
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${localStorage.getItem("teacher-token") || localStorage.getItem("token")}`,
+              },
+            }
+          );
+        } else {
+          throw new Error("Failed to get image URL from Cloudinary");
+        }
       } catch (error) {
         console.error("Image upload failed:", error);
         setPasswordError("Failed to upload image. Please try again.");
@@ -69,13 +81,17 @@ const TeacherProfile = ({ teacherData, handleBackToDashboard }) => {
   const handleRemoveImage = async () => {
     setProfileImg(null);
     try {
+      const baseUrl = import.meta.env.VITE_BASE_URL;
       await axios.put(
-        `${VITE_BASE_URL}/teacher/${teacherData._id}/profile-image`,
-        { profileImg: null },
+        `${baseUrl}/teacher/add`,
+        { 
+          profileImg: null,
+          registerNo: teacherData.registerNo 
+        },
         {
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${localStorage.getItem("teacher-token")}`,
+            "Authorization": `Bearer ${localStorage.getItem("teacher-token") || localStorage.getItem("token")}`,
           },
         }
       );
@@ -102,8 +118,9 @@ const TeacherProfile = ({ teacherData, handleBackToDashboard }) => {
     }
 
     try {
+      const baseUrl = import.meta.env.VITE_BASE_URL;
       await axios.put(
-        `${import.meta.env.VITE_BASE_URL}/teacher/change-password`,
+        `${baseUrl}/teacher/change-password`,
         {
           oldPassword: passwordData.oldPassword,
           newPassword: passwordData.newPassword
@@ -111,7 +128,7 @@ const TeacherProfile = ({ teacherData, handleBackToDashboard }) => {
         {
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${localStorage.getItem("token")}`,
+            "Authorization": `Bearer ${localStorage.getItem("teacher-token") || localStorage.getItem("token")}`,
           },
         }
       );
@@ -129,6 +146,17 @@ const TeacherProfile = ({ teacherData, handleBackToDashboard }) => {
       setPasswordError("Failed to change password. Please try again.");
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-4 text-gray-700">Loading teacher profile...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center py-10 px-6">
@@ -190,10 +218,12 @@ const TeacherProfile = ({ teacherData, handleBackToDashboard }) => {
             <InfoRow icon={<User />} label="Full Name" value={teacherData?.name} />
             <InfoRow icon={<Mail />} label="Email Address" value={teacherData?.email} />
             <InfoRow icon={<Hash />} label="Register Number" value={teacherData?.registerNo} />
+            <InfoRow icon={<Building />} label="Department" value={teacherData?.department} />
+            <InfoRow icon={<GraduationCap />} label="Role" value={teacherData?.role} />
             <InfoRow 
-              icon={<Calendar />} 
-              label="Class Incharge" 
-              value={teacherData?.classes?.[0]?.className || "N/A"} 
+              icon={<Users />} 
+              label="Classes Assigned" 
+              value={teacherData?.classes?.length > 0 ? `${teacherData.classes.length} Class(es)` : "No Classes Assigned"} 
             />
           </div>
 
@@ -293,7 +323,7 @@ const InfoRow = ({ icon, label, value }) => (
     </div>
     <div>
       <p className="text-sm text-gray-500">{label}</p>
-      <p className="text-lg font-semibold">{value}</p>
+      <p className="text-lg font-semibold">{value || "N/A"}</p>
     </div>
   </div>
 );

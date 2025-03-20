@@ -1,18 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import { 
   BarChart, Bar, LineChart, Line, PieChart, Pie, 
   XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Legend, CartesianGrid, LabelList
 } from 'recharts';
 import { 
   TrendingUp, Award, PieChart as PieChartIcon, 
-  BarChart2, Users, Download, Search
+  BarChart2, Users, Download, Search, ArrowLeft
 } from 'lucide-react';
 
 import LeaderboardTable from '../components/LeaderBoard';
 import ReportsDownloadSection from '../components/ReportsDownloadSection';
 
-const ReportsPage = () => {
+const ReportsPage = ({ isEmbedded = false }) => {
+  const navigate = useNavigate();
   const [totalPrizeMoney, setTotalPrizeMoney] = useState(0);
   const [topStudents, setTopStudents] = useState([]);
   const [popularCategories, setPopularCategories] = useState([]);
@@ -29,6 +31,7 @@ const ReportsPage = () => {
   const [nameSearchQuery, setNameSearchQuery] = useState('');
   const [selectedClass, setSelectedClass] = useState('');
   const [inactiveDaysFilter, setInactiveDaysFilter] = useState(30);
+  const [userRole, setUserRole] = useState('');
 
   const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -44,57 +47,57 @@ const ReportsPage = () => {
     { id: 'downloads', label: 'Downloads', icon: <Download size={20} /> }
   ];
 
+  // Add this function to create placeholder data when needed
+  const createPlaceholderData = () => {
+    return [
+      { name: 'No Data Available', value: 1 }
+    ];
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchReportsData = async () => {
+      setLoading(true);
+      setError(null);
+      
       try {
-        setLoading(true);
-        setError(null); // Reset error state
+        console.log('Fetching reports data from:', baseURL);
         
-        // Fetch prize money
-        const prizeMoneyResponse = await axios.get(`${baseURL}/reports/total-prize-money`);
-        setTotalPrizeMoney(prizeMoneyResponse.data.totalPrizeMoney);
+        // Fetch total prize money
+        const totalPrizeMoneyResponse = await axios.get(`${baseURL}/reports/total-prize-money`);
+        console.log('Total Prize Money Response:', totalPrizeMoneyResponse.data);
+        setTotalPrizeMoney(totalPrizeMoneyResponse.data.totalPrizeMoney || 0);
 
         // Fetch top students
-        const topStudentsResponse = await axios.get(`${baseURL}/reports/top-students`);
-        const formattedStudentData = topStudentsResponse.data.topStudents.map(student => ({
-          submittedBy: student._id,
-          totalPoints: student.totalPoints,
-        }));
-        setTopStudents(formattedStudentData);
+        const topStudentsResponse = await axios.get(`${baseURL}/reports/top-students?limit=10`);
+        console.log('Top Students Response:', topStudentsResponse.data);
+        setTopStudents(topStudentsResponse.data.topStudents || []);
 
-        // Fetch and format categories
-        const categoriesResponse = await axios.get(`${baseURL}/reports/popular-categories`);
-        const formattedCategories = categoriesResponse.data.popularCategories.map(category => ({
-          name: category._id,
-          value: category.count
-        }));
-        setPopularCategories(formattedCategories);
+        // Fetch popular categories
+        const categoriesResponse = await axios.get(`${baseURL}/reports/popular-categories?limit=5`);
+        console.log('Popular Categories Response:', categoriesResponse.data);
+        
+        // Set placeholder data if empty
+        const categoryData = categoriesResponse.data.popularCategories || [];
+        setPopularCategories(categoryData.length > 0 ? categoryData : createPlaceholderData());
 
         // Fetch approval rates
         const approvalResponse = await axios.get(`${baseURL}/reports/approval-rates`);
-        const formattedApprovalRates = approvalResponse.data.approvalRates.map(rate => ({
-          name: rate.status,
-          value: rate.count
-        }));
-        setApprovalRates(formattedApprovalRates);
-
-        // Fetch trends
-        const trendsResponse = await axios.get(`${baseURL}/reports/trends/monthly`);
-        setTrends(trendsResponse.data.trends);
+        console.log('Approval Rates Response:', approvalResponse.data);
+        setApprovalRates(approvalResponse.data.approvalRates || []);
 
         // Fetch class performance
-        const classPerformanceResponse = await axios.get(`${baseURL}/reports/class-performance`);
-        console.log('Class Performance Response:', classPerformanceResponse.data); // Add logging
-        setClassPerformance(classPerformanceResponse.data.performance || []);
+        const classResponse = await axios.get(`${baseURL}/reports/class-performance`);
+        console.log('Class Performance Response:', classResponse.data);
+        setClassPerformance(classResponse.data.performance || []);
 
-        // Fetch detailed student performance
+        // Fetch student performance
         const studentPerformanceResponse = await axios.get(`${baseURL}/reports/detailed-student-performance`);
-        console.log('Student Performance Response:', studentPerformanceResponse.data); // Add logging
+        console.log('Student Performance Response:', studentPerformanceResponse.data);
         setStudentPerformance(studentPerformanceResponse.data.performance || []);
 
         // Fetch category performance by class
         const categoryResponse = await axios.get(`${baseURL}/reports/category-performance-by-class`);
-        console.log('Category Performance Response:', categoryResponse.data); // Add logging
+        console.log('Category Performance Response:', categoryResponse.data);
         setCategoryByClass(categoryResponse.data.performance || []);
 
         // Fetch inactive students
@@ -106,14 +109,19 @@ const ReportsPage = () => {
         setClassParticipation(classParticipationResponse.data.participation || []);
 
       } catch (err) {
-        console.error('Error details:', err.response?.data || err.message); // Add detailed error logging
+        console.error('Error fetching reports:', err);
+        console.error('Error details:', err.response?.data || err.message);
         setError(err.response?.data?.message || 'Failed to load report data');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
+    // Determine user type from local storage or other auth mechanism
+    const role = localStorage.getItem('userRole') || '';
+    setUserRole(role);
+
+    fetchReportsData();
   }, [baseURL]);
 
   const CustomTooltip = ({ active, payload, label }) => {
@@ -556,43 +564,94 @@ const ReportsPage = () => {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
-      <div className="w-64 bg-white shadow-lg fixed h-full">
+  const handleBackNavigation = () => {
+    if (userRole === 'Admin') {
+      navigate('/admin-dashboard');
+    } else if (userRole === 'HOD' || userRole === 'Advisor') {
+      navigate('/advisor-hod');
+    } else {
+      navigate('/teacher-dashboard');
+    }
+  };
+
+  return isEmbedded ? (
+    <div className="bg-gray-50">
+      {loading ? (
+        <div className="flex items-center justify-center py-10">
+          <div className="text-lg text-gray-600">Loading reports...</div>
+        </div>
+      ) : error ? (
+        <div className="flex items-center justify-center py-10">
+          <div className="text-lg text-red-600">{error}</div>
+        </div>
+      ) : (
         <div className="p-6">
-          <h1 className="text-xl font-bold text-gray-800 mb-6">Reports Dashboard</h1>
-          <nav className="space-y-2">
+          {/* Navigation tabs */}
+          <div className="mb-6 flex overflow-x-auto gap-2 pb-2">
             {sidebarItems.map(item => (
               <button
                 key={item.id}
                 onClick={() => setActiveSection(item.id)}
-                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
                   activeSection === item.id 
-                    ? 'bg-blue-50 text-blue-600' 
-                    : 'text-gray-600 hover:bg-gray-50'
+                    ? 'bg-blue-100 text-blue-600' 
+                    : 'text-gray-600 hover:bg-gray-100'
                 }`}
               >
                 {item.icon}
                 <span>{item.label}</span>
               </button>
             ))}
-          </nav>
+          </div>
+          {renderContent()}
         </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="ml-64 flex-1 p-8">
+      )}
+    </div>
+  ) : (
+    <div className="min-h-screen bg-gray-50">
+      {/* Add back navigation */}
+      <div className="p-4 lg:p-8">
+        <button
+          onClick={handleBackNavigation}
+          className="flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-6"
+        >
+          <ArrowLeft size={18} />
+          <span>Back to Dashboard</span>
+        </button>
+        
+        {/* Rest of your reports UI */}
         {loading ? (
-          <div className="flex items-center justify-center h-full">
+          <div className="flex items-center justify-center h-64">
             <div className="text-lg text-gray-600">Loading reports...</div>
           </div>
         ) : error ? (
-          <div className="flex items-center justify-center h-full">
+          <div className="flex items-center justify-center h-64">
             <div className="text-lg text-red-600">{error}</div>
           </div>
         ) : (
-          renderContent()
+          <div>
+            {/* Your reports content */}
+            {/* Navigation tabs */}
+            <div className="mb-6 flex overflow-x-auto gap-2 pb-2">
+              {sidebarItems.map(item => (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveSection(item.id)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
+                    activeSection === item.id 
+                      ? 'bg-blue-100 text-blue-600' 
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  {item.icon}
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </div>
+            
+            {/* Reports content sections */}
+            {renderContent()}
+          </div>
         )}
       </div>
     </div>

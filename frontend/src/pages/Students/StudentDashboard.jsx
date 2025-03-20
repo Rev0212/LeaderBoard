@@ -3,6 +3,7 @@ import { Trophy, Calendar, Plus, Medal, User, LogOut, Menu, X, History, External
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import LeaderboardTable from "../../components/LeaderBoard";
+import StudentEventHistory from "../../components/StudentEventHistory";
 
 const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -210,6 +211,16 @@ const StudentDashboard = () => {
     if (loading) return <div className="text-center py-10">Loading...</div>;
     if (error) return <div className="text-center py-10 text-red-500">{error}</div>;
 
+    // Display StudentEventHistory if currentView is eventHistory
+    if (currentView === "eventHistory") {
+      return (
+        <div className="p-6 lg:ml-64 bg-gray-50 min-h-screen">
+          <StudentEventHistory handleBackToDashboard={() => setCurrentView("dashboard")} />
+        </div>
+      );
+    }
+
+    // Regular dashboard content
     return (
       <div className="p-6 lg:ml-64 bg-gray-50 min-h-screen">
         {windowWidth < 1024 && (

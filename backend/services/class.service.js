@@ -275,6 +275,28 @@ exports.getStudentsByClass = async (classId) => {
         .select('-password -rawPassword');
 };
 
+exports.addStudentsToClass = async (classId, studentIds) => {
+    // First, update the class to include these students
+    await classModel.findByIdAndUpdate(
+        classId,
+        { $addToSet: { students: { $each: studentIds } } }
+    );
+    
+    // Then update each student to reference this class
+    // Try both ways depending on your schema usage
+    await studentModel.updateMany(
+        { _id: { $in: studentIds } },
+        { 
+            $set: { 
+                class: classId,
+                'currentClass.ref': classId 
+            } 
+        }
+    );
+    
+    return await classModel.findById(classId).populate('students');
+};
+
 module.exports = {
     createClass,
     addStudentsToClass,

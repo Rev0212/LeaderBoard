@@ -9,20 +9,29 @@ const StudentEventHistory = ({ handleBackToDashboard }) => {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
+        const token = localStorage.getItem('student-token') || localStorage.getItem('token');
+        
+        if (!token) {
+          throw new Error('No authentication token found');
+        }
+        
         const response = await fetch(`${import.meta.env.VITE_BASE_URL}/student/events-history`, {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('student-token')}`,
+            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         });
 
         if (!response.ok) {
-          throw new Error('Failed to fetch events');
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to fetch events');
         }
 
         const data = await response.json();
+        console.log('Student events data:', data);
         setEvents(data);
       } catch (err) {
+        console.error('Error fetching events:', err);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -123,4 +132,4 @@ const StudentEventHistory = ({ handleBackToDashboard }) => {
   );
 };
 
-export default StudentEventHistory; 
+export default StudentEventHistory;
