@@ -31,8 +31,7 @@ app.use('/student', studentRoutes);
 const teacherRoutes = require('./routes/teacher.routes');
 app.use('/teacher', teacherRoutes);
 
-const eventRoutes = require("./routes/event.routes")
-app.use('/event',eventRoutes)
+
 
 const adminRoutes = require("./routes/admin.routes")
 app.use('/admin',adminRoutes)
@@ -43,14 +42,19 @@ app.use('/class',classRoutes)
 const leaderboardRoutes = require('./routes/leaderboard.routes')
 app.use('/leaderboard',leaderboardRoutes)
 
-const eventReports = require('./routes/eventReports.routes');
-app.use('/reports', eventReports);
+
 
 const upcomingEventRoutes = require('./routes/upcomingEvent.routes');
 app.use('/upcoming-events', upcomingEventRoutes);
 
 const assignmentRoutes = require('./routes/assignment.routes');
 app.use('/assignment', assignmentRoutes);
+
+
+const roleBasedEventReportsRoutes = require('./routes/roleBasedEventReports.routes');
+
+// Mount routes
+app.use('/reports', roleBasedEventReportsRoutes);
 
 // console.log('Mounted upcoming events routes at /upcoming-events');
 

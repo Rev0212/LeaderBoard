@@ -72,4 +72,9 @@ router.get('/department-teachers', authMiddleware.authHOD, teacherController.get
 // Academic Advisor specific routes
 router.get('/advised-classes', authMiddleware.authAcademicAdvisor, teacherController.getAdvisedClasses);
 
+
+router.get('/verify', authMiddleware.authTeacher, (req, res) => {
+    return res.status(200).json({ isAuthenticated: true });
+  });
+  
 module.exports = router;
