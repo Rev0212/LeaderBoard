@@ -8,8 +8,14 @@ const cookieParser = require('cookie-parser');
 const connectToDb = require('./db/db');
 
 // CORS configuration
+// app.use(cors({
+//   origin: true, // Allow all origins in development
+//   credentials: true,
+//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+//   allowedHeaders: ['Content-Type', 'Authorization']
+// }));
 app.use(cors({
-  origin: true, // Allow all origins in development
+  origin: "http://localhost:5173", // Or your actual frontend URL
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
