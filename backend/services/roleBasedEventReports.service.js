@@ -73,50 +73,113 @@ class RoleBasedEventReportsService {
   }
 
   /**
-   * Get available classes for the given teacher's role/department
+   * Apply user filters to base filters
    */
-  static async getAvailableClasses(teacher) {
+  static applyUserFilters(baseFilters, userFilters = {}) {
+    const filters = { ...baseFilters };
+    
+    // Add year filter
+    if (userFilters.year && !isNaN(parseInt(userFilters.year))) {
+      filters.studentYear = parseInt(userFilters.year);
+      console.log(`Applied year filter: ${filters.studentYear}`);
+    }
+    
+    // Add specific class filter if provided
+    if (userFilters.classId) {
+      filters.specificClassId = userFilters.classId;
+    }
+    
+    // Add date range filter if provided
+    if (userFilters.startDate && userFilters.endDate) {
+      filters.dateRange = {
+        $gte: new Date(userFilters.startDate),
+        $lte: new Date(userFilters.endDate)
+      };
+    }
+    
+    // Add category filter
+    if (userFilters.category) {
+      filters.category = userFilters.category;
+    }
+    
+    // Add department filter
+    if (userFilters.department) {
+      filters.department = userFilters.department;
+    }
+    
+    return filters;
+  }
+
+  /**
+   * Get student-class mapping based on filters
+   */
+  static async getStudentClassMap(filters) {
     try {
+      // Get accessible classes based on role
       let classQuery = {};
       
-      // If HOD, show classes in their department
-      if (teacher.role === 'HOD') {
-        classQuery.department = teacher.department;
-      } 
-      // If Academic Advisor, show classes they advise
-      else if (teacher.role === 'Academic Advisor') {
-        const advisedClassIds = await Class.find({
-          academicAdvisors: teacher._id
-        }).distinct('_id');
-        
-        if (advisedClassIds.length > 0) {
-          classQuery._id = { $in: advisedClassIds };
-        }
-      } 
-      // If Faculty, show their assigned classes
-      else {
-        const assignedClassIds = await Class.find({
-          facultyAssigned: teacher._id
-        }).distinct('_id');
-        
-        if (assignedClassIds.length === 0 && teacher.classes && teacher.classes.length > 0) {
-          // Fallback to teacher.classes if facultyAssigned is empty
-          classQuery._id = { $in: teacher.classes };
-        } else if (assignedClassIds.length > 0) {
-          classQuery._id = { $in: assignedClassIds };
-        }
+      if (filters.specificClassId) {
+        // Looking for a specific class
+        classQuery._id = filters.specificClassId;
+      } else if (filters.accessibleClassIds && filters.accessibleClassIds.length > 0) {
+        // Filter to role-accessible classes
+        classQuery._id = { $in: filters.accessibleClassIds };
       }
       
-      // For admin or if filters would return nothing, return all classes
-      if (teacher.role === 'admin' || 
-         (Object.keys(classQuery).length === 0 && 
-          teacher.role !== 'Faculty')) {
-        console.log("Returning all classes");
-        return await Class.find({}).lean();
+      // Apply year filter if provided
+      if (filters.studentYear) {
+        classQuery.year = filters.studentYear;
+        console.log(`Filtering classes by year: ${filters.studentYear}`);
       }
       
+      // Apply department filter if provided
+      if (filters.department) {
+        classQuery.department = filters.department;
+      }
+      
+      console.log('Class query:', JSON.stringify(classQuery));
+      
+      // Get filtered classes
       const classes = await Class.find(classQuery).lean();
-      console.log(`Found ${classes.length} classes for teacher`);
+      console.log(`Found ${classes.length} classes matching criteria`);
+      
+      // Continue with the rest of your method...
+    } catch (error) {
+      console.error('Error getting student-class map:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get available classes for the given teacher's role/department
+   */
+  static async getAvailableClasses(teacher, yearFilter = null) {
+    try {
+      // Get role-based access filters
+      const baseFilters = await this.getRoleBasedFilters(teacher);
+      
+      // Build query based on teacher's role
+      let query = {};
+      
+      // Apply year filter if provided
+      if (yearFilter && !isNaN(parseInt(yearFilter))) {
+        query.year = parseInt(yearFilter);
+      }
+      
+      // Apply department filter for HOD/faculty
+      if (teacher.role === 'HOD' && teacher.department) {
+        query.department = teacher.department;
+      }
+      
+      // Apply class restrictions for faculty
+      if (teacher.role === 'faculty' && teacher.classes && teacher.classes.length > 0) {
+        query._id = { $in: teacher.classes };
+      }
+      
+      // Get classes
+      const classes = await Class.find(query)
+        .sort({ year: 1, section: 1, department: 1 })
+        .lean();
       
       return classes;
     } catch (error) {
@@ -128,53 +191,74 @@ class RoleBasedEventReportsService {
   /**
    * Get top students based on teacher's role/department
    */
-  static async getTopStudents(teacher, limit = 10) {
+  static async getTopStudents(teacher, limit = 10, userFilters = {}) {
     try {
-      // Get class IDs accessible to this teacher
-      const filters = await this.getRoleBasedFilters(teacher);
-      const classes = await this.getAvailableClasses(teacher);
+      // Get role-based access filters with user filters applied
+      const baseFilters = await this.getRoleBasedFilters(teacher);
+      const filters = this.applyUserFilters(baseFilters, userFilters);
       
-      if (classes.length === 0) {
-        console.log("No classes found, returning empty result");
+      // Get student-class map based on filters (now includes year filter)
+      const studentClassMap = await this.getStudentClassMap(filters);
+      
+      // Convert student IDs to ObjectIds
+      const accessibleStudentIds = Array.from(studentClassMap.keys()).map(id => 
+        mongoose.Types.ObjectId(id)
+      );
+      
+      // If no students found, return empty array
+      if (accessibleStudentIds.length === 0) {
+        console.log("No accessible students found");
         return [];
       }
       
-      // Get class IDs
-      const classIds = classes.map(c => c._id);
-      
-      // Find students in those classes
-      const students = await Student.find({
-        $or: [
-          { 'currentClass.ref': { $in: classIds } },
-          { 'class': { $in: classIds } }
-        ]
-      })
-      .sort({ totalPoints: -1 })
-      .limit(limit)
-      .select('name registerNo totalPoints currentClass department')
-      .lean();
-      
-      console.log(`Found ${students.length} top students`);
-      
-      // Enhance student data with class name
-      const studentsWithClass = await Promise.all(students.map(async student => {
-        let className = "Unknown";
-        const classId = student.currentClass?.ref || student.class;
-        
-        if (classId) {
-          const classDetails = await Class.findById(classId).select('className').lean();
-          if (classDetails) {
-            className = classDetails.className;
+      // Get events submitted by these students
+      const pipeline = [
+        {
+          $match: {
+            submittedBy: { $in: accessibleStudentIds },
+            status: 'Approved'
           }
+        },
+        {
+          $group: {
+            _id: '$submittedBy',
+            totalPoints: { $sum: '$points' },
+            eventCount: { $sum: 1 }
+          }
+        },
+        {
+          $sort: { totalPoints: -1 }
+        },
+        {
+          $limit: limit
         }
-        
-        return {
-          ...student,
-          className
-        };
-      }));
+      ];
       
-      return studentsWithClass;
+      const studentStats = await Event.aggregate(pipeline);
+      
+      // Get student details
+      const topStudents = await Promise.all(
+        studentStats.map(async (stat) => {
+          const student = await Student.findById(stat._id)
+            .select('name registerNo totalPoints department currentClass')
+            .lean();
+            
+          if (!student) return null;
+          
+          return {
+            _id: student._id,
+            name: student.name,
+            registerNo: student.registerNo,
+            totalPoints: stat.totalPoints,
+            activityCount: stat.eventCount,
+            department: student.department,
+            className: studentClassMap.get(student._id.toString()) || 'Unknown'
+          };
+        })
+      );
+      
+      // Filter out nulls and return results
+      return topStudents.filter(Boolean);
     } catch (error) {
       console.error('Error getting top students:', error);
       return [];
@@ -184,10 +268,11 @@ class RoleBasedEventReportsService {
   /**
    * Get popular categories based on event submissions
    */
-  static async getPopularCategories(teacher, limit = 5) {
+  static async getPopularCategories(teacher, limit = 5, userFilters = {}) {
     try {
-      // Get class IDs accessible to this teacher
-      const classes = await this.getAvailableClasses(teacher);
+      // Pass the year filter to getAvailableClasses
+      const yearFilter = userFilters.year ? parseInt(userFilters.year) : null;
+      const classes = await this.getAvailableClasses(teacher, yearFilter);
       
       if (classes.length === 0) {
         console.log("No classes found, returning empty result");
@@ -273,10 +358,11 @@ class RoleBasedEventReportsService {
   /**
    * Get class performance metrics
    */
-  static async getClassPerformance(teacher) {
+  static async getClassPerformance(teacher, userFilters = {}) {
     try {
-      // Get classes accessible to this teacher
-      const classes = await this.getAvailableClasses(teacher);
+      // Pass the year filter to getAvailableClasses
+      const yearFilter = userFilters.year ? parseInt(userFilters.year) : null;
+      const classes = await this.getAvailableClasses(teacher, yearFilter);
       
       if (classes.length === 0) {
         console.log("No classes found, returning empty result");
@@ -346,10 +432,11 @@ class RoleBasedEventReportsService {
   /**
    * Get approval rates statistics
    */
-  static async getApprovalRates(teacher) {
+  static async getApprovalRates(teacher, userFilters = {}) {
     try {
-      // Get class IDs accessible to this teacher
-      const classes = await this.getAvailableClasses(teacher);
+      // Pass the year filter to getAvailableClasses
+      const yearFilter = userFilters.year ? parseInt(userFilters.year) : null;
+      const classes = await this.getAvailableClasses(teacher, yearFilter);
       
       if (classes.length === 0) {
         console.log("No classes found, returning empty result");
@@ -434,10 +521,11 @@ class RoleBasedEventReportsService {
   /**
    * Get inactive students (students with no recent activity)
    */
-  static async getInactiveStudents(teacher, inactiveDays = 30) {
+  static async getInactiveStudents(teacher, inactiveDays = 30, userFilters = {}) {
     try {
-      // Get class IDs accessible to this teacher
-      const classes = await this.getAvailableClasses(teacher);
+      // Pass the year filter to getAvailableClasses
+      const yearFilter = userFilters.year ? parseInt(userFilters.year) : null;
+      const classes = await this.getAvailableClasses(teacher, yearFilter);
       
       if (classes.length === 0) {
         console.log("No classes found, returning empty result");
@@ -551,10 +639,11 @@ class RoleBasedEventReportsService {
   /**
    * Get detailed student performance data
    */
-  static async getDetailedStudentPerformance(teacher) {
+  static async getDetailedStudentPerformance(teacher, userFilters = {}) {
     try {
-      // Get class IDs accessible to this teacher
-      const classes = await this.getAvailableClasses(teacher);
+      // Pass the year filter to getAvailableClasses
+      const yearFilter = userFilters.year ? parseInt(userFilters.year) : null;
+      const classes = await this.getAvailableClasses(teacher, yearFilter);
       
       if (classes.length === 0) {
         console.log("No classes found, returning empty result");
@@ -643,10 +732,11 @@ class RoleBasedEventReportsService {
   /**
    * Get category performance by class
    */
-  static async getCategoryPerformanceByClass(teacher) {
+  static async getCategoryPerformanceByClass(teacher, userFilters = {}) {
     try {
-      // Get class IDs accessible to this teacher
-      const classes = await this.getAvailableClasses(teacher);
+      // Pass the year filter to getAvailableClasses
+      const yearFilter = userFilters.year ? parseInt(userFilters.year) : null;
+      const classes = await this.getAvailableClasses(teacher, yearFilter);
       
       if (classes.length === 0) {
         console.log("No classes found, returning empty result");
@@ -715,11 +805,11 @@ class RoleBasedEventReportsService {
   /**
    * Get participation trends over time
    */
-  static async getTrends(teacher) {
+  static async getTrends(teacher, userFilters = {}) {
     try {
-      // Get class IDs accessible to this teacher
-      const classes = await this.getAvailableClasses(teacher);
-      
+      // Pass the year filter to getAvailableClasses
+      const yearFilter = userFilters.year ? parseInt(userFilters.year) : null;
+      const classes = await this.getAvailableClasses(teacher, yearFilter);
       if (classes.length === 0) {
         console.log("No classes found, returning empty result");
         return [];
@@ -825,10 +915,11 @@ class RoleBasedEventReportsService {
   /**
    * Get class participation data
    */
-  static async getClassParticipation(teacher) {
+  static async getClassParticipation(teacher, userFilters = {}) {
     try {
-      // Get class IDs accessible to this teacher
-      const classes = await this.getAvailableClasses(teacher);
+      // Pass the year filter to getAvailableClasses
+      const yearFilter = userFilters.year ? parseInt(userFilters.year) : null;
+      const classes = await this.getAvailableClasses(teacher, yearFilter);
       
       if (classes.length === 0) {
         console.log("No classes found, returning empty result");

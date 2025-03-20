@@ -2,11 +2,10 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { 
-  TrendingUp, PieChart, BarChart2, Users, Download
+  PieChart, BarChart2, Users, Download, Filter
 } from 'lucide-react';
 
-// Import section components
-import OverviewSection from '../components/reports/OverviewSection';
+// Import section components - removed OverviewSection
 import CategoriesSection from '../components/reports/CategoriesSection';
 import ClassAnalysisSection from '../components/reports/ClassAnalysisSection';
 import StudentsSection from '../components/reports/StudentsSection';
@@ -16,7 +15,8 @@ const ReportsPage = ({ userData }) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeSection, setActiveSection] = useState('overview');
+  const [activeSection, setActiveSection] = useState('categories'); // Changed default to categories
+  const [yearFilter, setYearFilter] = useState('1');
   const [reportData, setReportData] = useState({
     availableClasses: [],
     topStudents: [],
@@ -31,9 +31,8 @@ const ReportsPage = ({ userData }) => {
     prizeMoneyByClass: [] // HOD only
   });
 
-  // Sidebar navigation items
+  // Sidebar navigation items - removed overview
   const sidebarItems = [
-    { id: 'overview', label: 'Overview', icon: <TrendingUp size={20} /> },
     { id: 'categories', label: 'Categories', icon: <PieChart size={20} /> },
     { id: 'class-analysis', label: 'Class Analysis', icon: <BarChart2 size={20} /> },
     { id: 'students', label: 'Students', icon: <Users size={20} /> },
@@ -58,13 +57,18 @@ const ReportsPage = ({ userData }) => {
     });
   };
 
-  // Helper function for API calls
+  // Helper function for API calls - now includes year filter
   const fetchFromApi = async (endpoint, params = {}) => {
     try {
       const authAxios = createAuthAxios();
       if (!authAxios) return { success: false, message: "Authentication failed" };
       
-      console.log(`Fetching from: ${endpoint}`);
+      // Add year filter if it's set
+      if (yearFilter) {
+        params.year = yearFilter;
+      }
+      
+      console.log(`Fetching from: ${endpoint} with params:`, params);
       const response = await authAxios.get(endpoint, { params });
       console.log(`Response from ${endpoint}:`, response.data);
       return { success: true, data: response.data };
@@ -84,72 +88,75 @@ const ReportsPage = ({ userData }) => {
     }
   };
 
-  // Main data fetching function
+  // Reload data when year filter changes
   useEffect(() => {
-    const fetchReportsData = async () => {
-      setLoading(true);
-      setError(null);
-      
-      try {
-        // Common reports for all roles
-        const basicData = await Promise.allSettled([
-          fetchFromApi('/reports/available-classes'),
-          fetchFromApi('/reports/top-students'),
-          fetchFromApi('/reports/popular-categories'),
-          fetchFromApi('/reports/approval-rates'),
-          fetchFromApi('/reports/trends'),
-          fetchFromApi('/reports/class-performance')
-        ]);
-        
-        // Advanced reports for faculty and HOD
-        const advancedData = await Promise.allSettled([
-          fetchFromApi('/reports/detailed-student-performance'),
-          fetchFromApi('/reports/inactive-students'),
-          fetchFromApi('/reports/class-participation'),
-          fetchFromApi('/reports/category-performance-by-class')
-        ]);
-        
-        // HOD-only report
-        let hodData = null;
-        if (userData?.role === 'HOD' || userData?.role === 'admin') {
-          hodData = await fetchFromApi('/reports/prize-money-by-class');
-        }
-        
-        // Process and set report data
-        const newReportData = {
-          availableClasses: basicData[0].status === 'fulfilled' && basicData[0].value.success 
-            ? basicData[0].value.data.classes || [] : [],
-          topStudents: basicData[1].status === 'fulfilled' && basicData[1].value.success 
-            ? basicData[1].value.data.topStudents || [] : [],
-          popularCategories: basicData[2].status === 'fulfilled' && basicData[2].value.success 
-            ? basicData[2].value.data.popularCategories || [] : [],
-          approvalRates: basicData[3].status === 'fulfilled' && basicData[3].value.success 
-            ? basicData[3].value.data.approvalRates || [] : [],
-          trends: basicData[4].status === 'fulfilled' && basicData[4].value.success 
-            ? basicData[4].value.data.trends || [] : [],
-          classPerformance: basicData[5].status === 'fulfilled' && basicData[5].value.success 
-            ? basicData[5].value.data.performance || [] : [],
-          detailedStudentPerformance: advancedData[0].status === 'fulfilled' && advancedData[0].value.success 
-            ? advancedData[0].value.data.performance || [] : [],
-          inactiveStudents: advancedData[1].status === 'fulfilled' && advancedData[1].value.success 
-            ? advancedData[1].value.data.inactiveStudents || [] : [],
-          classParticipation: advancedData[2].status === 'fulfilled' && advancedData[2].value.success 
-            ? advancedData[2].value.data.participation || [] : [],
-          categoryPerformanceByClass: advancedData[3].status === 'fulfilled' && advancedData[3].value.success 
-            ? advancedData[3].value.data.performance || [] : [],
-          prizeMoneyByClass: hodData?.success ? hodData.data.prizeMoneyByClass || [] : []
-        };
-        
-        setReportData(newReportData);
-        
-      } catch (error) {
-        console.error('Error in fetchReportsData:', error);
-        setError('Failed to load reports data. Please try again later.');
-      } finally {
-        setLoading(false);
-      }
-    };
+    fetchReportsData();
+  }, [yearFilter]);
 
+  // Main data fetching function
+  const fetchReportsData = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // Common reports for all roles - removed references to overview data
+      const basicData = await Promise.allSettled([
+        fetchFromApi('/reports/available-classes'),
+        fetchFromApi('/reports/top-students'),
+        fetchFromApi('/reports/popular-categories'),
+        fetchFromApi('/reports/approval-rates'),
+        fetchFromApi('/reports/class-performance')
+      ]);
+      
+      // Advanced reports for faculty and HOD
+      const advancedData = await Promise.allSettled([
+        fetchFromApi('/reports/detailed-student-performance'),
+        fetchFromApi('/reports/inactive-students'),
+        fetchFromApi('/reports/class-participation'),
+        fetchFromApi('/reports/category-performance-by-class')
+      ]);
+      
+      // HOD-only report
+      let hodData = null;
+      if (userData?.role === 'HOD' || userData?.role === 'admin') {
+        hodData = await fetchFromApi('/reports/prize-money-by-class');
+      }
+      
+      // Process and set report data
+      const newReportData = {
+        availableClasses: basicData[0].status === 'fulfilled' && basicData[0].value.success 
+          ? basicData[0].value.data.classes || [] : [],
+        topStudents: basicData[1].status === 'fulfilled' && basicData[1].value.success 
+          ? basicData[1].value.data.topStudents || [] : [],
+        popularCategories: basicData[2].status === 'fulfilled' && basicData[2].value.success 
+          ? basicData[2].value.data.popularCategories || [] : [],
+        approvalRates: basicData[3].status === 'fulfilled' && basicData[3].value.success 
+          ? basicData[3].value.data.approvalRates || [] : [],
+        classPerformance: basicData[4].status === 'fulfilled' && basicData[4].value.success 
+          ? basicData[4].value.data.performance || [] : [],
+        detailedStudentPerformance: advancedData[0].status === 'fulfilled' && advancedData[0].value.success 
+          ? advancedData[0].value.data.performance || [] : [],
+        inactiveStudents: advancedData[1].status === 'fulfilled' && advancedData[1].value.success 
+          ? advancedData[1].value.data.inactiveStudents || [] : [],
+        classParticipation: advancedData[2].status === 'fulfilled' && advancedData[2].value.success 
+          ? advancedData[2].value.data.participation || [] : [],
+        categoryPerformanceByClass: advancedData[3].status === 'fulfilled' && advancedData[3].value.success 
+          ? advancedData[3].value.data.performance || [] : [],
+        prizeMoneyByClass: hodData?.success ? hodData.data.prizeMoneyByClass || [] : []
+      };
+      
+      setReportData(newReportData);
+      
+    } catch (error) {
+      console.error('Error in fetchReportsData:', error);
+      setError('Failed to load reports data. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial data load
+  useEffect(() => {
     fetchReportsData();
   }, [navigate, userData?.role]);
 
@@ -172,14 +179,6 @@ const ReportsPage = ({ userData }) => {
     }
     
     switch (activeSection) {
-      case 'overview':
-        return <OverviewSection 
-          topStudents={reportData.topStudents} 
-          approvalRates={reportData.approvalRates} 
-          trends={reportData.trends}
-          role={userData?.role}
-          prizeMoneyByClass={reportData.prizeMoneyByClass}
-        />;
       case 'categories':
         return <CategoriesSection 
           popularCategories={reportData.popularCategories}
@@ -234,19 +233,39 @@ const ReportsPage = ({ userData }) => {
 
       {/* Main Content */}
       <div className="flex-1 p-6 overflow-auto">
-        {/* Mobile Navigation */}
-        <div className="md:hidden mb-6">
-          <select
-            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={activeSection}
-            onChange={(e) => setActiveSection(e.target.value)}
-          >
-            {sidebarItems.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.label}
-              </option>
-            ))}
-          </select>
+        {/* Year Filter + Mobile Navigation */}
+        <div className="flex flex-col md:flex-row gap-4 mb-6 items-center">
+          <div className="w-full md:w-auto">
+            <select
+              className="w-full md:w-48 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={activeSection}
+              onChange={(e) => setActiveSection(e.target.value)}
+            >
+              {sidebarItems.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          {/* Year Filter - Added "All Years" option */}
+          <div className="w-full md:w-auto md:ml-auto">
+            <div className="flex items-center gap-2">
+              <Filter size={18} className="text-gray-500" />
+              <select
+                value={yearFilter}
+                onChange={(e) => setYearFilter(e.target.value)}
+                className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="1">1st Year</option>
+                <option value="2">2nd Year</option>
+                <option value="3">3rd Year</option>
+                <option value="4">4th Year</option>
+                <option value="5">5th Year</option>
+              </select>
+            </div>
+          </div>
         </div>
 
         {/* Content */}
