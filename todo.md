@@ -46,3 +46,12 @@ Revanth A Observation In HoD Dashboard
 2. Need year filter in All Classses
 3. The Points is not comming for students in (Class View)
 4. Add pagination
+
+
+21 March:
+Revanth A Observations 
+1. Leaderboard Yearwise,Department wise Filer(backend) - Fiexed
+2. Have the LeftDashboard Constant in all pages
+3. Remove Back to Dashboard
+4. Make the Profile Page Similar to HOD Profile Page
+
