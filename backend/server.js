@@ -25,7 +25,7 @@ const server = http.createServer(app);
         // Ensure database connection is ready before restoring backup
         mongoose.connection.once('open', async () => {
             // await restoreBackup(); // Restore data from backup
-            server.listen(port, () => {
+            server.listen(port,'0.0.0.0' ,() => {
                 console.log(`Server is running at port ${port}`);
             });
         });

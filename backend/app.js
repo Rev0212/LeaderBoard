@@ -15,11 +15,18 @@ const connectToDb = require('./db/db');
 //   allowedHeaders: ['Content-Type', 'Authorization']
 // }));
 app.use(cors({
-  origin: "http://localhost:5173", // Or your actual frontend URL
+  origin: ["http://10.1.38.189:5173","http://localhost:5173"], // Or your actual frontend URL
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// app.use(cors({
+//   origin: "http://localhost:5173", // Or your actual frontend URL
+//   credentials: true,
+//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+//   allowedHeaders: ['Content-Type', 'Authorization']
+// }));
 
 app.get('/', (req, res) => {
     res.send('Server is running!');
