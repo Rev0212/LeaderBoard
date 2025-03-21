@@ -4,9 +4,13 @@ const authMiddleware = require('../middlewares/auth.middlewares');
 
 const router = express.Router();
 
-// Get leaderboard (can be accessed by all authenticated users)
-router.get('/',leaderboardController.getLeaderboard);
+// Get general leaderboard (with optional filters)
+router.get('/', leaderboardController.getLeaderboard);
 
-router.get('/my-rank',leaderboardController.getStudentRank);
+// Get student's own rank
+router.get('/my-rank', authMiddleware.authStudent, leaderboardController.getStudentRank);
+
+// Get leaderboard specific to student's year and department
+router.get('/my-context', authMiddleware.authStudent, leaderboardController.getMyContextLeaderboard);
 
 module.exports = router;

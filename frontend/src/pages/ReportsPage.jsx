@@ -1,658 +1,275 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { 
-  BarChart, Bar, LineChart, Line, PieChart, Pie, 
-  XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Legend, CartesianGrid, LabelList
-} from 'recharts';
-import { 
-  TrendingUp, Award, PieChart as PieChartIcon, 
-  BarChart2, Users, Download, Search, ArrowLeft
+  PieChart, BarChart2, Users, Download, Filter
 } from 'lucide-react';
 
-import LeaderboardTable from '../components/LeaderBoard';
-import ReportsDownloadSection from '../components/ReportsDownloadSection';
+// Import section components - removed OverviewSection
+import CategoriesSection from '../components/reports/CategoriesSection';
+import ClassAnalysisSection from '../components/reports/ClassAnalysisSection';
+import StudentsSection from '../components/reports/StudentsSection';
+import ReportsDownloadSection from '../components/reports/ReportsDownloadSection';
 
-const ReportsPage = ({ isEmbedded = false }) => {
+const ReportsPage = ({ userData }) => {
   const navigate = useNavigate();
-  const [totalPrizeMoney, setTotalPrizeMoney] = useState(0);
-  const [topStudents, setTopStudents] = useState([]);
-  const [popularCategories, setPopularCategories] = useState([]);
-  const [approvalRates, setApprovalRates] = useState([]);
-  const [trends, setTrends] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [classPerformance, setClassPerformance] = useState([]);
-  const [studentPerformance, setStudentPerformance] = useState([]);
-  const [categoryByClass, setCategoryByClass] = useState([]);
-  const [activeSection, setActiveSection] = useState('overview');
-  const [inactiveStudents, setInactiveStudents] = useState([]);
-  const [classParticipation, setClassParticipation] = useState([]);
-  const [nameSearchQuery, setNameSearchQuery] = useState('');
-  const [selectedClass, setSelectedClass] = useState('');
-  const [inactiveDaysFilter, setInactiveDaysFilter] = useState(30);
-  const [userRole, setUserRole] = useState('');
+  const [activeSection, setActiveSection] = useState('categories'); // Changed default to categories
+  const [yearFilter, setYearFilter] = useState('1');
+  const [reportData, setReportData] = useState({
+    availableClasses: [],
+    topStudents: [],
+    popularCategories: [],
+    approvalRates: [],
+    trends: [],
+    classPerformance: [],
+    detailedStudentPerformance: [],
+    inactiveStudents: [],
+    classParticipation: [],
+    categoryPerformanceByClass: [],
+    prizeMoneyByClass: [] // HOD only
+  });
 
-  const baseURL = import.meta.env.VITE_BASE_URL;
-
-  // Color schemes for charts
-  const COLORS = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
-
-  // Sidebar navigation items
+  // Sidebar navigation items - removed overview
   const sidebarItems = [
-    { id: 'overview', label: 'Overview', icon: <TrendingUp size={20} /> },
-    { id: 'categories', label: 'Categories', icon: <PieChartIcon size={20} /> },
+    { id: 'categories', label: 'Categories', icon: <PieChart size={20} /> },
     { id: 'class-analysis', label: 'Class Analysis', icon: <BarChart2 size={20} /> },
     { id: 'students', label: 'Students', icon: <Users size={20} /> },
     { id: 'downloads', label: 'Downloads', icon: <Download size={20} /> }
   ];
 
-  // Add this function to create placeholder data when needed
-  const createPlaceholderData = () => {
-    return [
-      { name: 'No Data Available', value: 1 }
-    ];
-  };
-
-  useEffect(() => {
-    const fetchReportsData = async () => {
-      setLoading(true);
-      setError(null);
-      
-      try {
-        console.log('Fetching reports data from:', baseURL);
-        
-        // Fetch total prize money
-        const totalPrizeMoneyResponse = await axios.get(`${baseURL}/reports/total-prize-money`);
-        console.log('Total Prize Money Response:', totalPrizeMoneyResponse.data);
-        setTotalPrizeMoney(totalPrizeMoneyResponse.data.totalPrizeMoney || 0);
-
-        // Fetch top students
-        const topStudentsResponse = await axios.get(`${baseURL}/reports/top-students?limit=10`);
-        console.log('Top Students Response:', topStudentsResponse.data);
-        setTopStudents(topStudentsResponse.data.topStudents || []);
-
-        // Fetch popular categories
-        const categoriesResponse = await axios.get(`${baseURL}/reports/popular-categories?limit=5`);
-        console.log('Popular Categories Response:', categoriesResponse.data);
-        
-        // Set placeholder data if empty
-        const categoryData = categoriesResponse.data.popularCategories || [];
-        setPopularCategories(categoryData.length > 0 ? categoryData : createPlaceholderData());
-
-        // Fetch approval rates
-        const approvalResponse = await axios.get(`${baseURL}/reports/approval-rates`);
-        console.log('Approval Rates Response:', approvalResponse.data);
-        setApprovalRates(approvalResponse.data.approvalRates || []);
-
-        // Fetch class performance
-        const classResponse = await axios.get(`${baseURL}/reports/class-performance`);
-        console.log('Class Performance Response:', classResponse.data);
-        setClassPerformance(classResponse.data.performance || []);
-
-        // Fetch student performance
-        const studentPerformanceResponse = await axios.get(`${baseURL}/reports/detailed-student-performance`);
-        console.log('Student Performance Response:', studentPerformanceResponse.data);
-        setStudentPerformance(studentPerformanceResponse.data.performance || []);
-
-        // Fetch category performance by class
-        const categoryResponse = await axios.get(`${baseURL}/reports/category-performance-by-class`);
-        console.log('Category Performance Response:', categoryResponse.data);
-        setCategoryByClass(categoryResponse.data.performance || []);
-
-        // Fetch inactive students
-        const inactiveStudentsResponse = await axios.get(`${baseURL}/reports/inactive-students`);
-        setInactiveStudents(inactiveStudentsResponse.data.inactiveStudents || []);
-
-        // Fetch class participation data
-        const classParticipationResponse = await axios.get(`${baseURL}/reports/class-participation`);
-        setClassParticipation(classParticipationResponse.data.participation || []);
-
-      } catch (err) {
-        console.error('Error fetching reports:', err);
-        console.error('Error details:', err.response?.data || err.message);
-        setError(err.response?.data?.message || 'Failed to load report data');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    // Determine user type from local storage or other auth mechanism
-    const role = localStorage.getItem('userRole') || '';
-    setUserRole(role);
-
-    fetchReportsData();
-  }, [baseURL]);
-
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-white p-4 border border-gray-200 rounded-lg shadow-sm">
-          <p className="text-gray-600">
-            {label ? `${label}: ${payload[0].value}` : `${payload[0].name}: ${payload[0].value}`}
-          </p>
-        </div>
-      );
+  // Create authenticated axios instance
+  const createAuthAxios = () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("No authentication token found");
+      navigate("/teacher-login");
+      return null;
     }
-    return null;
-  };
-
-  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, name }) => {
-    const RADIAN = Math.PI / 180;
-    const radius = outerRadius * 0.7; // Adjust this value to move labels closer to or further from center
-    const x = cx + radius * Math.cos(-midAngle * RADIAN);
-    const y = cy + radius * Math.sin(-midAngle * RADIAN);
-
-    return (
-      <text 
-        x={x} 
-        y={y} 
-        fill="white" 
-        textAnchor="middle" // Center the text horizontally
-        dominantBaseline="middle" // Center the text vertically
-      >
-        {`${(percent * 100).toFixed(0)}%`}
-      </text>
-    );
-  };
-
-  const formatDataForChart = (data) => {
-    if (!data || data.length === 0) return [];
     
-    // Get unique categories across all classes
-    const allCategories = [...new Set(
-      data.flatMap(item => item.categories.map(cat => cat.category))
-    )];
-
-    // Format data for the chart
-    return data.map(classData => {
-      const formattedData = {
-        className: classData.className,
-        totalPoints: classData.totalPoints,
-      };
-
-      // Add each category's points
-      allCategories.forEach(category => {
-        const categoryData = classData.categories.find(cat => cat.category === category);
-        formattedData[category] = categoryData ? categoryData.points : 0;
-      });
-
-      return formattedData;
+    return axios.create({
+      baseURL: import.meta.env.VITE_BASE_URL,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
     });
   };
 
-  const filteredInactiveStudents = inactiveStudents.filter(student => {
-    const matchesName = student.name.toLowerCase().includes(nameSearchQuery.toLowerCase());
-    const matchesClass = !selectedClass || student.className === selectedClass;
+  // Helper function for API calls - now includes year filter
+  const fetchFromApi = async (endpoint, params = {}) => {
+    try {
+      const authAxios = createAuthAxios();
+      if (!authAxios) return { success: false, message: "Authentication failed" };
+      
+      // Add year filter if it's set
+      if (yearFilter) {
+        params.year = yearFilter;
+      }
+      
+      console.log(`Fetching from: ${endpoint} with params:`, params);
+      const response = await authAxios.get(endpoint, { params });
+      console.log(`Response from ${endpoint}:`, response.data);
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error(`Error fetching from ${endpoint}:`, error);
+      console.error('Error details:', error.response?.data || error.message);
+      
+      if (error.response?.status === 401) {
+        // If unauthorized, redirect to login
+        navigate("/teacher-login");
+      }
+      
+      return { 
+        success: false, 
+        message: error.response?.data?.message || "Failed to fetch data" 
+      };
+    }
+  };
+
+  // Reload data when year filter changes
+  useEffect(() => {
+    fetchReportsData();
+  }, [yearFilter]);
+
+  // Main data fetching function
+  const fetchReportsData = async () => {
+    setLoading(true);
+    setError(null);
     
-    const lastActivity = student.lastActivity ? new Date(student.lastActivity) : null;
-    const inactiveDays = lastActivity 
-      ? Math.floor((new Date() - lastActivity) / (1000 * 60 * 60 * 24))
-      : Number.POSITIVE_INFINITY;
+    try {
+      // Common reports for all roles - removed references to overview data
+      const basicData = await Promise.allSettled([
+        fetchFromApi('/reports/available-classes'),
+        fetchFromApi('/reports/top-students'),
+        fetchFromApi('/reports/popular-categories'),
+        fetchFromApi('/reports/approval-rates'),
+        fetchFromApi('/reports/class-performance')
+      ]);
+      
+      // Advanced reports for faculty and HOD
+      const advancedData = await Promise.allSettled([
+        fetchFromApi('/reports/detailed-student-performance'),
+        fetchFromApi('/reports/inactive-students'),
+        fetchFromApi('/reports/class-participation'),
+        fetchFromApi('/reports/category-performance-by-class')
+      ]);
+      
+      // HOD-only report
+      let hodData = null;
+      if (userData?.role === 'HOD' || userData?.role === 'admin') {
+        hodData = await fetchFromApi('/reports/prize-money-by-class');
+      }
+      
+      // Process and set report data
+      const newReportData = {
+        availableClasses: basicData[0].status === 'fulfilled' && basicData[0].value.success 
+          ? basicData[0].value.data.classes || [] : [],
+        topStudents: basicData[1].status === 'fulfilled' && basicData[1].value.success 
+          ? basicData[1].value.data.topStudents || [] : [],
+        popularCategories: basicData[2].status === 'fulfilled' && basicData[2].value.success 
+          ? basicData[2].value.data.popularCategories || [] : [],
+        approvalRates: basicData[3].status === 'fulfilled' && basicData[3].value.success 
+          ? basicData[3].value.data.approvalRates || [] : [],
+        classPerformance: basicData[4].status === 'fulfilled' && basicData[4].value.success 
+          ? basicData[4].value.data.performance || [] : [],
+        detailedStudentPerformance: advancedData[0].status === 'fulfilled' && advancedData[0].value.success 
+          ? advancedData[0].value.data.performance || [] : [],
+        inactiveStudents: advancedData[1].status === 'fulfilled' && advancedData[1].value.success 
+          ? advancedData[1].value.data.inactiveStudents || [] : [],
+        classParticipation: advancedData[2].status === 'fulfilled' && advancedData[2].value.success 
+          ? advancedData[2].value.data.participation || [] : [],
+        categoryPerformanceByClass: advancedData[3].status === 'fulfilled' && advancedData[3].value.success 
+          ? advancedData[3].value.data.performance || [] : [],
+        prizeMoneyByClass: hodData?.success ? hodData.data.prizeMoneyByClass || [] : []
+      };
+      
+      setReportData(newReportData);
+      
+    } catch (error) {
+      console.error('Error in fetchReportsData:', error);
+      setError('Failed to load reports data. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    return matchesName && matchesClass && inactiveDays >= inactiveDaysFilter;
-  });
+  // Initial data load
+  useEffect(() => {
+    fetchReportsData();
+  }, [navigate, userData?.role]);
 
-  const uniqueClasses = [...new Set(inactiveStudents.map(student => student.className))].sort();
-
+  // Function to render the active section
   const renderContent = () => {
+    if (loading) {
+      return (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        </div>
+      );
+    }
+    
+    if (error) {
+      return (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          <p>{error}</p>
+        </div>
+      );
+    }
+    
     switch (activeSection) {
-      case 'overview':
-        return (
-          <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold text-gray-700 mb-4">Total Prize Money</h2>
-              <span className="text-3xl font-bold text-green-600">
-                ₹{totalPrizeMoney.toLocaleString()}
-              </span>
-            </div>
-            
-            <div className="bg-white rounded-lg shadow">
-              <LeaderboardTable />
-            </div>
-          </div>
-        );
-
       case 'categories':
-        return (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold text-gray-700 mb-4">Popular Categories</h2>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={popularCategories}
-                      dataKey="value"
-                      nameKey="name"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={100}
-                      labelLine={false}
-                      label={renderCustomizedLabel}
-                    >
-                      {popularCategories.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip content={<CustomTooltip />} />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold text-gray-700 mb-4">Category Performance by Class</h2>
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead>
-                    <tr>
-                      <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Class
-                      </th>
-                      <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Total Points
-                      </th>
-                      <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Categories Performance
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {categoryByClass.map((classData, index) => (
-                      <tr key={index}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {classData.className || 'N/A'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {classData.totalPoints}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-500">
-                          {classData.categoriesPerformance.map((categoryText, idx) => (
-                            <div key={idx} className="mb-2">
-                              {categoryText}
-                            </div>
-                          ))}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-              </table>
-            </div>
-          </div>
-        );
-
+        return <CategoriesSection 
+          popularCategories={reportData.popularCategories}
+          categoryPerformanceByClass={reportData.categoryPerformanceByClass}
+        />;
       case 'class-analysis':
-        return (
-          <div className="space-y-8">
-            {/* Class Performance Overview */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold text-gray-700 mb-4">Class Performance Overview</h2>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={classPerformance}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis 
-                      dataKey="_id" 
-                      label={{ value: 'Class', position: 'bottom', offset: 0 }}
-                    />
-                    <YAxis label={{ value: 'Total Points', angle: -90, position: 'insideLeft' }} />
-                    <Tooltip />
-                    <Bar dataKey="totalPoints" fill="#4F46E5" name="Total Points" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Category Performance by Class */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold text-gray-700 mb-4">Category Performance by Class</h2>
-              <div className="h-[600px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={formatDataForChart(classParticipation)}
-                    margin={{ top: 20, right: 30, left: 60, bottom: 60 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis 
-                      dataKey="className"
-                      angle={-45}
-                      textAnchor="end"
-                      height={100}
-                      interval={0}
-                      tick={{ fontSize: 12 }}
-                    />
-                    <YAxis
-                      label={{ 
-                        value: 'Points', 
-                        angle: -90, 
-                        position: 'insideLeft',
-                        offset: -10
-                      }}
-                    />
-                    <Tooltip 
-                      formatter={(value, name, props) => {
-                        const total = Object.keys(props.payload)
-                          .filter(key => !['className', 'totalPoints'].includes(key))
-                          .reduce((sum, key) => sum + (props.payload[key] || 0), 0);
-                        const percentage = ((value / total) * 100).toFixed(1);
-                        return [`${value} points (${percentage}%)`, name];
-                      }}
-                      contentStyle={{
-                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                        borderRadius: '6px',
-                        padding: '8px 12px',
-                        border: '1px solid #e2e8f0',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                      }}
-                      wrapperStyle={{
-                        zIndex: 1000
-                      }}
-                    />
-                    <Legend 
-                      verticalAlign="bottom"
-                      height={36}
-                      wrapperStyle={{
-                        paddingTop: '20px',
-                        bottom: '-10px'
-                      }}
-                      iconType="circle"
-                      iconSize={10}
-                    />
-                    {Object.keys(formatDataForChart(classParticipation)[0] || {})
-                      .filter(key => !['className', 'totalPoints'].includes(key))
-                      .map((category, index) => (
-                        <Bar 
-                          key={category}
-                          dataKey={category}
-                          fill={COLORS[index % COLORS.length]}
-                          name={category}
-                          stackId="a"
-                        />
-                      ))}
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Class Participation Trends */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold text-gray-700 mb-4">Class Participation Rate</h2>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={classParticipation.map(item => ({
-                        name: item.className,
-                        value: item.categories.reduce((sum, cat) => sum + cat.participationCount, 0)
-                      }))}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={false}
-                      outerRadius={120}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {classParticipation.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      formatter={(value, name) => {
-                        const total = classParticipation.reduce((sum, item) => 
-                          sum + item.categories.reduce((catSum, cat) => catSum + cat.participationCount, 0), 0
-                        );
-                        const percentage = ((value / total) * 100).toFixed(1);
-                        return [`${percentage}% (${value} participations)`, name];
-                      }}
-                      contentStyle={{
-                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                        borderRadius: '6px',
-                        padding: '8px 12px',
-                        border: '1px solid #e2e8f0',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Inactive Students Table */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold text-gray-700 mb-4">Inactive Students</h2>
-              
-              {/* Filters Section */}
-              <div className="mb-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* Student Name Search */}
-                <div className="w-full">
-                  <label htmlFor="nameSearch" className="block text-sm font-medium text-gray-700 mb-1">
-                    Search by Student Name
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      id="nameSearch"
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10"
-                      placeholder="Enter student name..."
-                      value={nameSearchQuery}
-                      onChange={(e) => setNameSearchQuery(e.target.value)}
-                    />
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                      <Search className="h-4 w-4 text-gray-400" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Class Filter Dropdown */}
-                <div className="w-full">
-                  <label htmlFor="classFilter" className="block text-sm font-medium text-gray-700 mb-1">
-                    Filter by Class
-                  </label>
-                  <select
-                    id="classFilter"
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10"
-                    value={selectedClass}
-                    onChange={(e) => setSelectedClass(e.target.value)}
-                  >
-                    <option value="">All Classes</option>
-                    {uniqueClasses.map((className) => (
-                      <option key={className} value={className}>
-                        {className}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Inactive Days Filter */}
-                <div className="w-full">
-                  <label htmlFor="inactiveDays" className="block text-sm font-medium text-gray-700 mb-1">
-                    Inactive For At Least
-                  </label>
-                  <select
-                    id="inactiveDays"
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10"
-                    value={inactiveDaysFilter}
-                    onChange={(e) => setInactiveDaysFilter(Number(e.target.value))}
-                  >
-                    <option value={7}>7 days</option>
-                    <option value={14}>14 days</option>
-                    <option value={30}>30 days</option>
-                    <option value={60}>60 days</option>
-                    <option value={90}>90 days</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Results count */}
-              <div className="text-sm text-gray-500 mb-4">
-                Found {filteredInactiveStudents.length} inactive students
-                {(nameSearchQuery || selectedClass || inactiveDaysFilter !== 30) && (
-                  <button
-                    onClick={() => {
-                      setNameSearchQuery('');
-                      setSelectedClass('');
-                      setInactiveDaysFilter(30);
-                    }}
-                    className="ml-2 text-blue-600 hover:text-blue-800"
-                  >
-                    Clear filters
-                  </button>
-                )}
-              </div>
-
-              <div className="overflow-x-auto">
-                <div className="max-h-[400px] overflow-y-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50 sticky top-0 z-10">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 w-1/4">
-                          Name
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 w-1/4">
-                          Class
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 w-1/4">
-                          Last Activity
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 w-1/4">
-                          Inactive Days
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {filteredInactiveStudents.map((student, index) => {
-                        const lastActivity = student.lastActivity ? new Date(student.lastActivity) : null;
-                        const inactiveDays = lastActivity 
-                          ? Math.floor((new Date() - lastActivity) / (1000 * 60 * 60 * 24))
-                          : 'N/A';
-                        
-                        return (
-                          <tr key={student._id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                              {student.name}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {student.className}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {lastActivity ? lastActivity.toLocaleDateString() : 'Never'}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {inactiveDays !== 'N/A' ? `${inactiveDays} days` : 'N/A'}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-
+        return <ClassAnalysisSection 
+          classPerformance={reportData.classPerformance}
+          classParticipation={reportData.classParticipation}
+          availableClasses={reportData.availableClasses}
+        />;
+      case 'students':
+        return <StudentsSection 
+          detailedStudentPerformance={reportData.detailedStudentPerformance}
+          inactiveStudents={reportData.inactiveStudents}
+          availableClasses={reportData.availableClasses}
+        />;
       case 'downloads':
-        return <ReportsDownloadSection baseURL={baseURL} />;
-
+        return <ReportsDownloadSection fetchFromApi={fetchFromApi} />;
       default:
-        return null;
+        return <div>Select a section from the sidebar</div>;
     }
   };
 
-  const handleBackNavigation = () => {
-    if (userRole === 'Admin') {
-      navigate('/admin-dashboard');
-    } else if (userRole === 'HOD' || userRole === 'Advisor') {
-      navigate('/advisor-hod');
-    } else {
-      navigate('/teacher-dashboard');
-    }
-  };
-
-  return isEmbedded ? (
-    <div className="bg-gray-50">
-      {loading ? (
-        <div className="flex items-center justify-center py-10">
-          <div className="text-lg text-gray-600">Loading reports...</div>
+  return (
+    <div className="flex h-full bg-gray-100">
+      {/* Sidebar */}
+      <div className="w-64 bg-white shadow-md hidden md:block">
+        <div className="p-5">
+          <h1 className="text-xl font-bold text-blue-600">Reports Dashboard</h1>
         </div>
-      ) : error ? (
-        <div className="flex items-center justify-center py-10">
-          <div className="text-lg text-red-600">{error}</div>
-        </div>
-      ) : (
-        <div className="p-6">
-          {/* Navigation tabs */}
-          <div className="mb-6 flex overflow-x-auto gap-2 pb-2">
-            {sidebarItems.map(item => (
-              <button
-                key={item.id}
-                onClick={() => setActiveSection(item.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
-                  activeSection === item.id 
-                    ? 'bg-blue-100 text-blue-600' 
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                {item.icon}
-                <span>{item.label}</span>
-              </button>
-            ))}
-          </div>
-          {renderContent()}
-        </div>
-      )}
-    </div>
-  ) : (
-    <div className="min-h-screen bg-gray-50">
-      {/* Add back navigation */}
-      <div className="p-4 lg:p-8">
-        <button
-          onClick={handleBackNavigation}
-          className="flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-6"
-        >
-          <ArrowLeft size={18} />
-          <span>Back to Dashboard</span>
-        </button>
-        
-        {/* Rest of your reports UI */}
-        {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="text-lg text-gray-600">Loading reports...</div>
-          </div>
-        ) : error ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="text-lg text-red-600">{error}</div>
-          </div>
-        ) : (
-          <div>
-            {/* Your reports content */}
-            {/* Navigation tabs */}
-            <div className="mb-6 flex overflow-x-auto gap-2 pb-2">
-              {sidebarItems.map(item => (
+        <nav className="mt-5">
+          <ul>
+            {sidebarItems.map((item) => (
+              <li key={item.id}>
                 <button
-                  key={item.id}
                   onClick={() => setActiveSection(item.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
-                    activeSection === item.id 
-                      ? 'bg-blue-100 text-blue-600' 
-                      : 'text-gray-600 hover:bg-gray-100'
+                  className={`flex items-center w-full px-5 py-3 text-left ${
+                    activeSection === item.id
+                      ? "bg-blue-50 text-blue-600 border-r-4 border-blue-600"
+                      : "text-gray-600 hover:bg-gray-50"
                   }`}
                 >
-                  {item.icon}
-                  <span>{item.label}</span>
+                  <span className="mr-3">{item.icon}</span>
+                  {item.label}
                 </button>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 p-6 overflow-auto">
+        {/* Year Filter + Mobile Navigation */}
+        <div className="flex flex-col md:flex-row gap-4 mb-6 items-center">
+          <div className="w-full md:w-auto">
+            <select
+              className="w-full md:w-48 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={activeSection}
+              onChange={(e) => setActiveSection(e.target.value)}
+            >
+              {sidebarItems.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.label}
+                </option>
               ))}
-            </div>
-            
-            {/* Reports content sections */}
-            {renderContent()}
+            </select>
           </div>
-        )}
+          
+          {/* Year Filter - Added "All Years" option */}
+          <div className="w-full md:w-auto md:ml-auto">
+            <div className="flex items-center gap-2">
+              <Filter size={18} className="text-gray-500" />
+              <select
+                value={yearFilter}
+                onChange={(e) => setYearFilter(e.target.value)}
+                className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="1">1st Year</option>
+                <option value="2">2nd Year</option>
+                <option value="3">3rd Year</option>
+                <option value="4">4th Year</option>
+                <option value="5">5th Year</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Content */}
+        {renderContent()}
       </div>
     </div>
   );
