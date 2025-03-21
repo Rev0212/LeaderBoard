@@ -4,7 +4,7 @@ import axios from "axios";
 
 const AdvisorHodWrapper = ({ children }) => {
     const navigate = useNavigate();
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("teacher-token");
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {

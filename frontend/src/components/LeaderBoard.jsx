@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Medal, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import axios from 'axios';
 
@@ -14,10 +14,15 @@ const LeaderboardTable = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchTimeout, setSearchTimeout] = useState(null);
 
-  const fetchLeaderboardData = async (page, limit, search) => {
+  // Using useCallback to memoize the fetch function
+  const fetchLeaderboardData = useCallback(async (page, limit, search) => {
     try {
       setLoading(true);
-      const response = await axios.get(`${VITE_BASE_URL}/leaderboard`, {
+      const authToken = localStorage.getItem('student-token');
+      const response = await axios.get(`${VITE_BASE_URL}/leaderboard/my-context`, {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
         params: {
           page,
           limit,
@@ -25,7 +30,7 @@ const LeaderboardTable = () => {
         },
       });
       
-      console.log('Leaderboard response:', response.data); // Add this for debugging
+      console.log('Leaderboard response:', response.data);
       
       if (response.data && Array.isArray(response.data.data)) {
         setLeaderboardData(response.data.data);
@@ -43,12 +48,14 @@ const LeaderboardTable = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
+    // Initial load with current page and items per page
     fetchLeaderboardData(currentPage, itemsPerPage, searchQuery);
-  }, [currentPage, itemsPerPage, searchQuery]);
+  }, [currentPage, itemsPerPage, fetchLeaderboardData]);
 
+  // Debounced search handler with 500ms delay
   const handleSearch = (e) => {
     const query = e.target.value;
     setSearchQuery(query);
@@ -62,7 +69,7 @@ const LeaderboardTable = () => {
     const timeoutId = setTimeout(() => {
       setCurrentPage(1); // Reset to first page
       fetchLeaderboardData(1, itemsPerPage, query);
-    }, 300); // Wait 300ms after user stops typing
+    }, 500); // Increased to 500ms for better debouncing
     
     setSearchTimeout(timeoutId);
   };
@@ -76,31 +83,7 @@ const LeaderboardTable = () => {
     setCurrentPage(1); // Reset to first page when changing items per page
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64 text-gray-500">
-        Loading...
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex justify-center items-center h-64 text-red-500">
-        {error}
-      </div>
-    );
-  }
-
-  // Early return if no data
-  if (!leaderboardData || leaderboardData.length === 0) {
-    return (
-      <div className="flex justify-center items-center h-64 text-gray-500">
-        No leaderboard data available
-      </div>
-    );
-  }
-
+  // Always render the container, search, and controls
   return (
     <div className="w-full max-w-4xl mx-auto bg-white rounded-lg shadow-md">
       {/* Container with mobile-first padding */}
@@ -121,7 +104,7 @@ const LeaderboardTable = () => {
             <div className="relative flex-grow md:flex-grow-0 md:w-64">
               <input
                 type="text"
-                placeholder="Search by name..."
+                placeholder="Search by name or register number..."
                 value={searchQuery}
                 onChange={handleSearch}
                 className="w-full border rounded-lg px-4 py-2 pl-9 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -143,58 +126,75 @@ const LeaderboardTable = () => {
           </div>
         </div>
         
-        {/* Leaderboard List - Scrollable with Max Height */}
-        <div className="max-h-[500px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-gray-50">
-          <div className="space-y-2">
-            {leaderboardData.map((student, index) => (
-              <div
-                key={student._id}
-                className={`flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-lg transition-colors ${
-                  index % 2 === 1 ? 'bg-gray-50' : 'bg-white'
-                } hover:bg-gray-100 space-y-2 sm:space-y-0`}
-              >
-                {/* Rank and Name Section - Responsive Layout */}
-                <div className="flex items-center gap-4 w-full sm:w-auto">
-                  <div className="flex items-center justify-center w-8 h-8">
-                    {student.rank <= 3 ? (
-                      <span className={`text-lg font-bold ${
-                        student.rank === 1 ? 'text-yellow-500' :
-                        student.rank === 2 ? 'text-gray-400' :
-                        'text-orange-500'
-                      }`}>
-                        #{student.rank}
-                      </span>
-                    ) : (
-                      <span className="text-lg font-bold text-gray-400">
-                        #{student.rank}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-                    <span className="font-medium text-gray-900">{student.name}</span>
-                    <span className="text-sm text-gray-600 sm:ml-2">
-                      [{student.registerNo}]
-                    </span>
-                  </div>
-                </div>
-                
-                {/* Points Section - Responsive Alignment */}
-                <div className="flex items-center gap-2 self-start sm:self-auto">
-                  <span className="font-bold text-blue-600">
-                    {student.totalPoints.toLocaleString()}
-                  </span>
-                  <span className="text-sm text-gray-500">points</span>
-                </div>
-              </div>
-            ))}
+        {/* Conditional Content Based on State */}
+        {loading ? (
+          <div className="flex justify-center items-center h-64 text-gray-500">
+            Loading...
           </div>
-        </div>
-  
-        {/* Pagination - Responsive Layout */}
+        ) : error ? (
+          <div className="flex justify-center items-center h-64 text-red-500">
+            {error}
+          </div>
+        ) : leaderboardData.length === 0 ? (
+          <div className="flex justify-center items-center h-64 text-gray-500">
+            No leaderboard data available
+          </div>
+        ) : (
+          <>
+            {/* Leaderboard List - Scrollable with Max Height */}
+            <div className="max-h-[500px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-gray-50">
+              <div className="space-y-2">
+                {leaderboardData.map((student, index) => (
+                  <div
+                    key={student._id}
+                    className={`flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-lg transition-colors ${
+                      index % 2 === 1 ? 'bg-gray-50' : 'bg-white'
+                    } hover:bg-gray-100 space-y-2 sm:space-y-0`}
+                  >
+                    {/* Rank and Name Section - Responsive Layout */}
+                    <div className="flex items-center gap-4 w-full sm:w-auto">
+                      <div className="flex items-center justify-center w-8 h-8">
+                        {student.rank <= 3 ? (
+                          <span className={`text-lg font-bold ${
+                            student.rank === 1 ? 'text-yellow-500' :
+                            student.rank === 2 ? 'text-gray-400' :
+                            'text-orange-500'
+                          }`}>
+                            #{student.rank}
+                          </span>
+                        ) : (
+                          <span className="text-lg font-bold text-gray-400">
+                            #{student.rank}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                        <span className="font-medium text-gray-900">{student.name}</span>
+                        <span className="text-sm text-gray-600 sm:ml-2">
+                          [{student.registerNo}]
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* Points Section - Responsive Alignment */}
+                    <div className="flex items-center gap-2 self-start sm:self-auto">
+                      <span className="font-bold text-blue-600">
+                        {student.totalPoints.toLocaleString()}
+                      </span>
+                      <span className="text-sm text-gray-500">points</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+        
+        {/* Pagination - Always shown but disabled if necessary */}
         <div className="flex flex-col sm:flex-row items-center justify-between mt-6 pt-4 border-t border-gray-100 gap-4">
           <button
             onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1}
+            disabled={currentPage === 1 || loading || leaderboardData.length === 0}
             className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors w-full sm:w-auto justify-center"
           >
             <ChevronLeft className="h-4 w-4 mr-1" />
@@ -207,7 +207,7 @@ const LeaderboardTable = () => {
           
           <button
             onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
+            disabled={currentPage === totalPages || loading || leaderboardData.length === 0}
             className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors w-full sm:w-auto justify-center"
           >
             Next

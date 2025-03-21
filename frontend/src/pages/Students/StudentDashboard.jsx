@@ -66,12 +66,13 @@ const StudentDashboard = () => {
 
   const fetchRank = async () => {
     try {
-      const response = await axios.get(`${VITE_BASE_URL}/student/current-rank`, {
+      const response = await axios.get(`${VITE_BASE_URL}/leaderboard/my-rank`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("student-token")}`,
           "Content-Type": "application/json",
         },
       });
+      console.log("Rank response:", response.data);
       setRank(response.data);
     } catch (err) {
       console.error("Error fetching rank:", err);
@@ -257,7 +258,7 @@ const StudentDashboard = () => {
             { 
               icon: Trophy, 
               title: 'Current Rank', 
-              value: `#${rank?.rank || 'N/A'}`, 
+              value: rank ? ` ${rank.contextRank ? '#' + rank.contextRank : ''}` : 'Loading...', 
               color: 'text-yellow-500' 
             },
             { 

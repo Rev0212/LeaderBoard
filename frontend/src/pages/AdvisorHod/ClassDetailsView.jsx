@@ -17,7 +17,13 @@ const ClassDetailsView = () => {
   useEffect(() => {
     const fetchClassDetails = async () => {
       try {
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem("teacher-token");
+        console.log("Using token for class details:", token ? `${token.substring(0, 10)}...` : 'No token found');
+        
+        if (!token) {
+          throw new Error("Authentication token not found");
+        }
+        
         const response = await axios.get(
           `${VITE_BASE_URL}/class/details/${classId}`,
           {
@@ -41,7 +47,13 @@ const ClassDetailsView = () => {
         
       } catch (err) {
         console.error("Error fetching class details:", err);
-        setError(err.response?.data?.message || "Failed to fetch class details");
+        
+        if (err.response && err.response.status === 401) {
+          setError("Your session has expired. Please log in again.");
+          setTimeout(() => navigate("/teacher-login"), 2000);
+        } else {
+          setError(err.response?.data?.message || "Failed to fetch class details");
+        }
       } finally {
         setLoading(false);
       }
