@@ -27,7 +27,7 @@ const AdvisorHodDashboard = () => {
     const fetchUserData = async () => {
       try {
         setLoading(true);
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem("teacher-token");
         
         // Fetch user profile
         const profileResponse = await axios.get(`${VITE_BASE_URL}/teacher/profile`, {
@@ -71,14 +71,14 @@ const AdvisorHodDashboard = () => {
 
   const handleLogout = async () => {
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("teacher-token");
       await axios.get(`${VITE_BASE_URL}/teacher/logout`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
       });
-      localStorage.removeItem("token");
+      localStorage.removeItem("teacher-token");
       navigate("/teacher-login");
     } catch (error) {
       console.error("Error logging out:", error);

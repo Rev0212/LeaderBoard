@@ -41,7 +41,7 @@ const ReportsPage = ({ userData }) => {
 
   // Create authenticated axios instance
   const createAuthAxios = () => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("teacher-token");
     if (!token) {
       console.error("No authentication token found");
       navigate("/teacher-login");

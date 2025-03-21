@@ -68,11 +68,21 @@ const TeacherLoginForm = () => {
       const response = await axios.post(`${VITE_BASE_URL}/teacher/login`, formData);  
       localStorage.setItem('teacher-token', response.data.token);
       setSuccessMessage('Login successful!');
+      
+      // Check role and navigate to the correct dashboard
+      const teacherRole = response.data.teacher?.role;
+      
+      if (teacherRole === 'HOD' || teacherRole === 'Academic Advisor') {
+        navigate('/advisor-hod-dashboard');
+      } else {
+        navigate('/teacher-dashboard');
+      }
+      
+      // Clear form data
       setFormData({
         email: '',
         password: '',
       });
-      navigate('/teacher-dashboard');
     } catch (error) {
       setApiError(error.response?.data?.message || 'An error occurred during login');
     } finally {

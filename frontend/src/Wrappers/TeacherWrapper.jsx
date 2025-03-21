@@ -17,7 +17,7 @@ const reportsApi = axios.create({
 // Add token to all requests for both APIs
 [teacherApi, reportsApi].forEach(api => {
   api.interceptors.request.use(config => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("teacher-token");
     if (token) {
       // Ensure the Authorization header is properly formatted
       config.headers.Authorization = `Bearer ${token}`;
@@ -29,7 +29,7 @@ const reportsApi = axios.create({
 const TeacherProtectWrapper = ({ children }) => {
     const navigate = useNavigate();
     const location = useLocation();
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("teacher-token");
     const [loading, setLoading] = useState(true);
     const [userData, setUserData] = useState(null);
     const [isAuthenticated, setIsAuthenticated] = useState(null);
@@ -53,6 +53,7 @@ const TeacherProtectWrapper = ({ children }) => {
     // Function to ensure reports endpoints have auth
     const getReports = async (endpoint, params = {}) => {
         try {
+            const token = localStorage.getItem("teacher-token");
             console.log(`Making reports request to: ${endpoint} with token: ${token?.substring(0, 10)}...`);
             // Make sure we're using the configured reportsApi with auth headers
             const response = await reportsApi.get(endpoint, { 
@@ -72,7 +73,7 @@ const TeacherProtectWrapper = ({ children }) => {
             
             if (error.response?.status === 401) {
                 // If unauthorized, redirect to login
-                localStorage.removeItem("token");
+                localStorage.removeItem("teacher-token");
                 navigate("/teacher-login");
             }
             return { 
@@ -107,25 +108,28 @@ const TeacherProtectWrapper = ({ children }) => {
                         const teacherData = response.data;
                         setUserData(teacherData);
                         
+                        console.log("Teacher role:", teacherData.role);
+                        console.log("Current path:", location.pathname);
+                        
                         // If on reports page, don't redirect based on role
                         if (location.pathname.includes('/reports')) {
                             setLoading(false);
                             return;
                         }
                         
-                        // If HOD or Academic Advisor, redirect to their dashboard
+                        // Remove the path condition to always redirect HODs/Advisors
                         if (teacherData.role === 'HOD' || teacherData.role === 'Academic Advisor') {
+                            console.log("Redirecting to advisor-hod-dashboard");
                             navigate("/advisor-hod-dashboard");
                             return;
                         }
                         
-                        // Regular faculty can continue to teacher dashboard
+                        // Set loading to false for all users
                         setLoading(false);
                         
                     } catch (error) {
                         console.error("Error checking role:", error);
-                        // On error, redirect to login
-                        localStorage.removeItem("token");
+                        localStorage.removeItem("teacher-token");
                         navigate("/teacher-login");
                     }
                 };
@@ -135,7 +139,7 @@ const TeacherProtectWrapper = ({ children }) => {
             } catch (error) {
                 console.error('Authentication failed:', error);
                 setIsAuthenticated(false);
-                localStorage.removeItem("token");
+                localStorage.removeItem("teacher-token");
                 navigate("/teacher-login");
             }
         };
