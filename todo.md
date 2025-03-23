@@ -58,3 +58,6 @@ Revanth A Observations
 3. Remove Back to Dashboard
 4. Make the Profile Page Similar to HOD Profile Page
 
+22 March:
+1. Add a file size limit
+2. Add PDF back to event
