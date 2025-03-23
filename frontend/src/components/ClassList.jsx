@@ -26,7 +26,7 @@ const ClassDetails = ({ classId, teacherData, handleBackToDashboard }) => {
           `${import.meta.env.VITE_BASE_URL}/class/details/${classId}`,
           {
             headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`,
+              Authorization: `Bearer ${localStorage.getItem('teacher-token')}`,
               'Content-Type': 'application/json'
             }
           }
