@@ -40,6 +40,9 @@ app.use('/class',classRoutes)
 const leaderboardRoutes = require('./routes/leaderboard.routes')
 app.use('/leaderboard',leaderboardRoutes)
 
+const eventRoutes = require('./routes/event.routes');
+app.use('/event', eventRoutes);
+
 const upcomingEventRoutes = require('./routes/upcomingEvent.routes');
 app.use('/upcoming-events', upcomingEventRoutes);
 

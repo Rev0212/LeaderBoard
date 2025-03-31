@@ -215,7 +215,7 @@ const StudentDashboard = () => {
     // Display StudentEventHistory if currentView is eventHistory
     if (currentView === "eventHistory") {
       return (
-        <div className="p-6 lg:ml-64 bg-gray-50 min-h-screen">
+        <div className="bg-gray-50 min-h-screen">
           <StudentEventHistory handleBackToDashboard={() => setCurrentView("dashboard")} />
         </div>
       );
@@ -223,13 +223,12 @@ const StudentDashboard = () => {
 
     // Regular dashboard content
     return (
-      <div className="p-6 lg:ml-64 bg-gray-50 min-h-screen">
+      <div className="bg-gray-50 min-h-screen">
         {windowWidth < 1024 && (
           <div className="flex justify-between items-center mb-4">
             <button onClick={() => setIsMobileMenuOpen(true)}>
               <Menu size={24} />
             </button>
-            {/* <h1 className="text-xl font-bold">Student Dashboard</h1> */}
           </div>
         )}
 

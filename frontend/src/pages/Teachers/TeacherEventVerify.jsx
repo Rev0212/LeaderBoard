@@ -105,8 +105,8 @@ const TeacherEventsPage = () => {
   };
 
   const handleBack = () => {
-    // Navigate back to class list instead of dashboard
-    navigate('/teacher-dashboard', { state: { showClassList: true } });
+    // Use browser history to go back to previous page (class list)
+    navigate(-1);
   };
 
   if (loading) {
