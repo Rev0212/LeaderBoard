@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import TeacherProfile from "../../components/TeacherProfile";
 import ClassDetails from "../../components/ClassList";
-import UpcomingEventsList from "../../components/UpcomingEventsList";
+import UpcomingEvents from "../UpcomingEvents";
 
 // Format event date helper function
 const formatEventDate = (event) => {
@@ -307,7 +307,7 @@ const TeacherDashboard = () => {
   };
 
   const handleViewAllUpcomingEvents = () => {
-    navigate('/upcoming-events');
+    navigate('/teacher-upcoming-events');
   };
 
   const renderContent = () => {
@@ -336,14 +336,7 @@ const TeacherDashboard = () => {
     if (currentView === "upcomingEvents") {
       return (
         <div className="p-6">
-          {/* <button
-            onClick={() => setCurrentView("dashboard")}
-            className="flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-6"
-          >
-            <ArrowLeft size={18} />
-            <span>Back to Dashboard</span>
-          </button> */}
-          <UpcomingEventsList 
+          <UpcomingEvents
             showBackButton={false}
             title="Upcoming Events" 
           />
@@ -512,9 +505,12 @@ const TeacherDashboard = () => {
               <BarChart size={18} />
               Reports
             </button>
+            {/* Update this button to navigate directly to the new route */}
             <button
-              onClick={() => navigate('/upcoming-events')}
-              className="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-100 transition-colors"
+              onClick={() => setCurrentView("upcomingEvents")}
+              className={`flex items-center gap-2 p-3 rounded-lg hover:bg-gray-100 transition-colors ${
+                currentView === "upcomingEvents" ? "bg-gray-100" : ""
+              }`}
             >
               <Calendar size={18} />
               Upcoming Events
