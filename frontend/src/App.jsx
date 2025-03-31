@@ -1,14 +1,13 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
-import LandingPage from './pages/homepage/LandingPage';
+import LandingPage from './pages/homepage/LandingPage';  
 import StudentLoginForm from './pages/Students/StudentLogin';
 import StudentDashboard from './pages/Students/StudentDashboard';
 import EventForm from './pages/Students/EventForm';
 import StudentProfile from './pages/Students/StudentProfile';
 import StudentProtectWrapper from './Wrappers/StudentWrapper';
-import StudentLayout from './layouts/StudentLayout';
+import StudentLayout from './Layouts/StudentLayout';
 import TeacherLoginForm from './pages/Teachers/TeacherLogin';
-import HomePage from './pages/HomePage';
 import TeacherDashboard from './pages/Teachers/TeacherDashboard';
 import TeacherProtectWrapper from './Wrappers/TeacherWrapper';
 import AdvisorHodWrapper from './Wrappers/AdvisorHodWrapper';
@@ -30,7 +29,7 @@ const App = () => {
       <Route path="/student-login" element={<StudentLoginForm />} />
       <Route path="/teacher-login" element={<TeacherLoginForm />} />
       <Route path="/admin-login" element={<AdminLoginForm />} />
-      <Route path="/" element={<HomePage />} />
+      <Route path="/" element={<LandingPage/>} />
       
       {/* Protected student routes with layout */}
       <Route path="/" element={<StudentProtectWrapper><StudentLayout /></StudentProtectWrapper>}>
