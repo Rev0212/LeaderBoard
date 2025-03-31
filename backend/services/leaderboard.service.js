@@ -7,22 +7,15 @@ exports.getLeaderboard = async (filterOptions, paginationOptions) => {
     const { department, course, year, section, search } = filterOptions;
     const { limit = 10, page = 1, sortBy = 'totalPoints' } = paginationOptions;
     
-    const filter = {};
-    if (department) filter.department = department;
-    if (course) filter.course = course;
-    if (year) filter['currentClass.year'] = parseInt(year);
-    if (section) filter['currentClass.section'] = section;
+    // Create base filter without search for calculating ranks
+    const baseFilter = {};
+    if (department) baseFilter.department = department;
+    if (course) baseFilter.course = course;
+    if (year) baseFilter['currentClass.year'] = parseInt(year);
+    if (section) baseFilter['currentClass.section'] = section;
     
-    // Add search functionality
-    if (search) {
-        filter.$or = [
-            { name: { $regex: search, $options: 'i' } },
-            { registerNo: { $regex: search, $options: 'i' } }
-        ];
-    }
-    
-    // First, get all students with their points for proper ranking calculation
-    const allStudents = await studentModel.find(filter)
+    // First, get all students with their points for proper ranking calculation (without search filter)
+    const allStudents = await studentModel.find(baseFilter)
         .sort({ totalPoints: -1 })
         .select('_id totalPoints')
         .lean();
@@ -42,16 +35,25 @@ exports.getLeaderboard = async (filterOptions, paginationOptions) => {
         rankMap.set(student._id.toString(), currentRank);
     }
     
-    // Get paginated students with full data
-    const students = await studentModel.find(filter)
+    // Now create search filter for pagination
+    const searchFilter = {...baseFilter};
+    if (search) {
+        searchFilter.$or = [
+            { name: { $regex: search, $options: 'i' } },
+            { registerNo: { $regex: search, $options: 'i' } }
+        ];
+    }
+    
+    // Get paginated students with search filter
+    const students = await studentModel.find(searchFilter)
         .sort({ totalPoints: -1 })
         .skip((page - 1) * limit)
         .limit(parseInt(limit))
         .select('name registerNo totalPoints department currentClass');
         
-    const total = await studentModel.countDocuments(filter);
+    const total = await studentModel.countDocuments(searchFilter);
     
-    // Add rank to each student using the rankMap
+    // Add rank to each student using the original rank map
     const studentsWithRank = students.map(student => ({
         _id: student._id,
         name: student.name,
@@ -179,27 +181,19 @@ exports.getClassLeaderboard = async (year, section, department, paginationOption
 exports.getStudentContextLeaderboard = async (student, paginationOptions) => {
     const { limit = 10, page = 1, search } = paginationOptions;
     
-    // Create filter for students in the same year and department
-    const filter = {
+    // Create base filter for students in the same context (year and department)
+    const contextFilter = {
         'currentClass.year': student.currentClass?.year,
         'department': student.department
     };
     
-    // Add search functionality
-    if (search) {
-        filter.$or = [
-            { name: { $regex: search, $options: 'i' } },
-            { registerNo: { $regex: search, $options: 'i' } }
-        ];
-    }
-    
-    // Get all students in the same context for ranking
-    const allContextStudents = await studentModel.find(filter)
+    // First calculate ranks using ALL students in the context (without search filter)
+    const allContextStudents = await studentModel.find(contextFilter)
         .sort({ totalPoints: -1 })
         .select('_id totalPoints')
         .lean();
     
-    // Calculate dense ranking
+    // Calculate dense ranking for all students in the context
     let currentRank = 0;
     let previousPoints = null;
     const rankMap = new Map();
@@ -214,16 +208,25 @@ exports.getStudentContextLeaderboard = async (student, paginationOptions) => {
         rankMap.set(student._id.toString(), currentRank);
     }
     
-    // Get paginated students
-    const students = await studentModel.find(filter)
+    // Now apply search filter for pagination only
+    const searchFilter = {...contextFilter};
+    if (search) {
+        searchFilter.$or = [
+            { name: { $regex: search, $options: 'i' } },
+            { registerNo: { $regex: search, $options: 'i' } }
+        ];
+    }
+    
+    // Get paginated students with the search filter
+    const students = await studentModel.find(searchFilter)
         .sort({ totalPoints: -1 })
         .skip((page - 1) * limit)
         .limit(parseInt(limit))
         .select('name registerNo totalPoints');
         
-    const total = await studentModel.countDocuments(filter);
+    const total = await studentModel.countDocuments(searchFilter);
     
-    // Add rank to each student
+    // Add rank to each student using the original rank map
     const studentsWithRank = students.map(student => ({
         _id: student._id,
         name: student.name,
