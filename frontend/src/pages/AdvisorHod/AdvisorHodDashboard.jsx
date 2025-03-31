@@ -382,7 +382,7 @@ const AdvisorHodDashboard = () => {
         {/* Show heading only once - show in sidebar only on desktop */}
         {windowWidth >= 1024 && (
           <h1 className="text-2xl font-bold text-gray-800 mb-6">
-            {userData?.role === "HOD" ? "HOD Portal" : "Academic Advisor Portal"}
+            {userData?.role === "HOD" ? "HOD Dashboard" : "Academic Advisor Dashboard"}
           </h1>
         )}
         
