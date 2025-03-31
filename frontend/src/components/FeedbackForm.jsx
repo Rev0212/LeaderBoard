@@ -19,7 +19,7 @@ const FeedbackForm = () => {
 
   return (
     <div className="p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-xl font-semibold mb-4">Leave Your Feedback</h2>
+      <h2 className="text-xl font-semibold mb-4">Provide Your Feedback</h2>
       <form onSubmit={handleSubmit}>
         <textarea
           value={comment}
