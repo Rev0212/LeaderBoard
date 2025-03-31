@@ -9,6 +9,8 @@ import {
   Hash,
   Layers,
   BarChart,
+  Menu,
+  X,
 } from "lucide-react";
 import AdvisorProfile from "../../components/advisor/AdvisorProfile";
 import ClassesList from "../../components/advisor/ClassesList";
@@ -19,45 +21,73 @@ const AdvisorHodDashboard = () => {
   const [classes, setClasses] = useState([]);
   const [currentView, setCurrentView] = useState("dashboard");
   const [loading, setLoading] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
   const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
   const navigate = useNavigate();
-  
+
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (windowWidth >= 1024) {
+      setIsMobileMenuOpen(false);
+    }
+  }, [windowWidth]);
+
   useEffect(() => {
     const fetchUserData = async () => {
       try {
         setLoading(true);
         const token = localStorage.getItem("teacher-token");
-        
+
         // Fetch user profile
-        const profileResponse = await axios.get(`${VITE_BASE_URL}/teacher/profile`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
-        
+        const profileResponse = await axios.get(
+          `${VITE_BASE_URL}/teacher/profile`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
         const userData = profileResponse.data;
         setUserData(userData);
-        
+
         // Fetch the appropriate classes based on role
         let classesResponse;
-        if (userData.role === 'HOD') {
-          classesResponse = await axios.get(`${VITE_BASE_URL}/teacher/department-classes`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          });
+        if (userData.role === "HOD") {
+          classesResponse = await axios.get(
+            `${VITE_BASE_URL}/teacher/department-classes`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+            }
+          );
         } else {
-          classesResponse = await axios.get(`${VITE_BASE_URL}/teacher/advised-classes`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          });
+          classesResponse = await axios.get(
+            `${VITE_BASE_URL}/teacher/advised-classes`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+            }
+          );
         }
-        
+
         setClasses(classesResponse.data);
         setLoading(false);
       } catch (error) {
@@ -88,7 +118,7 @@ const AdvisorHodDashboard = () => {
   const handleReportsClick = () => {
     // Option 1: Change view within the dashboard
     setCurrentView("reports");
-    
+
     // Option 2: Navigate to dedicated reports page
     // navigate("/reports");
   };
@@ -122,8 +152,8 @@ const AdvisorHodDashboard = () => {
 
     if (currentView === "reports") {
       return (
-        <ReportSection 
-          handleBackToDashboard={() => setCurrentView("dashboard")} 
+        <ReportSection
+          handleBackToDashboard={() => setCurrentView("dashboard")}
         />
       );
     }
@@ -136,49 +166,65 @@ const AdvisorHodDashboard = () => {
           {/* Department Info */}
           <div className="bg-white p-4 lg:p-6 rounded-lg shadow-md">
             <div className="flex items-center justify-between mb-3 lg:mb-4">
-              <h3 className="text-base lg:text-lg font-semibold text-gray-700">Department</h3>
+              <h3 className="text-base lg:text-lg font-semibold text-gray-700">
+                Department
+              </h3>
               <Building className="h-5 w-5 lg:h-6 lg:w-6 text-blue-500" />
             </div>
             <p className="text-2xl lg:text-3xl font-bold text-gray-900">
               {userData?.department || "N/A"}
             </p>
-            <p className="text-xs lg:text-sm text-gray-500 mt-2">Current Department</p>
+            <p className="text-xs lg:text-sm text-gray-500 mt-2">
+              Current Department
+            </p>
           </div>
-        
+
           {/* Role Info */}
           <div className="bg-white p-4 lg:p-6 rounded-lg shadow-md">
             <div className="flex items-center justify-between mb-3 lg:mb-4">
-              <h3 className="text-base lg:text-lg font-semibold text-gray-700">Role</h3>
+              <h3 className="text-base lg:text-lg font-semibold text-gray-700">
+                Role
+              </h3>
               <User className="h-5 w-5 lg:h-6 lg:w-6 text-green-500" />
             </div>
             <p className="text-2xl lg:text-3xl font-bold text-gray-900">
               {userData?.role || "N/A"}
             </p>
-            <p className="text-xs lg:text-sm text-gray-500 mt-2">{userData?.role === "HOD" ? "Head of Department" : "Academic Advisor"}</p>
+            <p className="text-xs lg:text-sm text-gray-500 mt-2">
+              {userData?.role === "HOD"
+                ? "Head of Department"
+                : "Academic Advisor"}
+            </p>
           </div>
-        
+
           {/* Classes Managed */}
           <div className="bg-white p-4 lg:p-6 rounded-lg shadow-md">
             <div className="flex items-center justify-between mb-3 lg:mb-4">
-              <h3 className="text-base lg:text-lg font-semibold text-gray-700">Classes</h3>
+              <h3 className="text-base lg:text-lg font-semibold text-gray-700">
+                Classes
+              </h3>
               <Layers className="h-5 w-5 lg:h-6 lg:w-6 text-purple-500" />
             </div>
             <p className="text-2xl lg:text-3xl font-bold text-gray-900">
               {classes?.length || 0}
             </p>
             <p className="text-xs lg:text-sm text-gray-500 mt-2">
-              {userData?.role === "HOD" ? "Departmental Classes" : "Classes Managed"}
+              {userData?.role === "HOD"
+                ? "Departmental Classes"
+                : "Classes Managed"}
             </p>
           </div>
         </div>
-        
+
         {/* Classes Overview Section */}
         <div className="bg-white rounded-lg shadow-md mb-8">
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Layers className="h-6 w-6 text-blue-600" />
-                <h2 className="text-xl font-semibold text-gray-800">Classes Overview</h2>
+                <h2 className="text-xl font-semibold text-gray-800">
+                  Classes Overview
+                </h2>
               </div>
               <button
                 onClick={() => setCurrentView("classes")}
@@ -188,7 +234,7 @@ const AdvisorHodDashboard = () => {
               </button>
             </div>
           </div>
-          
+
           <div className="p-6">
             {classes.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -196,10 +242,13 @@ const AdvisorHodDashboard = () => {
                   <div
                     key={classItem._id}
                     className="border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer"
-                    onClick={() => navigate(`/advisor-hod/class/${classItem._id}`)}
+                    onClick={() =>
+                      navigate(`/advisor-hod/class/${classItem._id}`)
+                    }
                   >
                     <h3 className="font-medium text-lg text-gray-900">
-                      {classItem.className || `${classItem.year}-${classItem.section}`}
+                      {classItem.className ||
+                        `${classItem.year}-${classItem.section}`}
                     </h3>
                     <p className="text-sm text-gray-500">
                       {classItem.department} • {classItem.academicYear}
@@ -217,13 +266,17 @@ const AdvisorHodDashboard = () => {
               <div className="text-center py-8">
                 <p className="text-gray-500">No classes found.</p>
                 {userData?.role === "HOD" ? (
-                  <p className="text-sm text-gray-400 mt-2">Classes for your department will appear here.</p>
+                  <p className="text-sm text-gray-400 mt-2">
+                    Classes for your department will appear here.
+                  </p>
                 ) : (
-                  <p className="text-sm text-gray-400 mt-2">Classes assigned to you will appear here.</p>
+                  <p className="text-sm text-gray-400 mt-2">
+                    Classes assigned to you will appear here.
+                  </p>
                 )}
               </div>
             )}
-            
+
             {classes.length > 6 && (
               <div className="mt-4 text-center">
                 <button
@@ -236,14 +289,16 @@ const AdvisorHodDashboard = () => {
             )}
           </div>
         </div>
-        
+
         {/* Reports Overview Section */}
         <div className="bg-white rounded-lg shadow-md">
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <BarChart className="h-6 w-6 text-blue-600" />
-                <h2 className="text-xl font-semibold text-gray-800">Reports Overview</h2>
+                <h2 className="text-xl font-semibold text-gray-800">
+                  Reports Overview
+                </h2>
               </div>
               <button
                 onClick={() => setCurrentView("reports")}
@@ -253,23 +308,35 @@ const AdvisorHodDashboard = () => {
               </button>
             </div>
           </div>
-          
+
           <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer"
-                   onClick={() => setCurrentView("reports")}>
+              <div
+                className="border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                onClick={() => setCurrentView("reports")}
+              >
                 <h3 className="font-medium text-gray-900">Performance Reports</h3>
-                <p className="text-sm text-gray-500 mt-1">Analyze student performance across classes</p>
+                <p className="text-sm text-gray-500 mt-1">
+                  Analyze student performance across classes
+                </p>
               </div>
-              <div className="border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer"
-                   onClick={() => setCurrentView("reports")}>
+              <div
+                className="border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                onClick={() => setCurrentView("reports")}
+              >
                 <h3 className="font-medium text-gray-900">Participation Reports</h3>
-                <p className="text-sm text-gray-500 mt-1">Event participation statistics by class</p>
+                <p className="text-sm text-gray-500 mt-1">
+                  Event participation statistics by class
+                </p>
               </div>
-              <div className="border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer"
-                   onClick={() => setCurrentView("reports")}>
+              <div
+                className="border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                onClick={() => setCurrentView("reports")}
+              >
                 <h3 className="font-medium text-gray-900">Leaderboard Stats</h3>
-                <p className="text-sm text-gray-500 mt-1">Top performing students and classes</p>
+                <p className="text-sm text-gray-500 mt-1">
+                  Top performing students and classes
+                </p>
               </div>
             </div>
           </div>
@@ -279,9 +346,41 @@ const AdvisorHodDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
-      <div className="fixed top-0 left-0 h-full w-64 bg-white shadow-lg p-4 lg:p-6">
+    <div className="flex flex-col md:flex-row min-h-screen bg-gray-50">
+      {/* Mobile Header - only visible on mobile */}
+      <div className="lg:hidden bg-white shadow-md p-4 flex justify-between items-center z-20">
+        <h1 className="text-xl font-bold text-gray-800">HOD Portal</h1>
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="p-2 rounded-md text-gray-600 hover:bg-gray-100"
+        >
+          {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
+      </div>
+
+      {/* Sidebar - changes based on screen size */}
+      <div
+        className={`${
+          windowWidth >= 1024
+            ? "fixed left-0 top-0 h-full w-64 bg-white shadow-lg p-6 z-20"
+            : `fixed z-50 top-0 left-0 w-64 h-full bg-white shadow-lg p-6 transform transition-transform duration-300 ${
+                isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+              }`
+        }`}
+      >
+        {/* Mobile close button */}
+        {windowWidth < 1024 && (
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-xl font-bold text-gray-800">HOD Portal</h1>
+            <button
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="p-1 rounded-md text-gray-600 hover:bg-gray-100"
+            >
+              <X size={20} />
+            </button>
+          </div>
+        )}
+
         <div className="flex flex-col h-full">
           <h1 className="text-xl font-bold text-gray-800 mb-8">
             {userData?.role === "HOD" ? "HOD Portal" : "Advisor Portal"}
@@ -334,8 +433,18 @@ const AdvisorHodDashboard = () => {
         </div>
       </div>
 
+      {/* Overlay to close menu when clicked outside on mobile */}
+      {isMobileMenuOpen && windowWidth < 1024 && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
       {/* Main Content */}
-      <div className="flex-1 lg:ml-64">{renderContent()}</div>
+      <main className={`flex-grow ${windowWidth >= 1024 ? "ml-64" : "ml-0"} p-4 md:p-8`}>
+        {renderContent()}
+      </main>
     </div>
   );
 };

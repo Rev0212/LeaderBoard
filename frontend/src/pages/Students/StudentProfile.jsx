@@ -3,7 +3,7 @@ import axios from 'axios';
 import { 
   User, Mail, Hash, Star, Calendar, ArrowLeft, 
   Camera, Trash2, Building, GraduationCap, BookOpen,
-  Menu, X, LogOut, History, CalendarDays, Plus, Home
+  Menu, X, LogOut, History, CalendarDays, Plus, Home, Phone
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -314,157 +314,183 @@ const StudentProfile = () => {
       )}
 
       {/* Main content */}
-      <div className={`flex-1 ${windowWidth >= 1024 ? 'ml-64' : ''} p-4`}>
-        <div className="max-w-3xl mx-auto mt-10">
-          <div className="bg-white rounded-lg shadow-lg p-8">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">My Profile</h2>
-              <button
-                onClick={() => setShowChangePasswordForm(true)}
-                className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
-              >
-                Change Password
-              </button>
-            </div>
-
-            <div className={showChangePasswordForm ? 'opacity-50' : 'opacity-100'}>
-              <div className="flex flex-col items-center gap-6 mb-8">
-                <div className="relative">
-                  {profileImg ? (
-                    <div className="relative">
-                      <img
-                        src={profileImg}
-                        alt="Profile"
-                        className="w-32 h-32 rounded-full object-cover border-4 border-blue-500"
-                      />
-                      <button
-                        onClick={handleRemoveImage}
-                        className="absolute top-0 right-0 bg-red-500 text-white p-2 rounded-full"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+      <div>
+      {/* <div className={`flex-1 ${windowWidth >= 1024 ? 'ml-64' : ''} p-4`}> */}
+        <div className="max-w-5xl mx-auto mt-10">
+          <div className="bg-white rounded-lg shadow-md">
+            <div className="p-6">
+              <h2 className="text-2xl font-semibold text-gray-800 mb-6">My Profile</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Profile Image */}
+                <div className="col-span-1">
+                  <div className="flex flex-col items-center space-y-4">
+                    <div className="relative w-40 h-40">
+                      {profileImg ? (
+                        <div className="relative">
+                          <img
+                            src={profileImg}
+                            alt="Profile"
+                            className="rounded-full w-full h-full object-cover border-4 border-gray-200"
+                          />
+                          <button
+                            onClick={handleRemoveImage}
+                            className="absolute bottom-0 right-0 bg-red-500 text-white p-2 rounded-full cursor-pointer shadow-lg hover:bg-red-600 transition-colors"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="relative">
+                          <div className="rounded-full w-full h-full bg-gray-200 flex items-center justify-center">
+                            <User size={64} className="text-gray-400" />
+                          </div>
+                          <label
+                            className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full cursor-pointer shadow-lg hover:bg-blue-700 transition-colors"
+                            htmlFor="profileImage"
+                          >
+                            <Camera size={16} />
+                          </label>
+                          <input
+                            type="file"
+                            id="profileImage"
+                            className="hidden"
+                            onChange={handleAddImage}
+                            accept="image/*"
+                            disabled={uploading}
+                          />
+                        </div>
+                      )}
                     </div>
-                  ) : (
-                    <label className="cursor-pointer">
-                      <div className="w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center border-2 border-dashed border-gray-400">
-                        {uploading ? (
-                          <span className="text-gray-500">Uploading...</span>
-                        ) : (
-                          <Camera size={32} className="text-gray-500" />
-                        )}
-                      </div>
-                      <input type="file" className="hidden" onChange={handleAddImage} />
-                    </label>
+                    <div className="text-center">
+                      <h3 className="text-xl font-semibold text-gray-800">{student?.name}</h3>
+                      <p className="text-gray-600">{student?.email}</p>
+                    </div>
+                    <button
+                      onClick={() => setShowChangePasswordForm(true)}
+                      className="border border-blue-500 text-blue-500 hover:bg-blue-50 px-4 py-2 rounded transition-colors w-full"
+                    >
+                      Change Password
+                    </button>
+                  </div>
+                </div>
+
+                {/* Profile Info */}
+                <div className="col-span-2 space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <InfoRow
+                      icon={<Mail />}
+                      label="Email"
+                      value={student?.email}
+                    />
+                    <InfoRow
+                      icon={<Building />}
+                      label="Department"
+                      value={student?.department}
+                    />
+                    <InfoRow
+                      icon={<Hash />}
+                      label="Register Number"
+                      value={student?.registerNo}
+                    />
+                    <InfoRow
+                      icon={<GraduationCap />}
+                      label="Program"
+                      value={student?.program}
+                    />
+                    <InfoRow
+                      icon={<BookOpen />}
+                      label="Current Class"
+                      value={student?.currentClass?.section || "N/A"}
+                    />
+                    <InfoRow
+                      icon={<Calendar />}
+                      label="Events Participated"
+                      value={student?.eventsParticipated?.filter(event => event.status === 'Approved')?.length || 0}
+                    />
+                    <InfoRow
+                      icon={<Star />}
+                      label="Total Points"
+                      value={student?.totalPoints || 0}
+                    />
+                  </div>
+
+                  {/* Change Password Form */}
+                  {showChangePasswordForm && (
+                    <div className="mt-8 bg-gray-50 p-6 rounded-lg">
+                      <h4 className="text-lg font-semibold text-gray-800 mb-4">
+                        Change Password
+                      </h4>
+                      <form onSubmit={handleSubmitPasswordChange}>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Current Password
+                            </label>
+                            <input
+                              type="password"
+                              name="oldPassword"
+                              value={passwordData.oldPassword}
+                              onChange={handlePasswordChange}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              New Password
+                            </label>
+                            <input
+                              type="password"
+                              name="newPassword"
+                              value={passwordData.newPassword}
+                              onChange={handlePasswordChange}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Confirm New Password
+                            </label>
+                            <input
+                              type="password"
+                              name="reenterNewPassword"
+                              value={passwordData.reenterNewPassword}
+                              onChange={handlePasswordChange}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                              required
+                            />
+                          </div>
+
+                          {passwordError && (
+                            <p className="text-red-600 text-sm">{passwordError}</p>
+                          )}
+                          {passwordSuccess && (
+                            <p className="text-green-600 text-sm">{passwordSuccess}</p>
+                          )}
+
+                          <div className="flex gap-3 mt-4">
+                            <button
+                              type="submit"
+                              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
+                            >
+                              Update Password
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setShowChangePasswordForm(false)}
+                              className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300 transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      </form>
+                    </div>
                   )}
                 </div>
-
-                <div className="text-center">
-                  <h1 className="text-2xl font-bold text-gray-800">{student?.name || "N/A"}</h1>
-                  <p className="text-gray-600">{student?.email || "N/A"}</p>
-                </div>
               </div>
-
-              <div className="space-y-6">
-                <InfoRow icon={<User />} label="Full Name" value={student?.name} />
-                <InfoRow icon={<Mail />} label="Email Address" value={student?.email} />
-                <InfoRow icon={<Hash />} label="Register Number" value={student?.registerNo} />
-                <InfoRow icon={<Building />} label="Department" value={student?.department} />
-                <InfoRow icon={<GraduationCap />} label="Program" value={student?.program} />
-                <InfoRow 
-                  icon={<BookOpen />} 
-                  label="Current Class" 
-                  value={student?.currentClass?.section || "N/A"} 
-                />
-                <InfoRow 
-                  icon={<Calendar />} 
-                  label="Events Participated" 
-                  value={student?.eventsParticipated?.filter(event => event.status === 'Approved')?.length || 0} 
-                />
-                <InfoRow 
-                  icon={<Star />} 
-                  label="Total Points" 
-                  value={student?.totalPoints || 0} 
-                />
-              </div>
-            </div> 
-
-            {showChangePasswordForm && (
-              <div className="fixed inset-0 flex items-center justify-center z-50">
-                <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
-                  <form onSubmit={handleSubmitPasswordChange} className="space-y-4">
-                    <h2 className="text-2xl font-bold mb-6">Change Password</h2>
-                    
-                    {passwordError && (
-                      <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
-                        <p className="text-red-700">{passwordError}</p>
-                      </div>
-                    )}
-                    
-                    {passwordSuccess && (
-                      <div className="bg-green-50 border-l-4 border-green-500 p-4 mb-4">
-                        <p className="text-green-700">{passwordSuccess}</p>
-                      </div>
-                    )}
-
-                    <div>
-                      <label className="block text-gray-700 mb-2 font-medium">Current Password</label>
-                      <input
-                        type="password"
-                        name="oldPassword"
-                        value={passwordData.oldPassword}
-                        onChange={handlePasswordChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
-                        required
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-gray-700 mb-2 font-medium">New Password</label>
-                      <input
-                        type="password"
-                        name="newPassword"
-                        value={passwordData.newPassword}
-                        onChange={handlePasswordChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
-                        required
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-gray-700 mb-2 font-medium">Confirm New Password</label>
-                      <input
-                        type="password"
-                        name="reenterNewPassword"
-                        value={passwordData.reenterNewPassword}
-                        onChange={handlePasswordChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
-                        required
-                      />
-                    </div>
-
-                    <div className="flex justify-between pt-6">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowChangePasswordForm(false);
-                          setPasswordError("");
-                          setPasswordSuccess("");
-                        }}
-                        className="bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600 transition-colors"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        className="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition-colors"
-                      >
-                        Submit
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            )}
+            </div>
           </div>
         </div>
       </div>
