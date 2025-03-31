@@ -130,7 +130,7 @@ const AdvisorProfile = ({ userData, handleBackToDashboard }) => {
                       alt="Profile"
                       className="rounded-full w-full h-full object-cover border-4 border-gray-200"
                     />
-                  ) : (
+                  ) : ( 
                     <div className="rounded-full w-full h-full bg-gray-200 flex items-center justify-center">
                       <User size={64} className="text-gray-400" />
                     </div>
@@ -180,23 +180,9 @@ const AdvisorProfile = ({ userData, handleBackToDashboard }) => {
                   value={userData?.department}
                 />
                 <InfoRow
-                  icon={<Phone />}
-                  label="Contact"
-                  value={userData?.contactNo || "Not provided"}
-                />
-                <InfoRow
                   icon={<User />}
                   label="Role"
                   value={userData?.role}
-                />
-                <InfoRow
-                  icon={<Calendar />}
-                  label="Joined On"
-                  value={
-                    userData?.createdAt
-                      ? new Date(userData.createdAt).toLocaleDateString()
-                      : "Not available"
-                  }
                 />
                  {/*<InfoRow
                   icon={<Hash />}
