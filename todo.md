@@ -53,7 +53,7 @@ Revanth A Observation In HoD Dashboard
 
 21 March:
 Revanth A Observations 
-1. Leaderboard Yearwise,Department wise Filer(backend) - Fiexed
+1. Leaderboard Yearwise,Department wise Filer(backend) - Fixed
 2. Have the LeftDashboard Constant in all pages
 3. Remove Back to Dashboard
 4. Make the Profile Page Similar to HOD Profile Page

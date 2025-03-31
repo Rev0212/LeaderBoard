@@ -309,20 +309,9 @@ const EventForm = () => {
     }
   };
 
-  const handleBackToDashboard = () => {
-    navigate("/student-dashboard");
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
-        <button
-          onClick={handleBackToDashboard}
-          className="flex items-center gap-2 text-blue-500 hover:underline mb-6"
-        >
-          <ArrowLeft size={20} />
-          Back to Dashboard
-        </button>
         
         <div className="bg-white rounded-xl shadow-md overflow-hidden">
           <div className="bg-blue-600 py-4 px-6">

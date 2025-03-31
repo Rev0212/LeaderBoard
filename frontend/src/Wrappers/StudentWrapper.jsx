@@ -1,21 +1,14 @@
-import React, { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React from 'react';
+import { Navigate } from 'react-router-dom';
 
 const StudentProtectWrapper = ({ children }) => {
-    const navigate = useNavigate();
-    const token = localStorage.getItem("student-token");
-
-    useEffect(() => {
-        if (!token) {
-            navigate("/student-login");
-        } 
-    }, [navigate, token]); 
-
-    if (!token) {
-        return null;
-    }
-
-    return <>{children}</>;
+  const token = localStorage.getItem("student-token");
+  
+  if (!token) {
+    return <Navigate to="/student-login" replace />;
+  }
+  
+  return children;
 };
 
 export default StudentProtectWrapper;
