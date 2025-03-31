@@ -278,13 +278,13 @@ const StudentProfile = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="bg-red-50 border-l-4 border-red-500 p-4 w-full max-w-md">
           <p className="text-red-700">{error}</p>
-          <button
+          {/* <button
             onClick={handleBackToDashboard}
             className="mt-4 flex items-center gap-2 text-blue-500"
           >
             <ArrowLeft size={20} />
             Back to Dashboard
-          </button>
+          </button> */}
         </div>
       </div>
     );

@@ -7,13 +7,13 @@ const ClassesList = ({ classes, handleBackToDashboard }) => {
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      <button
+      {/* <button
         onClick={handleBackToDashboard}
         className="flex items-center gap-2 text-blue-500 hover:underline mb-6"
       >
         <ArrowLeft size={20} />
         Back to Dashboard
-      </button>
+      </button> */}
       
       <h1 className="text-2xl font-semibold text-gray-800 mb-6">All Classes</h1>
       

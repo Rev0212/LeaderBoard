@@ -71,7 +71,7 @@ const UpcomingEventsList = ({ showBackButton = false, onBack = null, title = "Cu
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       {/* Render back button if showBackButton is true */}
-      {showBackButton && onBack && (
+      {/* {showBackButton && onBack && (
         <button 
           onClick={onBack}
           className="flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-4"
@@ -79,7 +79,7 @@ const UpcomingEventsList = ({ showBackButton = false, onBack = null, title = "Cu
           <ArrowLeft size={20} />
           <span>Back to Dashboard</span>
         </button>
-      )}
+      )} */}
       
       <h2 className="text-2xl font-semibold text-gray-900 mb-6">{title}</h2>
       <div className="space-y-4">

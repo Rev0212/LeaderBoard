@@ -99,28 +99,35 @@ const AdvisorHodDashboard = () => {
     fetchUserData();
   }, [VITE_BASE_URL]);
 
-  const handleLogout = async () => {
-    try {
-      const token = localStorage.getItem("teacher-token");
-      await axios.get(`${VITE_BASE_URL}/teacher/logout`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-      localStorage.removeItem("teacher-token");
-      navigate("/teacher-login");
-    } catch (error) {
-      console.error("Error logging out:", error);
+  // Modified navigation handlers with automatic sidebar closing
+  const handleViewChange = (view) => {
+    setCurrentView(view);
+    if (windowWidth < 1024) {
+      setIsMobileMenuOpen(false);
     }
   };
 
-  const handleReportsClick = () => {
-    // Option 1: Change view within the dashboard
-    setCurrentView("reports");
+  const handleNavigateToClassDetails = (classId) => {
+    if (windowWidth < 1024) {
+      setIsMobileMenuOpen(false);
+    }
+    navigate(`/class/${classId}`);
+  };
 
-    // Option 2: Navigate to dedicated reports page
-    // navigate("/reports");
+  const handleLogout = async () => {
+    // Close sidebar if on mobile before logout
+    if (windowWidth < 1024) {
+      setIsMobileMenuOpen(false);
+    }
+    
+    // Existing logout code
+    try {
+      localStorage.removeItem("teacher-token");
+      localStorage.removeItem("token");
+      navigate("/");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
   };
 
   const renderContent = () => {
@@ -345,104 +352,104 @@ const AdvisorHodDashboard = () => {
     );
   };
 
+  // The rendering section with fixed duplicate heading issue
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-gray-50">
       {/* Mobile Header - only visible on mobile */}
       <div className="lg:hidden bg-white shadow-md p-4 flex justify-between items-center z-20">
-        <h1 className="text-xl font-bold text-gray-800">HOD Portal</h1>
-        <button
+        <button 
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           className="p-2 rounded-md text-gray-600 hover:bg-gray-100"
         >
           {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
+        <h1 className="text-xl font-bold text-gray-800">
+          {userData?.role === "HOD" ? "HOD Portal" : "Academic Advisor Portal"}
+        </h1>
+        {/* Empty div to maintain spacing with justify-between */}
+        <div className="w-10"></div>
       </div>
 
       {/* Sidebar - changes based on screen size */}
-      <div
-        className={`${
-          windowWidth >= 1024
-            ? "fixed left-0 top-0 h-full w-64 bg-white shadow-lg p-6 z-20"
-            : `fixed z-50 top-0 left-0 w-64 h-full bg-white shadow-lg p-6 transform transition-transform duration-300 ${
-                isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-              }`
-        }`}
-      >
-        {/* Mobile close button */}
-        {windowWidth < 1024 && (
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-xl font-bold text-gray-800">HOD Portal</h1>
-            <button
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="p-1 rounded-md text-gray-600 hover:bg-gray-100"
-            >
-              <X size={20} />
-            </button>
-          </div>
-        )}
-
-        <div className="flex flex-col h-full">
-          <h1 className="text-xl font-bold text-gray-800 mb-8">
-            {userData?.role === "HOD" ? "HOD Portal" : "Advisor Portal"}
+      <div className={`
+        ${windowWidth >= 1024 
+          ? 'fixed left-0 top-0 h-full w-64 bg-white shadow-lg p-6 z-20' 
+          : `fixed z-50 top-0 left-0 w-64 h-full bg-white shadow-lg p-6 transform transition-transform duration-300 ${
+              isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+            }`
+        }
+      `}>
+        {/* Show heading only once - show in sidebar only on desktop */}
+        {windowWidth >= 1024 && (
+          <h1 className="text-2xl font-bold text-gray-800 mb-6">
+            {userData?.role === "HOD" ? "HOD Portal" : "Academic Advisor Portal"}
           </h1>
-          <nav className="flex flex-col gap-4">
-            <button
-              onClick={() => setCurrentView("dashboard")}
-              className={`flex items-center gap-2 p-3 rounded-lg hover:bg-gray-100 transition-colors ${
-                currentView === "dashboard" ? "bg-gray-100" : ""
-              }`}
-            >
-              <Building size={18} />
-              Dashboard
-            </button>
-            <button
-              onClick={() => setCurrentView("profile")}
-              className={`flex items-center gap-2 p-3 rounded-lg hover:bg-gray-100 transition-colors ${
-                currentView === "profile" ? "bg-gray-100" : ""
-              }`}
-            >
-              <User size={18} />
-              Profile
-            </button>
-            <button
-              onClick={() => setCurrentView("classes")}
-              className={`flex items-center gap-2 p-3 rounded-lg hover:bg-gray-100 transition-colors ${
-                currentView === "classes" ? "bg-gray-100" : ""
-              }`}
-            >
-              <Users size={18} />
-              Classes
-            </button>
-            <button
-              onClick={() => setCurrentView("reports")}
-              className={`flex items-center gap-2 p-3 rounded-lg hover:bg-gray-100 transition-colors ${
-                currentView === "reports" ? "bg-gray-100" : ""
-              }`}
-            >
-              <BarChart size={18} />
-              Reports
-            </button>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 p-3 rounded-lg hover:bg-red-100 transition-colors"
-            >
-              <LogOut size={18} />
-              Logout
-            </button>
-          </nav>
+        )}
+        
+        {/* Remove the redundant close button in mobile sidebar */}
+        
+        {/* Sidebar navigation with updated handlers */}
+        <div className="space-y-2 mt-6">
+          <button
+            onClick={() => handleViewChange("dashboard")}
+            className={`flex items-center w-full p-3 rounded-lg ${
+              currentView === "dashboard" ? "bg-blue-100 text-blue-700" : "hover:bg-gray-100"
+            }`}
+          >
+            <Building className="mr-3" size={20} />
+            Dashboard
+          </button>
+          
+          <button
+            onClick={() => handleViewChange("classes")}
+            className={`flex items-center w-full p-3 rounded-lg ${
+              currentView === "classes" ? "bg-blue-100 text-blue-700" : "hover:bg-gray-100"
+            }`}
+          >
+            <Users className="mr-3" size={20} />
+            Classes
+          </button>
+          
+          <button
+            onClick={() => handleViewChange("reports")}
+            className={`flex items-center w-full p-3 rounded-lg ${
+              currentView === "reports" ? "bg-blue-100 text-blue-700" : "hover:bg-gray-100"
+            }`}
+          >
+            <BarChart className="mr-3" size={20} />
+            Reports
+          </button>
+          
+          <button
+            onClick={() => handleViewChange("profile")}
+            className={`flex items-center w-full p-3 rounded-lg ${
+              currentView === "profile" ? "bg-blue-100 text-blue-700" : "hover:bg-gray-100"
+            }`}
+          >
+            <User className="mr-3" size={20} />
+            Profile
+          </button>
+          
+          <button
+            onClick={handleLogout}
+            className="flex items-center w-full p-3 bg-red-500 text-white rounded-lg hover:bg-red-600"
+          >
+            <LogOut className="mr-3" size={20} />
+            Logout
+          </button>
         </div>
       </div>
 
       {/* Overlay to close menu when clicked outside on mobile */}
       {isMobileMenuOpen && windowWidth < 1024 && (
-        <div
+        <div 
           className="fixed inset-0 bg-black bg-opacity-50 z-40"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
 
-      {/* Main Content */}
-      <main className={`flex-grow ${windowWidth >= 1024 ? "ml-64" : "ml-0"} p-4 md:p-8`}>
+      {/* Main content - adjust padding based on screen size */}
+      <main className={`flex-grow ${windowWidth >= 1024 ? 'ml-64' : 'ml-0'} p-4 md:p-8`}>
         {renderContent()}
       </main>
     </div>
