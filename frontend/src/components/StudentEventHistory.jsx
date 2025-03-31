@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, FileText, Calendar, Trophy, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { ArrowLeft, FileText, Calendar, Trophy, CheckCircle, XCircle, Clock, Info } from 'lucide-react';
 
 const StudentEventHistory = ({ handleBackToDashboard }) => {
   const [events, setEvents] = useState([]);
@@ -42,23 +42,22 @@ const StudentEventHistory = ({ handleBackToDashboard }) => {
   }, []);
 
   const getStatusBadge = (status) => {
-    switch (status) {
-      case 'Approved':
+    switch (status?.toLowerCase()) {
+      case 'approved':
         return (
-          <span className="rounded-full w-full h-full object-cover border-4 border-gray-200 aspect-square"
->
+          <span className="flex items-center gap-1 text-green-700 bg-green-100 px-3 py-1 rounded-full">
             <CheckCircle size={16} />
             Approved
           </span>
         );
-      case 'Rejected':
+      case 'rejected':
         return (
           <span className="flex items-center gap-1 text-red-700 bg-red-100 px-3 py-1 rounded-full">
             <XCircle size={16} />
             Rejected
           </span>
         );
-      case 'Pending':
+      case 'pending':
         return (
           <span className="flex items-center gap-1 text-yellow-700 bg-yellow-100 px-3 py-1 rounded-full">
             <Clock size={16} />
@@ -66,7 +65,12 @@ const StudentEventHistory = ({ handleBackToDashboard }) => {
           </span>
         );
       default:
-        return null;
+        return (
+          <span className="flex items-center gap-1 text-gray-700 bg-gray-100 px-3 py-1 rounded-full">
+            <Info size={16} />
+            {status || 'Unknown'}
+          </span>
+        );
     }
   };
 
