@@ -73,7 +73,7 @@ const EventDetailsModal = ({ event, onClose, onApprove, onReject }) => {
           <div>
             <strong>Proof:</strong>
             <img
-              src={event.proofUrl}
+              src={`${import.meta.env.VITE_BASE_URL}${event.proofUrl}`}
               alt="Event Proof"
               className="mt-2 border rounded-md shadow-md max-w-full h-48 object-contain"
             />

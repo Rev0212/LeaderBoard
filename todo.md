@@ -46,19 +46,19 @@ Revanth A Observation In Reports Page:
 Revanth A Observation In HoD Dashboard
 
 1. Need to optimise it for mobile view
-2. Need year filter in All Classses
-3. The Points is not comming for students in (Class View)
+2. Need year filter in All Classses in all classes overview
+<!-- 3. The Points is not comming for students in (Class View) -->
 4. Add pagination
 
 
 21 March:
 Revanth A Observations 
-1. Leaderboard Yearwise,Department wise Filer(backend) - Fixed
-2. Have the LeftDashboard Constant in all pages
-3. Remove Back to Dashboard
-4. Make the Profile Page Similar to HOD Profile Page
+<!-- 1. Leaderboard Yearwise,Department wise Filer(backend) - Fixed -->
+<!-- 2. Have the LeftDashboard Constant in all pages -->
+<!-- 3. Remove Back to Dashboard -->
+<!-- 4. Make the Profile Page Similar to HOD Profile Page -->
 
 22 March:
-1. Add a file size limit
+<!-- 1. Add a file size limit -->
 2. Add PDF back to event
-3. Teacherdashboard class list Unauthorized
+<!-- 3. Teacherdashboard class list Unauthorized -->

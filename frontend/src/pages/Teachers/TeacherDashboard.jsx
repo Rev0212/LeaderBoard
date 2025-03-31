@@ -8,22 +8,49 @@ import {
   LogOut,
   Building,
   Hash,
-  CheckCircle, // Added missing import
+  CheckCircle,
   BarChart,
   Calendar,
   ExternalLink,
 } from "lucide-react";
 import TeacherProfile from "../../components/TeacherProfile";
 import ClassDetails from "../../components/ClassList";
-import UpcomingEventsList from "../../components/UpcomingEventsList";
+import UpcomingEvents from "../UpcomingEvents";
+
+// Format event date helper function
+const formatEventDate = (event) => {
+  try {
+    const dateValue = event.timestamp || event.createdAt || event.date;
+    
+    if (!dateValue) return "No date available";
+    
+    const date = new Date(dateValue);
+    
+    if (isNaN(date.getTime())) return "Invalid date";
+    
+    const options = { 
+      day: 'numeric', 
+      month: 'short', 
+      year: 'numeric',
+      hour: '2-digit', 
+      minute: '2-digit'
+    };
+    
+    return date.toLocaleDateString('en-US', options);
+  } catch (error) {
+    console.error("Error formatting date:", error);
+    return "Date error";
+  }
+};
 
 const TeacherDashboard = () => {
   const [events, setEvents] = useState([]);
   const [teacherData, setTeacherData] = useState(null);
-  const [currentView, setCurrentView] = useState("dashboard"); // Track current view
+  const [currentView, setCurrentView] = useState("dashboard");
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [selectedPDF, setSelectedPDF] = useState(null);
-  const [loading, setLoading] = useState(false); // Add loading state
+  const [selectedImage, setSelectedImage] = useState(null); // New state for image viewing
+  const [loading, setLoading] = useState(false);
   const [upcomingEvents, setUpcomingEvents] = useState([]);
   const location = useLocation();
 
@@ -248,7 +275,7 @@ const TeacherDashboard = () => {
   const handleShowPDF = (event) => {
     // Ensure the PDF document exists before opening it in the modal
     if (event.pdfDocument) {
-      const pdfUrl = `http://localhost:4000/uploads/pdf/${event.pdfDocument}`;
+      const pdfUrl = `${VITE_BASE_URL}/uploads/pdf/${event.pdfDocument}`;
       setSelectedPDF(pdfUrl);  // Set the PDF URL to the state
     } else {
       console.error('No PDF document available for this event');
@@ -259,12 +286,28 @@ const TeacherDashboard = () => {
     setSelectedPDF(null);
   };
 
+  // New handler for showing certificate image
+  const handleShowImage = (event) => {
+    // Ensure the image exists before opening it in the modal
+    if (event.proofUrl) {
+      const imageUrl = `${VITE_BASE_URL}${event.proofUrl}`;
+      setSelectedImage(imageUrl);  // Set the image URL to the state
+    } else {
+      console.error('No certificate proof available for this event');
+    }
+  };
+
+  // New handler for closing image modal
+  const handleCloseImageModal = () => {
+    setSelectedImage(null);
+  };
+
   const handleViewReports = () => {
     navigate('/reports');
   };
 
   const handleViewAllUpcomingEvents = () => {
-    navigate('/upcoming-events');
+    navigate('/teacher-upcoming-events');
   };
 
   const renderContent = () => {
@@ -293,14 +336,7 @@ const TeacherDashboard = () => {
     if (currentView === "upcomingEvents") {
       return (
         <div className="p-6">
-          {/* <button
-            onClick={() => setCurrentView("dashboard")}
-            className="flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-6"
-          >
-            <ArrowLeft size={18} />
-            <span>Back to Dashboard</span>
-          </button> */}
-          <UpcomingEventsList 
+          <UpcomingEvents
             showBackButton={false}
             title="Upcoming Events" 
           />
@@ -371,10 +407,18 @@ const TeacherDashboard = () => {
                       <h3 className="font-medium text-lg text-gray-900">{event.submittedBy.name}</h3>
                       <p className="text-gray-600">{event.eventName}</p>
                       <p className="text-sm text-gray-500">
-                        {new Date(event.timestamp).toLocaleString()}
+                        {formatEventDate(event)}
                       </p>
                     </div>
                     <div className="ml-4 flex gap-4 items-center">
+                      {/* Add Certificate Proof button */}
+                      <button
+                        onClick={() => handleShowImage(event)}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors"
+                      >
+                        Show Certificate Proof
+                      </button>
+                      
                       <button
                         onClick={() => handleShowPDF(event)}
                         className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
@@ -461,9 +505,12 @@ const TeacherDashboard = () => {
               <BarChart size={18} />
               Reports
             </button>
+            {/* Update this button to navigate directly to the new route */}
             <button
-              onClick={() => navigate('/upcoming-events')}
-              className="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-100 transition-colors"
+              onClick={() => setCurrentView("upcomingEvents")}
+              className={`flex items-center gap-2 p-3 rounded-lg hover:bg-gray-100 transition-colors ${
+                currentView === "upcomingEvents" ? "bg-gray-100" : ""
+              }`}
             >
               <Calendar size={18} />
               Upcoming Events
@@ -518,6 +565,7 @@ const TeacherDashboard = () => {
         </div>
       )}
 
+      {/* Modal for viewing PDF */}
       {selectedPDF && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg max-w-4xl w-full h-3/4">
@@ -538,6 +586,32 @@ const TeacherDashboard = () => {
           </div>
         </div>
       )}
+
+      {/* New modal for viewing certificate image */}
+      {selectedImage && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg max-w-4xl w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold">Certificate Proof</h3>
+              <button 
+                onClick={handleCloseImageModal}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                Close
+              </button>
+            </div>
+            <div className="flex justify-center items-center h-[500px] overflow-auto">
+              <img 
+                src={selectedImage} 
+                alt="Certificate Proof" 
+                className="max-h-full max-w-full object-contain" 
+              />
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Remove the redundant image modal */}
     </div>
   );
 };

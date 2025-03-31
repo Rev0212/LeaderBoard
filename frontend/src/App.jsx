@@ -6,7 +6,7 @@ import StudentDashboard from './pages/Students/StudentDashboard';
 import EventForm from './pages/Students/EventForm';
 import StudentProfile from './pages/Students/StudentProfile';
 import StudentProtectWrapper from './Wrappers/StudentWrapper';
-import StudentLayout from './Layouts/StudentLayout';
+import StudentLayout from './layouts/StudentLayout';
 import TeacherLoginForm from './pages/Teachers/TeacherLogin';
 import TeacherDashboard from './pages/Teachers/TeacherDashboard';
 import TeacherProtectWrapper from './Wrappers/TeacherWrapper';
@@ -31,6 +31,12 @@ const App = () => {
       <Route path="/admin-login" element={<AdminLoginForm />} />
       <Route path="/" element={<LandingPage/>} />
       
+      {/* Teacher routes - Moving these BEFORE student routes for proper matching */}
+      <Route path="/teacher-events" element={<TeacherProtectWrapper><EventTable /></TeacherProtectWrapper>} />
+      <Route path="/teacher-dashboard" element={<TeacherProtectWrapper><TeacherDashboard /></TeacherProtectWrapper>} />
+      <Route path="/advisor-hod-dashboard" element={<AdvisorHodWrapper><AdvisorHodDashboard /></AdvisorHodWrapper>} />
+      <Route path="/advisor-hod/class/:classId" element={<AdvisorHodWrapper><ClassDetailsView /></AdvisorHodWrapper>} />
+      
       {/* Protected student routes with layout */}
       <Route path="/" element={<StudentProtectWrapper><StudentLayout /></StudentProtectWrapper>}>
         <Route path="student-dashboard" element={<StudentDashboard />} />
@@ -41,13 +47,9 @@ const App = () => {
       </Route>
       
       {/* Other routes */}
-      <Route path='/teacher-events' element={<TeacherProtectWrapper><EventTable /></TeacherProtectWrapper>} />
       <Route path='/reports' element={<ReportsPage />} />
       <Route path='/events' element={<EventHistoryTable />} />
       <Route path='/admin-dashboard' element={<AdminDashboard />} />
-      <Route path="/teacher-dashboard" element={<TeacherProtectWrapper><TeacherDashboard /></TeacherProtectWrapper>} />
-      <Route path="/advisor-hod-dashboard" element={<AdvisorHodWrapper><AdvisorHodDashboard /></AdvisorHodWrapper>} />
-      <Route path="/advisor-hod/class/:classId" element={<AdvisorHodWrapper><ClassDetailsView /></AdvisorHodWrapper>} />
     </Routes>
   );
 };
