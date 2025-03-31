@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Upload, Users, FileText, Download, UserPlus, Calendar } from 'lucide-react';
+import { Upload, Users, FileText, Download, UserPlus, Calendar, MessageSquare } from 'lucide-react';
 import AdminUpcomingEventForm from '../../components/AdminUpcomingEventForm';
 import UpcomingEventsList from '../../components/UpcomingEventsList';
 import ReportsPage from '../ReportsPage';
+import AdminFeedbackReview from './AdminFeedbackReview';
 
 const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -217,6 +218,15 @@ const AdminDashboard = () => {
               <Calendar size={20} />
               Manage Upcoming Events
             </button>
+            <button
+              onClick={() => setActiveTab('feedback')}
+              className={`w-full p-4 flex items-center gap-2 ${
+                activeTab === 'feedback' ? 'bg-blue-50 text-blue-600' : 'text-gray-600'
+              }`}
+            >
+              <MessageSquare size={20} />
+              Feedback Review
+            </button>
           </nav>
         </div>
 
@@ -339,6 +349,12 @@ const AdminDashboard = () => {
         {activeTab === 'reports' && (
           <div className="bg-white rounded-lg shadow">
             <ReportsPage />
+          </div>
+        )}
+
+        {activeTab === 'feedback' && (
+          <div className="bg-white p-6 rounded-lg shadow">
+            <AdminFeedbackReview />
           </div>
         )}
       </div>

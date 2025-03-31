@@ -4,6 +4,7 @@ const { body } = require("express-validator");
 const adminController = require('../controllers/admin.controller');
 const authMiddleware = require('../middlewares/auth.middlewares');
 const adminModel = require('../models/admin.model');
+const FeedbackModel = require('../models/feedbackModel');
 
 // Password validation regex pattern
 const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
@@ -65,5 +66,14 @@ if (process.env.NODE_ENV !== 'production') {
         }
     });
 }
+
+router.get('/feedback', async (req, res) => {
+    try {
+        const feedbacks = await FeedbackModel.find().sort({ createdAt: -1 });
+        res.json(feedbacks);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching feedbacks' });
+    }
+});
 
 module.exports = router;

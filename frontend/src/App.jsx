@@ -21,6 +21,7 @@ import AdvisorHodDashboard from './pages/AdvisorHod/AdvisorHodDashboard';
 import ClassDetailsView from './pages/AdvisorHod/ClassDetailsView';
 import UpcomingEvents from './pages/UpcomingEvents';
 import StudentEventHistory from './components/StudentEventHistory';
+import AdminFeedbackReview from './pages/Admin/AdminFeedbackReview';
 
 const App = () => {
   return (
@@ -48,6 +49,7 @@ const App = () => {
       <Route path="/teacher-dashboard" element={<TeacherProtectWrapper><TeacherDashboard /></TeacherProtectWrapper>} />
       <Route path="/advisor-hod-dashboard" element={<AdvisorHodWrapper><AdvisorHodDashboard /></AdvisorHodWrapper>} />
       <Route path="/advisor-hod/class/:classId" element={<AdvisorHodWrapper><ClassDetailsView /></AdvisorHodWrapper>} />
+      <Route path="/admin/feedback" element={<AdminFeedbackReview />} />
     </Routes>
   );
 };
