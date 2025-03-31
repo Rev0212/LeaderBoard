@@ -293,13 +293,13 @@ const TeacherDashboard = () => {
     if (currentView === "upcomingEvents") {
       return (
         <div className="p-6">
-          <button
+          {/* <button
             onClick={() => setCurrentView("dashboard")}
             className="flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-6"
           >
             <ArrowLeft size={18} />
             <span>Back to Dashboard</span>
-          </button>
+          </button> */}
           <UpcomingEventsList 
             showBackButton={false}
             title="Upcoming Events" 

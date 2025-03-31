@@ -78,7 +78,10 @@ const StudentLayout = () => {
           ))}
         </nav>
         <button 
-          onClick={handleLogoutClick}
+          onClick={() => {
+            handleLogoutClick();
+            windowWidth < 1024 && setIsMobileMenuOpen(false);
+          }}
           className="flex items-center w-full p-3 bg-red-500 text-white mt-3 rounded-lg hover:bg-red-600"
         >
           <LogOut className="mr-3" size={20} />
@@ -114,7 +117,7 @@ const StudentLayout = () => {
       
       <div className={`
         ${windowWidth >= 1024 ? 'ml-64' : 'mt-16'} 
-        flex-1 min-h-screen bg-gray-50 p-4 md:p-6
+        min-h-screen w-full bg-gray-50 px-4 py-6 md:p-6
       `}>
         <Outlet />
       </div>

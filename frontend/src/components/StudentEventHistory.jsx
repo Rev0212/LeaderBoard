@@ -45,7 +45,8 @@ const StudentEventHistory = ({ handleBackToDashboard }) => {
     switch (status) {
       case 'Approved':
         return (
-          <span className="flex items-center gap-1 text-green-700 bg-green-100 px-3 py-1 rounded-full">
+          <span className="rounded-full w-full h-full object-cover border-4 border-gray-200 aspect-square"
+>
             <CheckCircle size={16} />
             Approved
           </span>
@@ -74,14 +75,6 @@ const StudentEventHistory = ({ handleBackToDashboard }) => {
 
   return (
     <div className="p-6">
-      <button
-        onClick={handleBackToDashboard}
-        className="flex items-center gap-2 text-blue-500 hover:underline mb-6"
-      >
-        <ArrowLeft size={20} />
-        Back to Dashboard
-      </button>
-
       <div className="bg-white shadow-md rounded-lg overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-800">Event Submission History</h2>

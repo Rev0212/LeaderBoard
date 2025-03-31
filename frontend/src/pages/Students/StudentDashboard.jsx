@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Trophy, Calendar, Plus, Medal, User, LogOut, Menu, X, History, ExternalLink, CalendarDays } from "lucide-react";
+import { Trophy, Calendar, Plus, Medal, User, LogOut, Menu, X, History, ExternalLink, CalendarDays, LayoutDashboard } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import LeaderboardTable from "../../components/LeaderBoard";
@@ -102,9 +102,9 @@ const StudentDashboard = () => {
       console.error("Error logging out:", err);
     }
   };
-  // Replace your existing handleUpcomingEvents function with this:
+
   const handleUpcomingEvents = () => {
-    setCurrentView("upcomingEvents");
+    navigate('/upcoming-events');
     setIsMobileMenuOpen(false);
   };
 
@@ -126,7 +126,8 @@ const StudentDashboard = () => {
         <h1 className="text-2xl font-bold text-gray-800 mb-6">Student Portal</h1>
         <nav className="space-y-2 flex-grow">
           {[
-            { icon: User, label: 'Profile', action:handleProfileClick },
+            { icon: LayoutDashboard, label: 'Dashboard', action: () => navigate('/student-dashboard') },
+            { icon: User, label: 'Profile', action: () => navigate('/student-profile') },
             { icon: History, label: 'Event History', view: 'eventHistory' },
             { icon: CalendarDays, label: 'Upcoming Events', action: handleUpcomingEvents },
             { icon: Plus, label: 'Submit Participation', action: handleAddEventClick },
@@ -218,19 +219,6 @@ const StudentDashboard = () => {
       return (
         <div className="bg-gray-50 min-h-screen">
           <StudentEventHistory handleBackToDashboard={() => setCurrentView("dashboard")} />
-        </div>
-      );
-    }
-
-    // Add this new condition for UpcomingEvents view
-    if (currentView === "upcomingEvents") {
-      return (
-        <div className="p-6 lg:ml-64 bg-gray-50 min-h-screen">
-          <UpcomingEventsList 
-            showBackButton={true} 
-            onBack={() => setCurrentView("dashboard")}
-            title="Upcoming Events" 
-          />
         </div>
       );
     }

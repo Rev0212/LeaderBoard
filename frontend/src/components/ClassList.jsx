@@ -64,13 +64,13 @@ const ClassDetails = ({ classId, teacherData, handleBackToDashboard }) => {
   if (error) {
     return (
       <div className="p-6">
-        <button
+        {/* <button
           onClick={handleBackToDashboard}
           className="flex items-center gap-2 text-blue-500 hover:underline mb-6"
         >
           <ArrowLeft size={20} />
           Back to Dashboard
-        </button>
+        </button> */}
         <div className="text-red-500">{error}</div>
       </div>
     );
@@ -78,13 +78,13 @@ const ClassDetails = ({ classId, teacherData, handleBackToDashboard }) => {
 
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
-      <button
+      {/* <button
         onClick={handleBackToDashboard}
         className="flex items-center gap-2 text-blue-500 hover:underline mb-6"
       >
         <ArrowLeft size={20} />
         Back to Dashboard
-      </button>
+      </button> */}
       
       {classDetails && (
         <div className="mb-6 bg-white p-4 rounded-lg shadow">

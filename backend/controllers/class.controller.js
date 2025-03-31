@@ -84,13 +84,15 @@ exports.changeClassTeacher = async (req, res) => {
 };
 
 exports.getClassDetails = async (req, res) => {
+
+    console.log("Fetching class details for classId:", req.params.classId);
     const { classId } = req.params;
     
     try {
         const classDetails = await classModel.findById(classId)
             .populate('facultyAssigned', 'name email registerNo')
             .populate('academicAdvisors', 'name email registerNo')
-            .populate('students', 'name email registerNo');
+            .populate('students', 'name email registerNo totalPoints');
             
         if (!classDetails) {
             return res.status(404).json({ message: 'Class not found' });

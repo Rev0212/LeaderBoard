@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Calendar, LinkIcon, ArrowLeft } from 'lucide-react';
+import { Calendar, LinkIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const UpcomingEvents = () => {
@@ -68,16 +68,7 @@ const UpcomingEvents = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Add back button */}
-      <button
-        onClick={handleBack}
-        className="flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-6"
-      >
-        <ArrowLeft size={18} />
-        <span>Back to Dashboard</span>
-      </button>
-      
+    <div className="w-full max-w-7xl mx-auto">
       <h1 className="text-3xl font-bold text-gray-900 mb-8">Upcoming Events</h1>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

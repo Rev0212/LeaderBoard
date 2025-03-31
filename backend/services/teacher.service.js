@@ -72,6 +72,12 @@ exports.getAdvisedClasses = async (teacherId) => {
 };
 
 module.exports.addProfileImg = async (registerNo, profileImg) => {
+    // Validate input
+    console.log("Register No:", registerNo);
+    console.log("Profile Image URL:", profileImg);
+    if (!registerNo || !profileImg) {
+        throw new Error("Register No and Profile Image URL are required");
+    }
     try {
         const updatedTeacher = await teacherModel.findOneAndUpdate(
             { registerNo }, 
