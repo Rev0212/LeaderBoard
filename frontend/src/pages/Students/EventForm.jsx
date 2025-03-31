@@ -127,13 +127,25 @@ const EventForm = () => {
 
   const validateImage = (file) => {
     const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    const maxSize = 2 * 1024 * 1024; // 5MB
 
     if (!validTypes.includes(file.type)) {
       return 'Please upload a valid image file (JPEG, PNG, or GIF)';
     }
     if (file.size > maxSize) {
       return 'Image size should be less than 5MB';
+    }
+    return null;
+  };
+
+  const validatePDF = (file) => {
+    const maxSize = 2 * 1024 * 1024; // 5MB
+    
+    if (file.type !== 'application/pdf') {
+      return 'Please upload a valid PDF file';
+    }
+    if (file.size > maxSize) {
+      return 'PDF size should be less than 5MB';
     }
     return null;
   };
@@ -177,9 +189,18 @@ const EventForm = () => {
       }));
     } else if (name === 'pdfDocument' && files[0]) {
       const file = files[0];
+      const error = validatePDF(file);
+      
+      if (error) {
+        setErrors(prev => ({ ...prev, pdfDocument: error }));
+        e.target.value = ''; // Reset the file input
+        return;
+      }
+      setErrors(prev => ({ ...prev, pdfDocument: null }));
+      
       const reader = new FileReader();
       reader.onloadend = () => {
-        setPdfPreview(reader.result);
+        setPdfPreview(file.name); // Just store the filename for display
       };
       reader.readAsDataURL(file);
       
@@ -413,6 +434,8 @@ const EventForm = () => {
                     <div key={fieldIndex}>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         {field.label}
+                        {field.name === 'pdfDocument' && " (Max 2MB)"}
+                        {field.name === 'proofImage' && " (Max 2MB)"}
                       </label>
                       
                       {field.type === 'select' ? (
@@ -444,6 +467,17 @@ const EventForm = () => {
                                 alt="Preview"
                                 className="w-32 h-32 object-cover rounded-md"
                               />
+                            </div>
+                          )}
+                          {field.name === 'pdfDocument' && pdfPreview && !errors.pdfDocument && (
+                            <div className="mt-3 flex items-center space-x-2 text-sm text-gray-600">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                              </svg>
+                              <span>{formData.pdfDocument.name}</span>
+                              <span className="text-xs">
+                                ({(formData.pdfDocument.size / (1024 * 1024)).toFixed(2)} MB)
+                              </span>
                             </div>
                           )}
                         </div>

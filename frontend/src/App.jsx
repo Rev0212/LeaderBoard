@@ -6,7 +6,7 @@ import StudentDashboard from './pages/Students/StudentDashboard';
 import EventForm from './pages/Students/EventForm';
 import StudentProfile from './pages/Students/StudentProfile';
 import StudentProtectWrapper from './Wrappers/StudentWrapper';
-import StudentLayout from './Layouts/StudentLayout';
+import StudentLayout from './layouts/StudentLayout';
 import TeacherLoginForm from './pages/Teachers/TeacherLogin';
 import TeacherDashboard from './pages/Teachers/TeacherDashboard';
 import TeacherProtectWrapper from './Wrappers/TeacherWrapper';
