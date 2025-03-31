@@ -449,7 +449,7 @@ const AdvisorHodDashboard = () => {
       )}
 
       {/* Main content - adjust padding based on screen size */}
-      <main className={`flex-grow ${windowWidth >= 1024 ? 'ml-64' : 'ml-0'} p-4 md:p-8`}>
+      <main className={`flex-grow ${windowWidth >= 1024 ? 'ml-64' : 'ml-0'} ${currentView === "reports" ? '' : 'p-4 md:p-8'}`}>
         {renderContent()}
       </main>
     </div>
