@@ -166,58 +166,49 @@ const TeacherProfile = ({ teacherData, handleBackToDashboard }) => {
 
       <div className="bg-white rounded-lg shadow-md">
         <div className="p-6">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-6">My Profile</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Profile Image */}
-            <div className="col-span-1">
-              <div className="flex flex-col items-center space-y-4">
-                <div className="relative w-40 h-40">
-                  {profileImg ? (
-                    <div className="relative">
-                      <img
-                        src={profileImg}
-                        alt="Profile"
-                        className="rounded-full w-full h-full object-cover border-4 border-gray-200"
-                      />
-                      <button
-                        onClick={handleRemoveImage}
-                        className="absolute bottom-0 right-0 bg-red-500 text-white p-2 rounded-full cursor-pointer shadow-lg hover:bg-red-600 transition-colors"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="relative">
-                      <div className="rounded-full w-full h-full bg-gray-200 flex items-center justify-center">
-                        <User size={64} className="text-gray-400" />
-                      </div>
-                      <label
-                        className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full cursor-pointer shadow-lg hover:bg-blue-700 transition-colors"
-                        htmlFor="profileImage"
-                      >
-                        <Camera size={16} />
-                      </label>
-                      <input
-                        type="file"
-                        id="profileImage"
-                        className="hidden"
-                        onChange={handleAddImage}
-                        accept="image/*"
-                        disabled={uploading}
-                      />
-                    </div>
-                  )}
-                </div>
-                <div className="text-center">
-                  <h3 className="text-xl font-semibold text-gray-800">{teacherData?.name}</h3>
-                  <p className="text-gray-600">{teacherData?.email}</p>
-                </div>
-                <button
-                  onClick={() => setShowChangePasswordForm(!showChangePasswordForm)}
-                  className="border border-blue-500 text-blue-500 hover:bg-blue-50 px-4 py-2 rounded transition-colors w-full"
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-800">Profile Information</h2>
+            <button
+              onClick={() => setShowChangePasswordForm(!showChangePasswordForm)}
+              className="border border-blue-500 text-blue-500 hover:bg-blue-50 px-4 py-2 rounded transition-colors"
+            >
+              Change Password
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Profile Image and Name Section */}
+            <div className="col-span-1 flex flex-col items-center space-y-4">
+              <div className="relative">
+                {profileImg ? (
+                  <img
+                    src={profileImg}
+                    alt="Profile"
+                    className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg"
+                  />
+                ) : (
+                  <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center border-4 border-white shadow-lg">
+                    <User size={64} className="text-gray-400" />
+                  </div>
+                )}
+                <label
+                  className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full cursor-pointer shadow-lg hover:bg-blue-700 transition-colors"
+                  htmlFor="profileImage"
                 >
-                  Change Password
-                </button>
+                  <Camera size={16} />
+                </label>
+                <input
+                  type="file"
+                  id="profileImage"
+                  className="hidden"
+                  onChange={handleAddImage}
+                  accept="image/*"
+                  disabled={uploading}
+                />
+              </div>
+              <div className="text-center">
+                <h3 className="text-xl font-semibold text-gray-800">{teacherData?.name}</h3>
+                <p className="text-gray-600">{teacherData?.email}</p>
               </div>
             </div>
 
