@@ -17,6 +17,35 @@ import TeacherProfile from "../../components/TeacherProfile";
 import ClassDetails from "../../components/ClassList";
 import UpcomingEventsList from "../../components/UpcomingEventsList";
 
+// Add this helper function before the TeacherDashboard component
+const formatEventDate = (event) => {
+  try {
+    // Try using timestamp, fallback to createdAt or date
+    const dateValue = event.timestamp || event.createdAt || event.date;
+    
+    if (!dateValue) return "No date available";
+    
+    const date = new Date(dateValue);
+    
+    // Check if date is valid before formatting
+    if (isNaN(date.getTime())) return "Invalid date";
+    
+    // Format as: "DD MMM YYYY, HH:MM AM/PM"
+    const options = { 
+      day: 'numeric', 
+      month: 'short', 
+      year: 'numeric',
+      hour: '2-digit', 
+      minute: '2-digit'
+    };
+    
+    return date.toLocaleDateString('en-US', options);
+  } catch (error) {
+    console.error("Error formatting date:", error);
+    return "Date error";
+  }
+};
+
 const TeacherDashboard = () => {
   const [events, setEvents] = useState([]);
   const [teacherData, setTeacherData] = useState(null);
@@ -371,7 +400,7 @@ const TeacherDashboard = () => {
                       <h3 className="font-medium text-lg text-gray-900">{event.submittedBy.name}</h3>
                       <p className="text-gray-600">{event.eventName}</p>
                       <p className="text-sm text-gray-500">
-                        {new Date(event.timestamp).toLocaleString()}
+                        {formatEventDate(event)}
                       </p>
                     </div>
                     <div className="ml-4 flex gap-4 items-center">
