@@ -1,14 +1,13 @@
 Create the modal to show certificate new the pdf proof 
 
 
-teacher profile -> class assigned should be section name
+<!-- #teacher profile -> class assigned should be section name -->
 
+<!-- #teacher profile remove Teacher ID from bottom -->
 
-teacher profile remove Teacher ID from bottom
+<!-- #student dashboard ->upcoming events backbutton -->
 
-
-student dashboard ->upcoming events backbutton
-
+<!-- #teacher dashboard events list Invalid Date -->
 
 homepage edit it
 
@@ -16,14 +15,18 @@ HOD MAM add year filter
 
 add review comments
 
-teacher dashboard events list Invalid Date
-
 from teacher class list when we click a students view event it takes to the page but the problem is when we click back it comes to dashboard and not class list
 
+<!-- student upcoming event back button  -->
+and update the ui
 
-student upcoming event back button and update the ui
-and 
-add upcoming evnts for faculty also 
+upcoming event navigate correctly in student dashboard
+
+hod profile page do same format as student/teacher profile
+
+<!-- password show/hide icon -->
+
+<!-- #add upcoming evnts for faculty also  -->
 
 
 CHANGE GIT
@@ -55,3 +58,7 @@ Revanth A Observations
 3. Remove Back to Dashboard
 4. Make the Profile Page Similar to HOD Profile Page
 
+22 March:
+1. Add a file size limit
+2. Add PDF back to event
+3. Teacherdashboard class list Unauthorized

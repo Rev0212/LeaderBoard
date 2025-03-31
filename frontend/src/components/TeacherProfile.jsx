@@ -221,18 +221,23 @@ const TeacherProfile = ({ teacherData, handleBackToDashboard }) => {
             <InfoRow icon={<Building />} label="Department" value={teacherData?.department} />
             <InfoRow icon={<GraduationCap />} label="Role" value={teacherData?.role} />
             <InfoRow 
-              icon={<Users />} 
-              label="Classes Assigned" 
-              value={teacherData?.classes?.length > 0 ? `${teacherData.classes.length} Class(es)` : "No Classes Assigned"} 
+                icon={<Users />} 
+                label="Classes Assigned" 
+                value={
+                    teacherData?.classes?.length > 0 
+                        ? teacherData.classes.map(classItem => classItem.className).join(', ') 
+                        : "No Classes Assigned"
+                } 
             />
-          </div>
-
-          <div className="mt-8 pt-6 border-t border-gray-200">
-            <p className="text-sm text-gray-500">
-              Teacher ID: <span className="font-mono">{teacherData?._id}</span>
-            </p>
-          </div>
         </div>
+
+          {/* Remove the Teacher ID display */}
+          {/* <div className="mt-8 pt-6 border-t border-gray-200">
+              <p className="text-sm text-gray-500">
+                  Teacher ID: <span className="font-mono">{teacherData?._id}</span>
+              </p>
+          </div> */}
+        </div> 
 
         {showChangePasswordForm && (
           <div className="fixed inset-0 flex items-center justify-center z-50">

@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import LeaderboardTable from "../../components/LeaderBoard";
 import StudentEventHistory from "../../components/StudentEventHistory";
+import UpcomingEventsList from "../../components/UpcomingEventsList";
 
 const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -101,9 +102,9 @@ const StudentDashboard = () => {
       console.error("Error logging out:", err);
     }
   };
-
+  // Replace your existing handleUpcomingEvents function with this:
   const handleUpcomingEvents = () => {
-    navigate("/upcoming-events");
+    setCurrentView("upcomingEvents");
     setIsMobileMenuOpen(false);
   };
 
@@ -217,6 +218,19 @@ const StudentDashboard = () => {
       return (
         <div className="bg-gray-50 min-h-screen">
           <StudentEventHistory handleBackToDashboard={() => setCurrentView("dashboard")} />
+        </div>
+      );
+    }
+
+    // Add this new condition for UpcomingEvents view
+    if (currentView === "upcomingEvents") {
+      return (
+        <div className="p-6 lg:ml-64 bg-gray-50 min-h-screen">
+          <UpcomingEventsList 
+            showBackButton={true} 
+            onBack={() => setCurrentView("dashboard")}
+            title="Upcoming Events" 
+          />
         </div>
       );
     }

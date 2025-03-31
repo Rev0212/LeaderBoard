@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Trash2, Pencil } from 'lucide-react';
+import { Trash2, Pencil, ArrowLeft } from 'lucide-react';
 import EditEventModal from './EditEventModal';
 
-const UpcomingEventsList = () => {
+// Add a showBackButton and onBack props with default values
+const UpcomingEventsList = ({ showBackButton = false, onBack = null, title = "Current Events" }) => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -11,9 +12,7 @@ const UpcomingEventsList = () => {
 
   const fetchEvents = async () => {
     try {
-    //   console.log('Fetching events from:', `${import.meta.env.VITE_BASE_URL}/upcoming-events`);
       const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/upcoming-events`);
-    //   console.log('Response:', response);
       setEvents(response.data);
     } catch (err) {
       console.error('Error details:', err);
@@ -21,7 +20,7 @@ const UpcomingEventsList = () => {
     } finally {
       setLoading(false);
     }
-  };
+  };  
 
   useEffect(() => {
     fetchEvents();
@@ -71,7 +70,18 @@ const UpcomingEventsList = () => {
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-2xl font-semibold text-gray-900 mb-6">Current Events</h2>
+      {/* Render back button if showBackButton is true */}
+      {showBackButton && onBack && (
+        <button 
+          onClick={onBack}
+          className="flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-4"
+        >
+          <ArrowLeft size={20} />
+          <span>Back to Dashboard</span>
+        </button>
+      )}
+      
+      <h2 className="text-2xl font-semibold text-gray-900 mb-6">{title}</h2>
       <div className="space-y-4">
         {events.length === 0 ? (
           <p className="text-gray-500 text-center">No upcoming events found</p>
@@ -124,4 +134,4 @@ const UpcomingEventsList = () => {
   );
 };
 
-export default UpcomingEventsList; 
+export default UpcomingEventsList;
