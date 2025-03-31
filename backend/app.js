@@ -6,6 +6,7 @@ const app = express();
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const connectToDb = require('./db/db');
+const path = require('path');
 
 // CORS configuration
 // app.use(cors({
@@ -36,7 +37,10 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true })); 
 app.use(cookieParser()); 
 
-app.use('/uploads', express.static('uploads'));
+// app.use('/uploads', express.static('uploads'));
+
+// Ensure this line exists and is using the correct path
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 const studentRoutes = require('./routes/student.routes');
 app.use('/student', studentRoutes);
