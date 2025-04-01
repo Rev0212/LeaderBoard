@@ -12,7 +12,7 @@ const VALIDATION_RULES = {
   PASSWORD_PATTERN: /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
 };
 
-const AdvisorHodLoginForm = () => {
+const AdminLogin = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false); // State to toggle password visibility
@@ -58,25 +58,20 @@ const AdvisorHodLoginForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSuccessMessage('');
-    setApiError('');
     
+    // Add form validation before submitting
     if (!validateForm()) return;
     
     setIsLoading(true);
     try {
-      const response = await axios.post(`${VITE_BASE_URL}/advisor-hod/login`, formData);  
-      localStorage.setItem('advisor-hod-token', response.data.token);
-      setSuccessMessage('Login successful!');
-      setFormData({
-        email: '',
-        password: '',
-      });
-      navigate('/advisor-hod-dashboard');
+        const response = await axios.post(`${VITE_BASE_URL}/admin/login`, formData);
+        localStorage.setItem('admin-token', response.data.token);
+        setSuccessMessage('Login successful!');
+        navigate('/admin-dashboard');
     } catch (error) {
-      setApiError(error.response?.data?.message || 'An error occurred during login');
+        setApiError(error.response?.data?.message || 'Login failed'); // Use setApiError not setError
     } finally {
-      setIsLoading(false);
+        setIsLoading(false);
     }
   };
 
@@ -192,4 +187,4 @@ const AdvisorHodLoginForm = () => {
   );
 };
 
-export default AdvisorHodLoginForm;
+export default AdminLogin;
