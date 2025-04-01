@@ -1,20 +1,67 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   PieChart, Pie, BarChart, Bar, 
   XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Legend, CartesianGrid 
 } from 'recharts';
 
 const CategoriesSection = ({ popularCategories, categoryPerformanceByClass }) => {
+  // Ensure we're working with an array
+  const performanceData = Array.isArray(categoryPerformanceByClass) 
+    ? categoryPerformanceByClass 
+    : [];
+  
+  // Extract unique class names from the data
+  const classNames = useMemo(() => {
+    return ['All', ...new Set(performanceData.map(item => item.className))];
+  }, [performanceData]);
+  
   const [selectedClass, setSelectedClass] = useState('All');
   const COLORS = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
   
-  // Extracting unique class names from the data
-  const classes = ['All', ...new Set(categoryPerformanceByClass.map(item => item.className))];
-  
-  // Filter categoryPerformanceByClass based on selected class
-  const filteredCategoryPerformance = selectedClass === 'All' 
-    ? categoryPerformanceByClass 
-    : categoryPerformanceByClass.filter(item => item.className === selectedClass);
+  // Transform the data for the chart based on selected class
+  const chartData = useMemo(() => {
+    // If no data or class selected is 'All', return empty array
+    if (performanceData.length === 0) return [];
+    
+    if (selectedClass === 'All') {
+      // Combine all categories across classes
+      const allCategories = {};
+      
+      performanceData.forEach(classData => {
+        if (classData.categories && Array.isArray(classData.categories)) {
+          classData.categories.forEach(catData => {
+            const category = catData.category;
+            if (!allCategories[category]) {
+              allCategories[category] = { points: 0, count: 0 };
+            }
+            allCategories[category].points += catData.points || 0;
+            allCategories[category].count += catData.count || 0;
+          });
+        }
+      });
+      
+      // Convert to array format for chart
+      return Object.keys(allCategories).map(category => ({
+        category,
+        score: allCategories[category].points,
+        count: allCategories[category].count
+      }));
+    } else {
+      // Find the selected class
+      const classData = performanceData.find(cls => cls.className === selectedClass);
+      
+      // If class found and has categories, transform to expected format
+      if (classData && classData.categories && Array.isArray(classData.categories)) {
+        return classData.categories.map(catData => ({
+          category: catData.category,
+          score: catData.points || 0,
+          count: catData.count || 0
+        }));
+      }
+      
+      return [];
+    }
+  }, [performanceData, selectedClass]);
 
   return (
     <div>
@@ -61,21 +108,22 @@ const CategoriesSection = ({ popularCategories, categoryPerformanceByClass }) =>
             value={selectedClass}
             onChange={(e) => setSelectedClass(e.target.value)}
           >
-            {classes.map(className => (
+            {classNames.map(className => (
               <option key={className} value={className}>{className}</option>
             ))}
           </select>
         </div>
         
-        {filteredCategoryPerformance.length > 0 ? (
+        {chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={filteredCategoryPerformance}>
+            <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="category" />
               <YAxis />
               <Tooltip />
               <Legend />
-              <Bar dataKey="score" fill="#4F46E5" name="Performance Score" />
+              <Bar dataKey="score" fill="#4F46E5" name="Points" />
+              <Bar dataKey="count" fill="#10B981" name="Activity Count" />
             </BarChart>
           </ResponsiveContainer>
         ) : (
