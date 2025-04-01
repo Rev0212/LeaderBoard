@@ -126,24 +126,6 @@ exports.advanceAcademicYear = async (academicYear) => {
     return results;
 };
 
-module.exports.addProfileImg = async (registerNo, profileImg) => {
-    try {
-        const updatedStudent = await studentModel.findOneAndUpdate(
-            { registerNo }, 
-            { profileImg: profileImg }, 
-            { new: true } // Return the updated document
-        );
-
-        if (!updatedStudent) {
-            throw new Error("Student not found with the given registerNo");
-        }
-
-        return updatedStudent;
-    } catch (error) {
-        console.error("Error updating profile image:", error);
-        throw error;
-    }
-}
 
 
 module.exports.changePassword = async (studentId, oldPassword, newPassword) => {

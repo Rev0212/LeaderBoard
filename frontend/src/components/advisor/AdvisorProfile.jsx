@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ArrowLeft, Mail, Building, Phone, User, Calendar, Hash, Camera } from "lucide-react";
+import { ArrowLeft, Mail, Building, Phone, User, Calendar, Hash, Camera, Trash2 } from "lucide-react";
 import axios from "axios";
 
 const AdvisorProfile = ({ userData, handleBackToDashboard }) => {
@@ -18,35 +18,93 @@ const AdvisorProfile = ({ userData, handleBackToDashboard }) => {
   const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
 
   useEffect(() => {
-    if (userData && userData.profileImage) {
-      setProfileImg(`${VITE_BASE_URL}/uploads/profile/${userData.profileImage}`);
+    if (userData) {
+      setLoading(false);
+      
+      // Fix the image path handling here
+      if (userData.profileImg) {
+        // Check if the profileImg already includes the base URL
+        if (userData.profileImg.startsWith('http')) {
+          setProfileImg(userData.profileImg);
+        } else {
+          // Otherwise, prepend the base URL
+          setProfileImg(`${VITE_BASE_URL}${userData.profileImg}`);
+        }
+      } else {
+        setProfileImg(null);
+      }
     }
-    setLoading(false);
   }, [userData, VITE_BASE_URL]);
 
   const handleAddImage = async (event) => {
-    if (!event.target.files || !event.target.files[0]) return;
-    
     const file = event.target.files[0];
-    const formData = new FormData();
-    formData.append("profileImage", file);
+    if (!file) return;
+    
+    setUploading(true);
     
     try {
-      setUploading(true);
-      const token = localStorage.getItem("token");
-      const response = await axios.put(`${VITE_BASE_URL}/teacher/add`, formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      // Create FormData with the file
+      const formData = new FormData();
+      formData.append("profileImage", file);
       
-      if (response.data.profileImage) {
-        setProfileImg(`${VITE_BASE_URL}/uploads/profile/${response.data.profileImage}`);
-      }
+      const token = localStorage.getItem("teacher-token") || localStorage.getItem("token");
+      
+      // Upload profile image to backend
+      const uploadResponse = await axios.post(
+        `${VITE_BASE_URL}/teacher/upload-profile-image`, 
+        formData, 
+        {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "multipart/form-data"
+          }
+        }
+      );
+      
+      // Update profile image path in teacher data
+      await axios.put(
+        `${VITE_BASE_URL}/teacher/update-profile-image`,
+        { profileImg: uploadResponse.data.filePath },
+        {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      
+      // Update UI with new image
+      const imageUrl = `${VITE_BASE_URL}${uploadResponse.data.filePath}`;
+      setProfileImg(imageUrl);
+      
     } catch (error) {
-      console.error("Error uploading profile image:", error);
+      console.error("Image upload failed:", error);
+      setPasswordError("Failed to upload image. Please try again.");
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleRemoveImage = async () => {
+    try {
+      const token = localStorage.getItem("teacher-token") || localStorage.getItem("token");
+      
+      await axios.put(
+        `${VITE_BASE_URL}/teacher/update-profile-image`,
+        { profileImg: null },
+        {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      
+      setProfileImg(null);
+      
+    } catch (error) {
+      console.error("Failed to remove profile image:", error);
+      setPasswordError("Failed to remove profile image. Please try again.");
     }
   };
 
@@ -158,6 +216,14 @@ const AdvisorProfile = ({ userData, handleBackToDashboard }) => {
                   accept="image/*"
                   disabled={uploading}
                 />
+                {profileImg && (
+                  <button
+                    onClick={handleRemoveImage}
+                    className="absolute top-0 right-0 bg-red-600 text-white p-2 rounded-full cursor-pointer shadow-lg hover:bg-red-700 transition-colors"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
               </div>
               <div className="text-center">
                 <h3 className="text-xl font-semibold text-gray-800">{userData?.name}</h3>
