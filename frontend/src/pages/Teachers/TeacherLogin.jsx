@@ -110,7 +110,7 @@ const TeacherLoginForm = () => {
     <div className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-gray-50">
       {/* Main background with gradient */}
       <div 
-        className="absolute inset-0 bg-gradient-to-br from-[#6e8cca] to-[#a3b8e0]"
+        className="absolute inset-0 bg-gradient-to-br from-[#2c5282] to-[#4a90e2]"
       />
 
       {/* Animated particles */}

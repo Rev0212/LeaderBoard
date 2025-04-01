@@ -99,7 +99,7 @@ const StudentLoginForm = () => {
     <div className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-gray-50">
       {/* Main background with gradient */}
       <div 
-        className="absolute inset-0 bg-gradient-to-br from-[#6e8cca] to-[#a3b8e0]"
+        className="absolute inset-0 bg-gradient-to-br from-[#2c5282] to-[#4a90e2]"
       />
 
       {/* Animated particles */}
@@ -196,7 +196,7 @@ const StudentLoginForm = () => {
               transition={{ duration: 0.5, delay: 0.3 }}
             >
               <h2 className="text-3xl font-bold text-gray-800 mb-2">Student Portal</h2>
-              <p className="mb-8" style={{ color: '#6e8cca' }}>Sign in to access your learning dashboard</p>
+              <p className="mb-8" style={{ color: '#6e8cca' }}>Sign in to access your dashboard</p>
             </motion.div>
 
             {apiError && (
