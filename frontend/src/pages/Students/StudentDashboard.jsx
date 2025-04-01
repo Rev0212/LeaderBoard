@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Trophy, Calendar, Plus, Medal, User, LogOut, Menu, X, History, ExternalLink, CalendarDays } from "lucide-react";
+import { Trophy, Calendar, Plus, Medal, User, LogOut, Menu, X, History, ExternalLink, CalendarDays, LayoutDashboard, MessageSquare } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import LeaderboardTable from "../../components/LeaderBoard";
 import StudentEventHistory from "../../components/StudentEventHistory";
 import UpcomingEventsList from "../../components/UpcomingEventsList";
+import FeedbackForm from '../../components/FeedbackForm';
 
 const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -102,9 +103,9 @@ const StudentDashboard = () => {
       console.error("Error logging out:", err);
     }
   };
-  // Replace your existing handleUpcomingEvents function with this:
+
   const handleUpcomingEvents = () => {
-    setCurrentView("upcomingEvents");
+    navigate('/upcoming-events');
     setIsMobileMenuOpen(false);
   };
 
@@ -126,10 +127,12 @@ const StudentDashboard = () => {
         <h1 className="text-2xl font-bold text-gray-800 mb-6">Student Portal</h1>
         <nav className="space-y-2 flex-grow">
           {[
-            { icon: User, label: 'Profile', action:handleProfileClick },
+            { icon: LayoutDashboard, label: 'Dashboard', view: 'dashboard' },
+            { icon: User, label: 'Profile', action: () => navigate('/student-profile') },
             { icon: History, label: 'Event History', view: 'eventHistory' },
             { icon: CalendarDays, label: 'Upcoming Events', action: handleUpcomingEvents },
             { icon: Plus, label: 'Submit Participation', action: handleAddEventClick },
+            { icon: MessageSquare, label: 'Feedback', view: 'feedback' },
           ].map(({ icon: Icon, label, view, action }) => (
             <button
               key={label}
@@ -213,37 +216,29 @@ const StudentDashboard = () => {
     if (loading) return <div className="text-center py-10">Loading...</div>;
     if (error) return <div className="text-center py-10 text-red-500">{error}</div>;
 
-    // Display StudentEventHistory if currentView is eventHistory
+    if (currentView === "feedback") {
+      return (
+        <div className="bg-gray-50 min-h-screen p-6">
+          <FeedbackForm />
+        </div>
+      );
+    }
+
     if (currentView === "eventHistory") {
       return (
-        <div className="p-6 lg:ml-64 bg-gray-50 min-h-screen">
+        <div className="bg-gray-50 min-h-screen">
           <StudentEventHistory handleBackToDashboard={() => setCurrentView("dashboard")} />
         </div>
       );
     }
 
-    // Add this new condition for UpcomingEvents view
-    if (currentView === "upcomingEvents") {
-      return (
-        <div className="p-6 lg:ml-64 bg-gray-50 min-h-screen">
-          <UpcomingEventsList 
-            showBackButton={true} 
-            onBack={() => setCurrentView("dashboard")}
-            title="Upcoming Events" 
-          />
-        </div>
-      );
-    }
-
-    // Regular dashboard content
     return (
-      <div className="p-6 lg:ml-64 bg-gray-50 min-h-screen">
+      <div className="bg-gray-50 min-h-screen">
         {windowWidth < 1024 && (
           <div className="flex justify-between items-center mb-4">
             <button onClick={() => setIsMobileMenuOpen(true)}>
               <Menu size={24} />
             </button>
-            {/* <h1 className="text-xl font-bold">Student Dashboard</h1> */}
           </div>
         )}
 

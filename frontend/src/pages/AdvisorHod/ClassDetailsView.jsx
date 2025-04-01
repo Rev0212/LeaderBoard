@@ -38,6 +38,7 @@ const ClassDetailsView = () => {
         
         // Handle different response structures
         if (response.data && response.data.students) {
+          console.log("RESPONSE:", response.data);
           setStudents(response.data.students);
         } else if (response.data && response.data.class && response.data.class.students) {
           setStudents(response.data.class.students);
@@ -119,71 +120,60 @@ const ClassDetailsView = () => {
   }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <button
-        onClick={handleBackToClasses}
-        className="flex items-center gap-2 text-blue-500 hover:underline mb-6"
-      >
-        <ArrowLeft size={20} />
-        Back to Classes
-      </button>
-
-      {/* Class Header */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800 mb-2">
-          {classDetails?.className || `${classDetails?.year}-${classDetails?.section}`}
-        </h1>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <p className="text-sm text-gray-500">Department</p>
-            <p className="text-lg font-medium text-gray-800">{classDetails?.department}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Academic Year</p>
-            <p className="text-lg font-medium text-gray-800">{classDetails?.academicYear}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Students</p>
-            <p className="text-lg font-medium text-gray-800">{students.length}</p>
+    <div className="flex flex-col min-h-screen bg-gray-50">
+      {/* Mobile-friendly header */}
+      <div className="bg-white shadow-sm p-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center">
+            <button 
+              onClick={() => navigate('/advisor-hod-dashboard')}
+              className="mr-3 text-gray-600 hover:text-gray-900"
+            >
+              <ArrowLeft size={20} />
+            </button>
+            <h1 className="text-xl md:text-2xl font-bold text-gray-800">
+              Class Details: {classDetails?.className || "Loading..."}
+            </h1>
           </div>
         </div>
       </div>
-
-      {/* Students List */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <Users className="h-6 w-6 text-blue-600" />
-            <h2 className="text-xl font-semibold text-gray-800">Students ({filteredStudents.length})</h2>
-          </div>
-          <button
-            onClick={handleExportCSV}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-            disabled={!students.length}
-          >
-            <Download size={16} />
-            Export CSV
-          </button>
-        </div>
-
-        {/* Search */}
-        <div className="mb-6">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search by name, register number or email..."
-              className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+      
+      {/* Main content with responsive padding */}
+      <div className="p-4 md:p-6 lg:p-8">
+        {/* Stats cards - 1 column on mobile, 2-3 on larger screens */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h1 className="text-2xl font-semibold text-gray-800 mb-2">
+              {classDetails?.className || `${classDetails?.year}-${classDetails?.section}`}
+            </h1>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <p className="text-sm text-gray-500">Department</p>
+                <p className="text-lg font-medium text-gray-800">{classDetails?.department}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Academic Year</p>
+                <p className="text-lg font-medium text-gray-800">{classDetails?.academicYear}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Students</p>
+                <p className="text-lg font-medium text-gray-800">{students.length}</p>
+              </div>
+            </div>
           </div>
         </div>
-
-        {/* Students Table */}
+        
+        {/* Tabs - scrollable on mobile */}
         <div className="overflow-x-auto">
-          {filteredStudents.length > 0 ? (
-            <table className="min-w-full bg-white border border-gray-200 rounded-lg">
+          <div className="flex space-x-2 border-b mb-4 min-w-max">
+            {/* ...tab buttons... */}
+          </div>
+        </div>
+        
+        {/* Student table with horizontal scroll */}
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -219,16 +209,17 @@ const ClassDetailsView = () => {
                 ))}
               </tbody>
             </table>
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-gray-500">No students found.</p>
-              {searchQuery && (
-                <p className="text-sm text-gray-400 mt-2">
-                  Try adjusting your search query.
-                </p>
-              )}
+          </div>
+          
+          {/* Pagination - stack buttons on mobile */}
+          <div className="px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-sm text-gray-700 mb-2 sm:mb-0">
+              Showing <span className="font-medium">1</span> to <span className="font-medium">10</span> of <span className="font-medium">50</span> results
             </div>
-          )}
+            <div className="flex justify-center space-x-1">
+              {/* ...pagination buttons... */}
+            </div>
+          </div>
         </div>
       </div>
     </div>

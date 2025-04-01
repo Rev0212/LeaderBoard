@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { User, Mail, Hash, Star, Calendar, ArrowLeft, Camera, Trash2, Building, GraduationCap, Users } from 'lucide-react';
+import { User, Mail, Hash, Star, Calendar, ArrowLeft, Camera, Trash2, Building, GraduationCap, Users, Phone } from 'lucide-react';
 
 const TeacherProfile = ({ teacherData, handleBackToDashboard }) => {
-  // Add loading state to handle null data
   const [loading, setLoading] = useState(!teacherData);
   const [profileImg, setProfileImg] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -36,21 +35,19 @@ const TeacherProfile = ({ teacherData, handleBackToDashboard }) => {
         const cloudinaryResponse = await fetch(
           `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`,
           {
-            method: "POST", // Changed from PUT to POST as Cloudinary typically uses POST
+            method: "POST",
             body: formData,
           }
         );
 
         const responseData = await cloudinaryResponse.json();
-        console.log("Image upload response:", responseData);
         
         if (responseData.secure_url) {
-          const imageUrl = responseData.secure_url; // Use secure_url if available
+          const imageUrl = responseData.secure_url;
           console.log("Teacher registerNo:", teacherData?.registerNo, "Image URL:", imageUrl);
 
           setProfileImg(imageUrl);
 
-          // Make sure VITE_BASE_URL is accessible
           const baseUrl = import.meta.env.VITE_BASE_URL;
           
           await axios.put(
@@ -134,7 +131,6 @@ const TeacherProfile = ({ teacherData, handleBackToDashboard }) => {
       );
       setPasswordSuccess("Password changed successfully");
       setTimeout(() => {
-        setShowChangePasswordForm(false);
         setPasswordData({
           oldPassword: "",
           newPassword: "",
@@ -159,163 +155,163 @@ const TeacherProfile = ({ teacherData, handleBackToDashboard }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center py-10 px-6">
-      <div className="w-full max-w-2xl bg-white rounded-lg shadow-lg p-8">
-        <div className="flex justify-between items-center mb-6">
-          <button
-            onClick={handleBackToDashboard}
-            className="flex items-center gap-2 text-blue-500 hover:underline"
-          >
-            <ArrowLeft size={20} />
-            Back to Dashboard
-          </button>
-          <button
-            onClick={() => setShowChangePasswordForm(true)}
-            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
-          >
-            Change Password
-          </button>
-        </div>
+    <div className="p-6 bg-gray-50 min-h-screen">
+      <button
+        onClick={handleBackToDashboard}
+        className="flex items-center gap-2 text-blue-500 hover:underline mb-6"
+      >
+        <ArrowLeft size={20} />
+        Back to Dashboard
+      </button>
 
-        <div className={showChangePasswordForm ? 'opacity-50' : 'opacity-100'}>
-          <div className="flex flex-col items-center gap-6 mb-8">
-            <div className="relative">
-              {profileImg ? (
-                <div className="relative">
+      <div className="bg-white rounded-lg shadow-md">
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-800">Profile Information</h2>
+            <button
+              onClick={() => setShowChangePasswordForm(!showChangePasswordForm)}
+              className="border border-blue-500 text-blue-500 hover:bg-blue-50 px-4 py-2 rounded transition-colors"
+            >
+              Change Password
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Profile Image and Name Section */}
+            <div className="col-span-1 flex flex-col items-center space-y-4">
+              <div className="relative">
+                {profileImg ? (
                   <img
                     src={profileImg}
                     alt="Profile"
-                    className="w-32 h-32 rounded-full object-cover border-4 border-blue-500"
+                    className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg"
                   />
-                  <button
-                    onClick={handleRemoveImage}
-                    className="absolute top-0 right-0 bg-red-500 text-white p-2 rounded-full"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              ) : (
-                <label className="cursor-pointer">
-                  <div className="w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center border-2 border-dashed border-gray-400">
-                    {uploading ? (
-                      <span className="text-gray-500">Uploading...</span>
-                    ) : (
-                      <Camera size={32} className="text-gray-500" />
-                    )}
+                ) : (
+                  <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center border-4 border-white shadow-lg">
+                    <User size={64} className="text-gray-400" />
                   </div>
-                  <input type="file" className="hidden" onChange={handleAddImage} />
+                )}
+                <label
+                  className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full cursor-pointer shadow-lg hover:bg-blue-700 transition-colors"
+                  htmlFor="profileImage"
+                >
+                  <Camera size={16} />
                 </label>
+                <input
+                  type="file"
+                  id="profileImage"
+                  className="hidden"
+                  onChange={handleAddImage}
+                  accept="image/*"
+                  disabled={uploading}
+                />
+              </div>
+              <div className="text-center">
+                <h3 className="text-xl font-semibold text-gray-800">{teacherData?.name}</h3>
+                <p className="text-gray-600">{teacherData?.email}</p>
+              </div>
+            </div>
+
+            {/* Profile Info */}
+            <div className="col-span-2 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <InfoRow icon={<Mail />} label="Email Address" value={teacherData?.email} />
+                <InfoRow icon={<Building />} label="Department" value={teacherData?.department} />
+                <InfoRow icon={<Hash />} label="Register Number" value={teacherData?.registerNo} />
+                <InfoRow icon={<GraduationCap />} label="Role" value={teacherData?.role} />
+                <InfoRow 
+                  icon={<Users />} 
+                  label="Classes Assigned" 
+                  value={
+                    teacherData?.classes?.length > 0 
+                      ? teacherData.classes.map(classItem => classItem.className).join(', ') 
+                      : "No Classes Assigned"
+                  } 
+                />
+                <InfoRow 
+                  icon={<Calendar />} 
+                  label="Joined" 
+                  value={teacherData?.createdAt ? new Date(teacherData.createdAt).toLocaleDateString() : "N/A"} 
+                />
+              </div>
+
+              {/* Change Password Form */}
+              {showChangePasswordForm && (
+                <div className="mt-8 bg-gray-50 p-6 rounded-lg">
+                  <h4 className="text-lg font-semibold text-gray-800 mb-4">
+                    Change Password
+                  </h4>
+                  <form onSubmit={handleSubmitPasswordChange}>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Current Password
+                        </label>
+                        <input
+                          type="password"
+                          name="oldPassword"
+                          value={passwordData.oldPassword}
+                          onChange={handlePasswordChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          New Password
+                        </label>
+                        <input
+                          type="password"
+                          name="newPassword"
+                          value={passwordData.newPassword}
+                          onChange={handlePasswordChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Confirm New Password
+                        </label>
+                        <input
+                          type="password"
+                          name="reenterNewPassword"
+                          value={passwordData.reenterNewPassword}
+                          onChange={handlePasswordChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                          required
+                        />
+                      </div>
+
+                      {passwordError && (
+                        <p className="text-red-600 text-sm">{passwordError}</p>
+                      )}
+                      {passwordSuccess && (
+                        <p className="text-green-600 text-sm">{passwordSuccess}</p>
+                      )}
+
+                      <div className="flex gap-3 mt-4">
+                        <button
+                          type="submit"
+                          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
+                        >
+                          Update Password
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowChangePasswordForm(false)}
+                          className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                </div>
               )}
             </div>
-
-            <div className="text-center">
-              <h1 className="text-2xl font-bold text-gray-800">{teacherData?.name || "N/A"}</h1>
-              <p className="text-gray-600">{teacherData?.email || "N/A"}</p>
-            </div>
           </div>
-
-          <div className="space-y-6">
-            <InfoRow icon={<User />} label="Full Name" value={teacherData?.name} />
-            <InfoRow icon={<Mail />} label="Email Address" value={teacherData?.email} />
-            <InfoRow icon={<Hash />} label="Register Number" value={teacherData?.registerNo} />
-            <InfoRow icon={<Building />} label="Department" value={teacherData?.department} />
-            <InfoRow icon={<GraduationCap />} label="Role" value={teacherData?.role} />
-            <InfoRow 
-                icon={<Users />} 
-                label="Classes Assigned" 
-                value={
-                    teacherData?.classes?.length > 0 
-                        ? teacherData.classes.map(classItem => classItem.className).join(', ') 
-                        : "No Classes Assigned"
-                } 
-            />
         </div>
-
-          {/* Remove the Teacher ID display */}
-          {/* <div className="mt-8 pt-6 border-t border-gray-200">
-              <p className="text-sm text-gray-500">
-                  Teacher ID: <span className="font-mono">{teacherData?._id}</span>
-              </p>
-          </div> */}
-        </div> 
-
-        {showChangePasswordForm && (
-          <div className="fixed inset-0 flex items-center justify-center z-50">
-            <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
-              <form onSubmit={handleSubmitPasswordChange} className="space-y-4">
-                <h2 className="text-2xl font-bold mb-6">Change Password</h2>
-                
-                {passwordError && (
-                  <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
-                    <p className="text-red-700">{passwordError}</p>
-                  </div>
-                )}
-                
-                {passwordSuccess && (
-                  <div className="bg-green-50 border-l-4 border-green-500 p-4 mb-4">
-                    <p className="text-green-700">{passwordSuccess}</p>
-                  </div>
-                )}
-
-                <div>
-                  <label className="block text-gray-700 mb-2 font-medium">Old Password</label>
-                  <input
-                    type="password"
-                    name="oldPassword"
-                    value={passwordData.oldPassword}
-                    onChange={handlePasswordChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-gray-700 mb-2 font-medium">New Password</label>
-                  <input
-                    type="password"
-                    name="newPassword"
-                    value={passwordData.newPassword}
-                    onChange={handlePasswordChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-gray-700 mb-2 font-medium">Re-enter New Password</label>
-                  <input
-                    type="password"
-                    name="reenterNewPassword"
-                    value={passwordData.reenterNewPassword}
-                    onChange={handlePasswordChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
-                    required
-                  />
-                </div>
-
-                <div className="flex justify-between pt-6">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowChangePasswordForm(false);
-                      setPasswordError("");
-                      setPasswordSuccess("");
-                    }}
-                    className="bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition-colors"
-                  >
-                    Submit
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

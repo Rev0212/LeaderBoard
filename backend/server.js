@@ -1,25 +1,22 @@
+const dotenv = require('dotenv');
+// Load environment variables before any other imports
+dotenv.config();
+
 const http = require('http');
 const app = require('./app');
 const mongoose = require('mongoose');
-const dotenv = require('dotenv');
 const { createBackup } = require('./utils/backupUtil');
 const { restoreBackup } = require('./utils/restoreUtil');
-
-// Load environment variables
-dotenv.config();
+const connectToDb = require('./db/db');
 
 const port = process.env.PORT || 3000;
 
 const server = http.createServer(app);
 
+connectToDb();
+
 (async () => {
     try {
-        // Connect to MongoDB
-        await mongoose.connect(process.env.DB_CONNECT, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-        });
-
         console.log('Connected to MongoDB.');
 
         // Ensure database connection is ready before restoring backup

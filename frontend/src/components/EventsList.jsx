@@ -5,14 +5,7 @@ const EventsList = ({ studentData, handleBackToDashboard }) => {
   console.log(studentData)
   return (
     <div className="p-6 w-full h-full space-y-6">
-      {/* Back Button */}
-      <button
-        onClick={handleBackToDashboard}
-        className="flex items-center gap-2 text-blue-500 hover:underline"
-      >
-        <ArrowLeft size={20} />
-        Back to Dashboardsss
-      </button>
+     
 
       {/* Events List */}
       <div className="border p-6 rounded-lg shadow-lg bg-white w-full h-full">

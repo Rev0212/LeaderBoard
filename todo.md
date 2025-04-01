@@ -1,4 +1,4 @@
-Create the modal to show certificate new the pdf proof 
+<!-- Create the modal to show certificate new the pdf proof  -->
 
 
 <!-- #teacher profile -> class assigned should be section name -->
@@ -9,20 +9,20 @@ Create the modal to show certificate new the pdf proof
 
 <!-- #teacher dashboard events list Invalid Date -->
 
-homepage edit it
+<!-- homepage edit it -->
 
-HOD MAM add year filter
+<!-- HOD MAM add year filter -->
 
-add review comments
+<!-- add review comments -->
 
 from teacher class list when we click a students view event it takes to the page but the problem is when we click back it comes to dashboard and not class list
 
 <!-- student upcoming event back button  -->
 and update the ui
 
-upcoming event navigate correctly in student dashboard
+<!-- upcoming event navigate correctly in student dashboard -->
 
-hod profile page do same format as student/teacher profile
+<!-- hod profile page do same format as student/teacher profile -->
 
 <!-- password show/hide icon -->
 
@@ -46,15 +46,19 @@ Revanth A Observation In Reports Page:
 Revanth A Observation In HoD Dashboard
 
 1. Need to optimise it for mobile view
-2. Need year filter in All Classses
-3. The Points is not comming for students in (Class View)
+2. Need year filter in All Classses in all classes overview
+<!-- 3. The Points is not comming for students in (Class View) -->
 4. Add pagination
 
 
 21 March:
 Revanth A Observations 
-1. Leaderboard Yearwise,Department wise Filer(backend) - Fiexed
-2. Have the LeftDashboard Constant in all pages
-3. Remove Back to Dashboard
-4. Make the Profile Page Similar to HOD Profile Page
+<!-- 1. Leaderboard Yearwise,Department wise Filer(backend) - Fixed -->
+<!-- 2. Have the LeftDashboard Constant in all pages -->
+<!-- 3. Remove Back to Dashboard -->
+<!-- 4. Make the Profile Page Similar to HOD Profile Page -->
 
+22 March:
+<!-- 1. Add a file size limit -->
+2. Add PDF back to event
+<!-- 3. Teacherdashboard class list Unauthorized -->

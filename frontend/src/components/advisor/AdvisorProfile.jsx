@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ArrowLeft, Mail, Building, Phone, User, Calendar, Hash } from "lucide-react";
+import { ArrowLeft, Mail, Building, Phone, User, Calendar, Hash, Camera } from "lucide-react";
 import axios from "axios";
 
 const AdvisorProfile = ({ userData, handleBackToDashboard }) => {
@@ -108,61 +108,60 @@ const AdvisorProfile = ({ userData, handleBackToDashboard }) => {
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      <button
+      {/* <button
         onClick={handleBackToDashboard}
         className="flex items-center gap-2 text-blue-500 hover:underline mb-6"
       >
         <ArrowLeft size={20} />
         Back to Dashboard
-      </button>
+      </button> */}
 
       <div className="bg-white rounded-lg shadow-md">
         <div className="p-6">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-6">My Profile</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Profile Image */}
-            <div className="col-span-1">
-              <div className="flex flex-col items-center space-y-4">
-                <div className="relative w-40 h-40">
-                  {profileImg ? (
-                    <img
-                      src={profileImg}
-                      alt="Profile"
-                      className="rounded-full w-full h-full object-cover border-4 border-gray-200"
-                    />
-                  ) : (
-                    <div className="rounded-full w-full h-full bg-gray-200 flex items-center justify-center">
-                      <User size={64} className="text-gray-400" />
-                    </div>
-                  )}
-                  <label
-                    className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full cursor-pointer shadow-lg hover:bg-blue-700 transition-colors"
-                    htmlFor="profileImage"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                      <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.83A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1v6zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4H2z"/>
-                      <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5zm0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>
-                    </svg>
-                  </label>
-                  <input
-                    type="file"
-                    id="profileImage"
-                    className="hidden"
-                    onChange={handleAddImage}
-                    accept="image/*"
-                    disabled={uploading}
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-800">Profile Information</h2>
+            <button
+              onClick={() => setShowChangePasswordForm(!showChangePasswordForm)}
+              className="border border-blue-500 text-blue-500 hover:bg-blue-50 px-4 py-2 rounded transition-colors"
+            >
+              Change Password
+            </button>
+          </div>
+          
+          {/* Profile Info Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Profile Image Section */}
+            <div className="col-span-1 flex flex-col items-center space-y-4">
+              <div className="relative">
+                {profileImg ? (
+                  <img
+                    src={profileImg}
+                    alt="Profile"
+                    className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg"
                   />
-                </div>
-                <div className="text-center">
-                  <h3 className="text-xl font-semibold text-gray-800">{userData?.name}</h3>
-                  <p className="text-gray-600">{userData?.role}</p>
-                </div>
-                <button
-                  onClick={() => setShowChangePasswordForm(!showChangePasswordForm)}
-                  className="border border-blue-500 text-blue-500 hover:bg-blue-50 px-4 py-2 rounded transition-colors w-full"
+                ) : (
+                  <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center border-4 border-white shadow-lg">
+                    <User size={64} className="text-gray-400" />
+                  </div>
+                )}
+                <label
+                  className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full cursor-pointer shadow-lg hover:bg-blue-700 transition-colors"
+                  htmlFor="profileImage"
                 >
-                  Change Password
-                </button>
+                  <Camera size={16} />
+                </label>
+                <input
+                  type="file"
+                  id="profileImage"
+                  className="hidden"
+                  onChange={handleAddImage}
+                  accept="image/*"
+                  disabled={uploading}
+                />
+              </div>
+              <div className="text-center">
+                <h3 className="text-xl font-semibold text-gray-800">{userData?.name}</h3>
+                <p className="text-gray-600">{userData?.email}</p>
               </div>
             </div>
 
@@ -180,23 +179,9 @@ const AdvisorProfile = ({ userData, handleBackToDashboard }) => {
                   value={userData?.department}
                 />
                 <InfoRow
-                  icon={<Phone />}
-                  label="Contact"
-                  value={userData?.contactNo || "Not provided"}
-                />
-                <InfoRow
                   icon={<User />}
                   label="Role"
                   value={userData?.role}
-                />
-                <InfoRow
-                  icon={<Calendar />}
-                  label="Joined On"
-                  value={
-                    userData?.createdAt
-                      ? new Date(userData.createdAt).toLocaleDateString()
-                      : "Not available"
-                  }
                 />
                  {/*<InfoRow
                   icon={<Hash />}

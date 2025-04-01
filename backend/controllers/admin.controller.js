@@ -23,6 +23,7 @@ module.exports.registeradmin = async (req, res, next) => {
             rawPassword: password // Keep the raw password
         });
 
+        // Generate token from the returned mongoose document
         const token = admin.generateAuthToken();
 
         res.status(201).json({ 
@@ -59,20 +60,10 @@ module.exports.loginadmin = async (req, res, next) => {
             return res.status(401).json({ message: 'Invalid email or password' });
         }
 
-        // Debug: Log stored password details (be careful with this in production)
-        console.log('Stored hashed password:', admin.password);
-        console.log('Stored raw password:', admin.rawPassword);
-        console.log('Attempting to match with provided password:', password);
-
         // Try both hashed and raw password comparison
         const isHashMatch = await admin.comparePassword(password);
         const isRawMatch = (password === admin.rawPassword);
         
-        console.log('Password comparison results:', {
-            hashedMatch: isHashMatch,
-            rawMatch: isRawMatch
-        });
-
         if (!isHashMatch && !isRawMatch) {
             console.log('Password match failed for:', email);
             return res.status(401).json({ message: 'Invalid email or password' });
@@ -82,7 +73,7 @@ module.exports.loginadmin = async (req, res, next) => {
         console.log('Token generated successfully');
 
         // Set HTTP-only cookie
-        res.cookie('token', token, {
+        res.cookie('admin-token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
@@ -99,10 +90,7 @@ module.exports.loginadmin = async (req, res, next) => {
             }
         });
     } catch (error) {
-        console.error('Login error details:', {
-            message: error.message,
-            stack: error.stack
-        });
+        console.error('Login error details:', error);
         res.status(500).json({ message: 'Server error during login' });
     }
 };
@@ -116,5 +104,67 @@ module.exports.getAdminProfile = async (req, res, next) => {
     } catch (error) {
         console.error('Profile error:', error);
         res.status(500).json({ message: 'Server error while fetching profile' });
+    }
+};
+
+module.exports.getDashboardData = async (req, res, next) => {
+    try {
+        if (!req.admin) {
+            return res.status(401).json({ message: 'Unauthorized: Admin access only' });
+        }
+        
+        // Fetch any data needed for the dashboard (example)
+        // const students = await studentModel.countDocuments();
+        // const events = await eventModel.countDocuments();
+        
+        res.status(200).json({
+            success: true,
+            message: 'Admin dashboard data fetched successfully',
+            admin: {
+                _id: req.admin._id,
+                name: req.admin.name,
+                email: req.admin.email
+            },
+            // Include any dashboard statistics here
+            stats: {
+                // students,
+                // events
+            }
+        });
+    } catch (error) {
+        console.error('Dashboard error:', error);
+        res.status(500).json({ message: 'Server error while fetching dashboard data' });
+    }
+};
+
+module.exports.someAdminAction = async (req, res, next) => {
+    try {
+        // Check if admin is authenticated
+        if (!req.admin) {
+            return res.status(401).json({ message: 'Unauthorized: Admin access only' });
+        }
+        
+        // Process admin action based on request body
+        const { actionType, data } = req.body;
+        
+        // Handle different action types
+        let result;
+        switch (actionType) {
+            case 'update':
+                // Handle update action
+                result = { status: 'success', message: 'Update completed' };
+                break;
+            case 'delete':
+                // Handle delete action
+                result = { status: 'success', message: 'Delete completed' };
+                break;
+            default:
+                result = { status: 'success', message: 'Action completed' };
+        }
+        
+        res.status(200).json(result);
+    } catch (error) {
+        console.error('Admin action error:', error);
+        res.status(500).json({ message: 'Server error during admin action' });
     }
 };

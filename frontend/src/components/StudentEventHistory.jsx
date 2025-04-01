@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, FileText, Calendar, Trophy, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { ArrowLeft, FileText, Calendar, Trophy, CheckCircle, XCircle, Clock, Info } from 'lucide-react';
 
 const StudentEventHistory = ({ handleBackToDashboard }) => {
   const [events, setEvents] = useState([]);
@@ -42,22 +42,22 @@ const StudentEventHistory = ({ handleBackToDashboard }) => {
   }, []);
 
   const getStatusBadge = (status) => {
-    switch (status) {
-      case 'Approved':
+    switch (status?.toLowerCase()) {
+      case 'approved':
         return (
           <span className="flex items-center gap-1 text-green-700 bg-green-100 px-3 py-1 rounded-full">
             <CheckCircle size={16} />
             Approved
           </span>
         );
-      case 'Rejected':
+      case 'rejected':
         return (
           <span className="flex items-center gap-1 text-red-700 bg-red-100 px-3 py-1 rounded-full">
             <XCircle size={16} />
             Rejected
           </span>
         );
-      case 'Pending':
+      case 'pending':
         return (
           <span className="flex items-center gap-1 text-yellow-700 bg-yellow-100 px-3 py-1 rounded-full">
             <Clock size={16} />
@@ -65,7 +65,12 @@ const StudentEventHistory = ({ handleBackToDashboard }) => {
           </span>
         );
       default:
-        return null;
+        return (
+          <span className="flex items-center gap-1 text-gray-700 bg-gray-100 px-3 py-1 rounded-full">
+            <Info size={16} />
+            {status || 'Unknown'}
+          </span>
+        );
     }
   };
 
@@ -74,14 +79,6 @@ const StudentEventHistory = ({ handleBackToDashboard }) => {
 
   return (
     <div className="p-6">
-      <button
-        onClick={handleBackToDashboard}
-        className="flex items-center gap-2 text-blue-500 hover:underline mb-6"
-      >
-        <ArrowLeft size={20} />
-        Back to Dashboard
-      </button>
-
       <div className="bg-white shadow-md rounded-lg overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-800">Event Submission History</h2>

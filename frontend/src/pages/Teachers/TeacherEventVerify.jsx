@@ -19,7 +19,9 @@ const TeacherEventsPage = () => {
 
   const fetchAllEvents = async () => {
     try {
-      const token = localStorage.getItem('token');
+      // Change from 'token' to 'teacher-token'
+      const token = localStorage.getItem('teacher-token');
+      
       const response = await axios.get(
         `${VITE_BASE_URL}/event/student-events/${studentId}`,
         {
@@ -51,7 +53,9 @@ const TeacherEventsPage = () => {
 
   const updateEventStatus = async (eventId, newStatus) => {
     try {
-      const token = localStorage.getItem('token');
+      // Change from 'token' to 'teacher-token'
+      const token = localStorage.getItem('teacher-token');
+      
       await axios.patch(
         `${VITE_BASE_URL}/event/edit/${eventId}`,
         {
@@ -65,11 +69,9 @@ const TeacherEventsPage = () => {
         }
       );
       // Refresh the page after a successful update
-      window.location.reload();
-    } catch (error) {
-      console.error('Error updating event status:', error);
-      // Show error message to user
-      alert(error.response?.data?.message || 'Failed to update event status');  
+      fetchAllEvents();
+    } catch (err) {
+      setError('Failed to update event status. Please try again.');
     }
   };
 
@@ -105,10 +107,8 @@ const TeacherEventsPage = () => {
   };
 
   const handleBack = () => {
-    // Navigate back to class list instead of dashboard
-    navigate('/teacher-dashboard', { 
-      state: { currentView: "classList" } 
-    });
+    // Use browser history to go back to previous page (class list)
+    navigate(-1);
   };
 
   if (loading) {
