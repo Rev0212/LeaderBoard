@@ -21,6 +21,7 @@ import AdvisorHodDashboard from './pages/AdvisorHod/AdvisorHodDashboard';
 import ClassDetailsView from './pages/AdvisorHod/ClassDetailsView';
 import UpcomingEvents from './pages/UpcomingEvents';
 import StudentEventHistory from './components/StudentEventHistory';
+import AdminFeedbackReview from './pages/Admin/AdminFeedbackReview';
 
 const App = () => {
   return (
@@ -50,6 +51,7 @@ const App = () => {
       <Route path='/reports' element={<ReportsPage />} />
       <Route path='/events' element={<EventHistoryTable />} />
       <Route path='/admin-dashboard' element={<AdminDashboard />} />
+      <Route path="/admin/feedback" element={<AdminFeedbackReview />} />
     </Routes>
   );
 };
