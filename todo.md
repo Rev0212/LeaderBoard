@@ -62,3 +62,7 @@ Revanth A Observations
 <!-- 1. Add a file size limit -->
 2. Add PDF back to event
 <!-- 3. Teacherdashboard class list Unauthorized -->
+
+
+
+<!-- inactive students UI -->

@@ -2,8 +2,11 @@ import React, { useState } from 'react';
 import { Search, Calendar, X, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const StudentsSection = ({ detailedStudentPerformance, inactiveStudents, availableClasses }) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedClass, setSelectedClass] = useState('All');
+  // Separate state for each section
+  const [performanceSearchQuery, setPerformanceSearchQuery] = useState('');
+  const [performanceSelectedClass, setPerformanceSelectedClass] = useState('All');
+  const [inactiveSearchQuery, setInactiveSearchQuery] = useState('');
+  const [inactiveSelectedClass, setInactiveSelectedClass] = useState('All');
   const [inactiveDaysFilter, setInactiveDaysFilter] = useState(30);
   
   // Pagination states
@@ -13,9 +16,9 @@ const StudentsSection = ({ detailedStudentPerformance, inactiveStudents, availab
   // Filter detailed student performance based on search and class
   const filteredStudentPerformance = detailedStudentPerformance
     .filter(student => 
-      (selectedClass === 'All' || student.className === selectedClass) &&
-      (student.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-       student.registerNo.toLowerCase().includes(searchQuery.toLowerCase()))
+      (performanceSelectedClass === 'All' || student.className === performanceSelectedClass) &&
+      (student.name.toLowerCase().includes(performanceSearchQuery.toLowerCase()) || 
+       student.registerNo.toLowerCase().includes(performanceSearchQuery.toLowerCase()))
     )
     .sort((a, b) => b.totalPoints - a.totalPoints);
 
@@ -41,14 +44,14 @@ const StudentsSection = ({ detailedStudentPerformance, inactiveStudents, availab
   // Reset to first page when filters change
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedClass]);
+  }, [performanceSearchQuery, performanceSelectedClass]);
 
   // Filter inactive students
   const filteredInactiveStudents = inactiveStudents
     .filter(student => 
-      (selectedClass === 'All' || student.className === selectedClass) &&
-      (student.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-       student.registerNo.toLowerCase().includes(searchQuery.toLowerCase())) &&
+      (inactiveSelectedClass === 'All' || student.className === inactiveSelectedClass) &&
+      (student.name.toLowerCase().includes(inactiveSearchQuery.toLowerCase()) || 
+       student.registerNo.toLowerCase().includes(inactiveSearchQuery.toLowerCase())) &&
       student.inactiveDays >= inactiveDaysFilter
     );
 
@@ -56,8 +59,11 @@ const StudentsSection = ({ detailedStudentPerformance, inactiveStudents, availab
     <div>
       <h2 className="text-2xl font-bold mb-6">Student Analysis</h2>
       
-      {/* Filter Controls */}
+      {/* Student Performance Table with filters */}
       <div className="bg-white p-4 rounded-lg shadow mb-6">
+        <h3 className="text-lg font-semibold mb-4">Top Performing Students</h3>
+        
+        {/* Performance Filters */}
         <div className="flex flex-col md:flex-row gap-4 mb-4">
           {/* Search Input */}
           <div className="relative flex-1">
@@ -66,14 +72,14 @@ const StudentsSection = ({ detailedStudentPerformance, inactiveStudents, availab
             </div>
             <input
               type="text"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
+              value={performanceSearchQuery}
+              onChange={e => setPerformanceSearchQuery(e.target.value)}
               placeholder="Search by name or register number..."
               className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             />
-            {searchQuery && (
+            {performanceSearchQuery && (
               <button 
-                onClick={() => setSearchQuery('')}
+                onClick={() => setPerformanceSearchQuery('')}
                 className="absolute inset-y-0 right-0 pr-3 flex items-center"
               >
                 <X className="h-5 w-5 text-gray-400 hover:text-gray-600" />
@@ -84,8 +90,8 @@ const StudentsSection = ({ detailedStudentPerformance, inactiveStudents, availab
           {/* Class Filter */}
           <div className="md:w-48">
             <select
-              value={selectedClass}
-              onChange={e => setSelectedClass(e.target.value)}
+              value={performanceSelectedClass}
+              onChange={e => setPerformanceSelectedClass(e.target.value)}
               className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="All">All Classes</option>
@@ -97,35 +103,9 @@ const StudentsSection = ({ detailedStudentPerformance, inactiveStudents, availab
             </select>
           </div>
           
-          {/* Inactive Days Filter */}
-          <div className="md:w-64">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-gray-400" />
-              <span className="text-sm text-gray-600">Inactive for at least</span>
-              <select
-                value={inactiveDaysFilter}
-                onChange={e => setInactiveDaysFilter(Number(e.target.value))}
-                className="block px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value={7}>7 days</option>
-                <option value={15}>15 days</option>
-                <option value={30}>30 days</option>
-                <option value={60}>60 days</option>
-                <option value={90}>90 days</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      {/* Student Performance Table */}
-      <div className="bg-white p-4 rounded-lg shadow mb-6">
-        <div className="flex justify-between mb-4">
-          <h3 className="text-lg font-semibold">Top Performing Students</h3>
-          
           {/* Rows per page selector */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">Rows:</span>
+          <div className="md:w-48 flex items-center justify-end">
+            <span className="text-sm text-gray-600 mr-2">Rows:</span>
             <select
               value={studentsPerPage}
               onChange={e => {
@@ -276,9 +256,69 @@ const StudentsSection = ({ detailedStudentPerformance, inactiveStudents, availab
         )}
       </div>
       
-      {/* Inactive Students Table */}
+      {/* Inactive Students Table with filters */}
       <div className="bg-white p-4 rounded-lg shadow">
         <h3 className="text-lg font-semibold mb-4">Inactive Students</h3>
+        
+        {/* Inactive Students Filters */}
+        <div className="flex flex-col md:flex-row gap-4 mb-4">
+          {/* Search Input */}
+          <div className="relative flex-1">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              value={inactiveSearchQuery}
+              onChange={e => setInactiveSearchQuery(e.target.value)}
+              placeholder="Search by name or register number..."
+              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            />
+            {inactiveSearchQuery && (
+              <button 
+                onClick={() => setInactiveSearchQuery('')}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+              >
+                <X className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+              </button>
+            )}
+          </div>
+          
+          {/* Class Filter */}
+          <div className="md:w-48">
+            <select
+              value={inactiveSelectedClass}
+              onChange={e => setInactiveSelectedClass(e.target.value)}
+              className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="All">All Classes</option>
+              {availableClasses.map(classInfo => (
+                <option key={classInfo.className} value={classInfo.className}>
+                  {classInfo.className}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          {/* Inactive Days Filter */}
+          <div className="md:w-64">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-gray-400" />
+              <span className="text-sm text-gray-600">Inactive for at least</span>
+              <select
+                value={inactiveDaysFilter}
+                onChange={e => setInactiveDaysFilter(Number(e.target.value))}
+                className="block px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value={7}>7 days</option>
+                <option value={15}>15 days</option>
+                <option value={30}>30 days</option>
+                <option value={60}>60 days</option>
+                <option value={90}>90 days</option>
+              </select>
+            </div>
+          </div>
+        </div>
         
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
