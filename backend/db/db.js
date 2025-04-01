@@ -2,8 +2,8 @@ const mongoose = require('mongoose');
 
 const connectToDb = async () => {
   try {
-    if (!process.env.MONGODB_URI) {
-      throw new Error('MONGODB_URI is not defined in environment variables');
+    if (!process.env.DB_CONNECT) {
+      throw new Error('DB_CONNECT is not defined in environment variables');
     }
     
     if (mongoose.connection.readyState === 0) {
