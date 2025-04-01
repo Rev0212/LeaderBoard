@@ -18,82 +18,94 @@ const TeacherProfile = ({ teacherData, handleBackToDashboard }) => {
   useEffect(() => {
     if (teacherData) {
       setLoading(false);
-      setProfileImg(teacherData.profileImg || null);
+      
+      // Fix the image path handling here
+      if (teacherData.profileImg) {
+        // Check if the profileImg already includes the base URL
+        if (teacherData.profileImg.startsWith('http')) {
+          setProfileImg(teacherData.profileImg);
+        } else {
+          // Otherwise, prepend the base URL
+          const baseUrl = import.meta.env.VITE_BASE_URL;
+          setProfileImg(`${baseUrl}${teacherData.profileImg}`);
+        }
+      } else {
+        setProfileImg(null);
+      }
     }
   }, [teacherData]);
 
+  // Update the handleAddImage function to use the new endpoints
   const handleAddImage = async (event) => {
     const file = event.target.files[0];
-    if (file) {
-      setUploading(true);
-
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("upload_preset", import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
-
-      try {
-        const cloudinaryResponse = await fetch(
-          `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`,
-          {
-            method: "POST",
-            body: formData,
-          }
-        );
-
-        const responseData = await cloudinaryResponse.json();
-        
-        if (responseData.secure_url) {
-          const imageUrl = responseData.secure_url;
-          console.log("Teacher registerNo:", teacherData?.registerNo, "Image URL:", imageUrl);
-
-          setProfileImg(imageUrl);
-
-          const baseUrl = import.meta.env.VITE_BASE_URL;
-          
-          await axios.put(
-            `${baseUrl}/teacher/add`,
-            {
-              profileImg: imageUrl,
-              registerNo: teacherData.registerNo
-            },
-            {
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${localStorage.getItem("teacher-token") || localStorage.getItem("token")}`,
-              },
-            }
-          );
-        } else {
-          throw new Error("Failed to get image URL from Cloudinary");
-        }
-      } catch (error) {
-        console.error("Image upload failed:", error);
-        setPasswordError("Failed to upload image. Please try again.");
-      } finally {
-        setUploading(false);
-      }
-    }
-  };
-
-  const handleRemoveImage = async () => {
-    setProfileImg(null);
+    if (!file) return;
+    
+    setUploading(true);
+    
     try {
-      const baseUrl = import.meta.env.VITE_BASE_URL;
-      await axios.put(
-        `${baseUrl}/teacher/add`,
-        { 
-          profileImg: null,
-          registerNo: teacherData.registerNo 
-        },
+      // Create FormData with the file
+      const formData = new FormData();
+      formData.append("profileImage", file);
+      
+      const token = localStorage.getItem("teacher-token") || localStorage.getItem("token");
+      
+      // Upload profile image to backend
+      const uploadResponse = await axios.post(
+        `${import.meta.env.VITE_BASE_URL}/teacher/upload-profile-image`, 
+        formData, 
         {
           headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "multipart/form-data"
+          }
+        }
+      );
+      
+      // Update profile image path in teacher data
+      await axios.put(
+        `${import.meta.env.VITE_BASE_URL}/teacher/update-profile-image`,
+        { profileImg: uploadResponse.data.filePath },
+        {
+          headers: {
+            "Authorization": `Bearer ${token}`,
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${localStorage.getItem("teacher-token") || localStorage.getItem("token")}`,
           },
         }
       );
+      
+      // Update UI with new image
+      const imageUrl = `${import.meta.env.VITE_BASE_URL}${uploadResponse.data.filePath}`;
+      setProfileImg(imageUrl);
+      
     } catch (error) {
-      console.error("Failed to remove profile image on backend:", error);
+      console.error("Image upload failed:", error);
+      setPasswordError("Failed to upload image. Please try again.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Update the handleRemoveImage function as well
+  const handleRemoveImage = async () => {
+    try {
+      const token = localStorage.getItem("teacher-token") || localStorage.getItem("token");
+      
+      await axios.put(
+        `${import.meta.env.VITE_BASE_URL}/teacher/update-profile-image`,
+        { profileImg: null },
+        {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      
+      setProfileImg(null);
+      
+    } catch (error) {
+      console.error("Failed to remove profile image:", error);
+      setPasswordError("Failed to remove profile image. Please try again.");
     }
   };
 

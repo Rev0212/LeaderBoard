@@ -353,3 +353,57 @@ exports.getAdvisedClasses = async (req, res) => {
         return res.status(500).json({ message: 'Internal server error', error: error.message });
     }
 };
+
+module.exports.uploadProfileImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        error: 'No image file provided',
+      });
+    }
+
+    // Send the filename and path back to the client
+    res.status(200).json({
+      message: 'Profile image uploaded successfully',
+      fileName: req.file.filename,
+      filePath: `/uploads/profile/teacher/${req.file.filename}`
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Profile image upload failed',
+      details: error.message,
+    });
+  }
+};
+
+module.exports.updateProfileImage = async (req, res) => {
+  try {
+    const { profileImg } = req.body;
+    
+    // Make sure to import your Teacher model at the top of the file
+    const updatedTeacher = await teacherModel.findByIdAndUpdate(
+      req.teacher._id, 
+      { profileImg }, 
+      { new: true }
+    );
+
+    if (!updatedTeacher) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Teacher not found' 
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Profile image updated successfully',
+      teacher: updatedTeacher
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update profile image',
+      details: error.message
+    });
+  }
+};

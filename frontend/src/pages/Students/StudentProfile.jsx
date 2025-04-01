@@ -54,7 +54,20 @@ const StudentProfile = () => {
         });
         
         setStudent(response.data);
-        setProfileImg(response.data.profileImg || null);
+        
+        // Fix the image path handling here
+        if (response.data.profileImg) {
+          // Check if the profileImg already includes the base URL
+          if (response.data.profileImg.startsWith('http')) {
+            setProfileImg(response.data.profileImg);
+          } else {
+            // Otherwise, prepend the base URL
+            setProfileImg(`${VITE_BASE_URL}${response.data.profileImg}`);
+          }
+        } else {
+          setProfileImg(null);
+        }
+        
         setLoading(false);
       } catch (err) {
         console.error('Error fetching student profile:', err);
@@ -67,69 +80,77 @@ const StudentProfile = () => {
   }, [VITE_BASE_URL, navigate]);
 
   const handleAddImage = async (event) => {
+    console.log("Image upload triggered");
     const file = event.target.files[0];
-    if (file) {
-      setUploading(true);
-
+    if (!file) return;
+    
+    setUploading(true);
+    
+    try {
+      // Create FormData with the file
       const formData = new FormData();
-      formData.append("file", file);
-      formData.append("upload_preset", import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
-
-      try {
-        const cloudinaryResponse = await fetch(
-          `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`,
-          {
-            method: "POST",
-            body: formData,
+      formData.append("profileImage", file);
+      
+      const token = localStorage.getItem("student-token");
+      
+      // Upload profile image to backend
+      const uploadResponse = await axios.post(
+        `${VITE_BASE_URL}/student/upload-profile-image`, 
+        formData, 
+        {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "multipart/form-data"
           }
-        );
-
-        const responseData = await cloudinaryResponse.json();
-        
-        if (responseData.secure_url) {
-          const imageUrl = responseData.secure_url;
-
-          setProfileImg(imageUrl);
-          
-          await axios.put(
-            `${VITE_BASE_URL}/student/update-profile`,
-            {
-              profileImg: imageUrl
-            },
-            {
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${localStorage.getItem("student-token")}`,
-              },
-            }
-          );
-        } else {
-          throw new Error("Failed to get image URL from Cloudinary");
         }
-      } catch (error) {
-        console.error("Image upload failed:", error);
-        setPasswordError("Failed to upload image. Please try again.");
-      } finally {
-        setUploading(false);
-      }
+      );
+      
+      // Update profile image path in student data
+      await axios.put(
+        `${VITE_BASE_URL}/student/update-profile-image`,
+        { profileImg: uploadResponse.data.filePath },
+        {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      
+      // Update UI with new image - ensure consistent URL construction
+      const imageUrl = `${VITE_BASE_URL}${uploadResponse.data.filePath}`;
+      setProfileImg(imageUrl);
+      setStudent({...student, profileImg: uploadResponse.data.filePath});
+      
+    } catch (error) {
+      console.error("Image upload failed:", error);
+      setError("Failed to upload image. Please try again.");
+    } finally {
+      setUploading(false);
     }
   };
 
   const handleRemoveImage = async () => {
-    setProfileImg(null);
     try {
+      const token = localStorage.getItem("student-token");
+      
       await axios.put(
-        `${VITE_BASE_URL}/student/update-profile`,
+        `${VITE_BASE_URL}/student/update-profile-image`,
         { profileImg: null },
         {
           headers: {
+            "Authorization": `Bearer ${token}`,
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${localStorage.getItem("student-token")}`,
           },
         }
       );
+      
+      setProfileImg(null);
+      setStudent({...student, profileImg: null});
+      
     } catch (error) {
       console.error("Failed to remove profile image:", error);
+      setPasswordError("Failed to remove profile image. Please try again.");
     }
   };
 
