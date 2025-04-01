@@ -8,12 +8,33 @@ const FeedbackForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Get the student token from localStorage
+    const token = localStorage.getItem('student-token');
+    
+    if (!token) {
+      setErrorMessage('You must be logged in to submit feedback.');
+      return;
+    }
+    
     try {
-      const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/feedback`, { comment });
+      const response = await axios.post(
+        `${import.meta.env.VITE_BASE_URL}/feedback`, 
+        { comment },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+      
       setSuccessMessage('Thank you for your feedback!');
       setComment('');
+      setErrorMessage('');
     } catch (error) {
-      setErrorMessage('Failed to submit feedback. Please try again.');
+      console.error('Feedback submission error:', error);
+      setErrorMessage(error.response?.data?.message || 'Failed to submit feedback. Please try again.');
+      setSuccessMessage('');
     }
   };
 
@@ -29,7 +50,7 @@ const FeedbackForm = () => {
           placeholder="Your feedback..."
           required
         />
-        <button type="submit" className="mt-2 bg-blue-500 text-white px-4 py-2 rounded">
+        <button type="submit" className="mt-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
           Submit
         </button>
       </form>
@@ -39,4 +60,4 @@ const FeedbackForm = () => {
   );
 };
 
-export default FeedbackForm; 
+export default FeedbackForm;

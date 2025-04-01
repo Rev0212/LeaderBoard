@@ -2,9 +2,11 @@ const express = require('express');
 const router = express.Router();
 const { body } = require("express-validator");
 const adminController = require('../controllers/admin.controller');
-const authMiddleware = require('../middlewares/auth.middlewares');
+const { authAdmin } = require('../middlewares/auth.middlewares');
 const adminModel = require('../models/admin.model');
-const FeedbackModel = require('../models/feedbackModel');
+const classController = require('../controllers/class.controller');
+const eventController = require('../controllers/event.controller');
+const Feedback = require('../models/feedback.model');
 
 // Password validation regex pattern
 const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
@@ -42,7 +44,7 @@ router.post('/login', [
 adminController.loginadmin);
 
 // Profile route with authentication middleware
-router.get('/profile', authMiddleware.authAdmin, adminController.getAdminProfile);
+router.get('/profile', authAdmin, adminController.getAdminProfile);
 
 // Logout route (commented out but available if needed)
 // router.get('/logout', authMiddleware.authAdmin, adminController.logoutadmin);
@@ -69,7 +71,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 router.get('/feedback', async (req, res) => {
     try {
-        const feedbacks = await FeedbackModel.find().sort({ createdAt: -1 });
+        const feedbacks = await Feedback.find().sort({ createdAt: -1 });
         res.json(feedbacks);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching feedbacks' });

@@ -1,9 +1,13 @@
-const feedbackSchemaModel = require('../models/feedbackModel')
+const Feedback = require('../models/feedback.model');
 
 const feedbackServices = {
-    submitFeedback: async (comment) => {
+    submitFeedback: async (comment, student, registerNo) => {
         try {
-            const feedback = new feedbackSchemaModel({ comment });
+            const feedback = new Feedback({ 
+                comment,
+                student,
+                registerNo
+            });
             return await feedback.save();
         } catch (error) {
             throw error;
@@ -12,7 +16,9 @@ const feedbackServices = {
 
     getAllFeedback: async () => {
         try {
-            return await feedbackSchemaModel.find().sort({ createdAt: -1 });
+            return await Feedback.find()
+                .select('comment createdAt')
+                .sort({ createdAt: -1 });
         } catch (error) {
             throw error;
         }
