@@ -1112,16 +1112,35 @@ class RoleBasedEventReportsService {
         return [];
       }
       
+      // Apply department filter to classes if provided
+      let filteredClasses = classes;
+      if (userFilters.department) {
+        filteredClasses = classes.filter(c => c.department === userFilters.department);
+        console.log(`Filtered classes by department: ${userFilters.department}, found ${filteredClasses.length} classes`);
+        
+        if (filteredClasses.length === 0) {
+          return [];
+        }
+      }
+      
       // Get class IDs
-      const classIds = classes.map(c => c._id);
+      const classIds = filteredClasses.map(c => c._id);
       
       // Find students in those classes
-      const students = await Student.find({
+      const studentQuery = {
         $or: [
           { 'currentClass.ref': { $in: classIds } },
           { 'class': { $in: classIds } }
         ]
-      }).select('_id').lean();
+      };
+      
+      // Apply department filter to students if provided
+      if (userFilters.department) {
+        studentQuery.department = userFilters.department;
+        console.log(`Filtering students by department: ${userFilters.department}`);
+      }
+      
+      const students = await Student.find(studentQuery).select('_id').lean();
       
       const studentIds = students.map(s => s._id);
       
@@ -1134,13 +1153,31 @@ class RoleBasedEventReportsService {
       const sixMonthsAgo = new Date();
       sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
       
+      // Create match condition for events
+      const matchCondition = {
+        submittedBy: { $in: studentIds },
+        status: 'Approved',
+        date: { $gte: sixMonthsAgo }
+      };
+      
+      // Apply department filter to events if provided
+      if (userFilters.department) {
+        matchCondition.department = userFilters.department;
+        console.log(`Filtering events by department: ${userFilters.department}`);
+      }
+      
+      // Apply date range filter if provided (overrides the 6-month default)
+      if (userFilters.startDate && userFilters.endDate) {
+        matchCondition.date = {
+          $gte: new Date(userFilters.startDate),
+          $lte: new Date(userFilters.endDate)
+        };
+        console.log(`Filtering trends by date range: ${userFilters.startDate} to ${userFilters.endDate}`);
+      }
+      
       const trends = await Event.aggregate([
         {
-          $match: {
-            submittedBy: { $in: studentIds },
-            status: 'Approved',
-            date: { $gte: sixMonthsAgo }
-          }
+          $match: matchCondition
         },
         {
           $group: {
