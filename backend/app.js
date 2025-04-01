@@ -15,7 +15,7 @@ const connectToDb = require('./db/db');
 //   allowedHeaders: ['Content-Type', 'Authorization']
 // }));
 app.use(cors({
-  origin: ["http://10.1.38.189:5173","http://localhost:5173","http://10.1.38.189"], // Or your actual frontend URL
+  origin: ["http://10.1.38.23:5173","http://localhost:5173","http://10.1.38.23"], // Or your actual frontend URL
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
