@@ -36,7 +36,7 @@ module.exports.authStudent = async (req, res, next) => {
 
 module.exports.authTeacher = async (req, res, next) => {
     try {
-        console.log("Auth headers:", req.headers.authorization); // Debug log
+        // console.log("Auth headers:", req.headers.authorization); // Debug log
         
         let token;
         if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
@@ -76,32 +76,32 @@ module.exports.authTeacher = async (req, res, next) => {
 } 
 
 module.exports.authAdmin = async (req, res, next) => {
-    const token = req.cookies.token || req.headers.authorization?.split(' ')[ 1 ];
+    const token = req.cookies['admin-token'] || req.headers.authorization?.split(' ')[1];
 
     if (!token) {
-        return res.status(401).json({ message: 'Unauthorized Token missing T' });
+        return res.status(401).json({ message: 'Unauthorized: Admin token missing' });
     }
-
 
     const isBlacklisted = await blackListTokenModel.findOne({ token: token });
 
     if (isBlacklisted) {
-        return res.status(401).json({ message: 'Unauthorized' });
+        return res.status(401).json({ message: 'Unauthorized: Token revoked' });
     }
 
     try {
-
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const admin = await adminModel.findById(decoded._id)
+        const admin = await adminModel.findById(decoded._id);
+
+        if (!admin) {
+            return res.status(401).json({ message: 'Unauthorized: Admin not found' });
+        }
 
         req.admin = admin;
-
         return next();
-
     } catch (err) {
-        return res.status(401).json({ message: 'Unauthorized Error' });
+        return res.status(401).json({ message: 'Unauthorized: Invalid token' });
     }
-}
+};
 
 module.exports.authHOD = async (req, res, next) => {
     try {

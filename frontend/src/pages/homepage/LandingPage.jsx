@@ -108,7 +108,7 @@ const LandingPage = () => {
                             PRO-RANK: POLICY BASED RANKING SYSTEM
                         </h1>
                         <p className="text-xl sm:text-2xl md:text-3xl font-bold text-white">
-                            LEARN, LEAP & LEAD!
+                            LEARN, LEAP & LEAD
                         </p>
                     </div>
                 </div>

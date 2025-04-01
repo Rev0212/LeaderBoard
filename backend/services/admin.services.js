@@ -11,11 +11,8 @@ module.exports.createadmin = async ({ name, email, password, rawPassword }) => {
         password,
         rawPassword
     });
-
-    // Don't return sensitive data in response
-    const adminResponse = admin.toObject();
-    delete adminResponse.password;
-    delete adminResponse.rawPassword;
     
-    return adminResponse;
+    // Return the mongoose document directly instead of converting to object
+    // This ensures methods like generateAuthToken are available
+    return admin;
 };

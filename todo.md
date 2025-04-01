@@ -38,7 +38,7 @@ Revanth Rev0212
 Revanth A Observation In Reports Page:
 
 1. Need to check the download of Reports
-2. Need to check the inactive students
+<!-- 2. Need to check the inactive students -->
 3. There are class Name Coming 2 Times Need to fix that
 4. Class Activity Summary Table Department Column must be removed
 5. Instead of Drop Down need to create card (at Last)
@@ -62,3 +62,18 @@ Revanth A Observations
 <!-- 1. Add a file size limit -->
 2. Add PDF back to event
 <!-- 3. Teacherdashboard class list Unauthorized -->
+
+
+
+<!-- inactive students UI -->
+
+Apply Similar Updates to All Report Methods
+You'll need to apply the department filtering approach to all other report methods:
+
+getTopStudents
+getPopularCategories
+getClassPerformance
+getApprovalRates
+getCategoryPerformanceByClass
+getTrends
+getClassParticipation

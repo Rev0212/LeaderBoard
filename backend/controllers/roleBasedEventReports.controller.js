@@ -291,9 +291,10 @@ class RoleBasedEventReportsController {
         userFilters
       );
       
+      // Change this line to return 'data' instead of 'inactiveStudents'
       res.status(200).json({ 
         success: true, 
-        inactiveStudents 
+        data: inactiveStudents  // Changed from 'inactiveStudents' to 'data'
       });
     } catch (error) {
       console.error('Error in getInactiveStudents controller:', error);
