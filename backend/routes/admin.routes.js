@@ -46,6 +46,11 @@ adminController.loginadmin);
 // Profile route with authentication middleware
 router.get('/profile', authAdmin, adminController.getAdminProfile);
 
+// Update dashboard routes - make sure there are no references to missing controller functions
+router.get('/dashboard', authAdmin, adminController.getDashboardData);
+// Comment out this line if adminController.someAdminAction doesn't exist
+// router.post('/some-admin-action', authAdmin, adminController.someAdminAction);
+
 // Logout route (commented out but available if needed)
 // router.get('/logout', authMiddleware.authAdmin, adminController.logoutadmin);
 

@@ -1,18 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Upload, Users, FileText, Download, UserPlus, Calendar, MessageSquare } from 'lucide-react';
 import AdminUpcomingEventForm from '../../components/AdminUpcomingEventForm';
 import UpcomingEventsList from '../../components/UpcomingEventsList';
 import ReportsPage from '../ReportsPage';
 import AdminFeedbackReview from './AdminFeedbackReview';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const AdminDashboard = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('create-class');
   const [classFile, setClassFile] = useState(null);
   const [studentsFile, setStudentsFile] = useState(null);
   const [teacherFile, setTeacherFile] = useState(null);
   const [registerStudentFile, setRegisterStudentFile] = useState(null);
+
+  // Check for authentication on component mount
+  useEffect(() => {
+    const token = localStorage.getItem('admin-token');
+    if (!token) {
+      navigate('/admin-login');
+      return;
+    }
+    
+    // Verify token validity with backend
+    const verifyToken = async () => {
+      try {
+        await axios.get(`${VITE_BASE_URL}/admin/profile`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+      } catch (error) {
+        localStorage.removeItem('admin-token');
+        navigate('/admin-login');
+      }
+    };
+    
+    verifyToken();
+  }, [navigate, VITE_BASE_URL]);
 
   const handleFileChange = (event, setFile) => {
     const file = event.target.files[0];
@@ -157,6 +185,30 @@ const AdminDashboard = () => {
       alert('Error downloading report');
     }
   };
+
+  // Example of using admin token in API calls
+  const fetchAdminData = async () => {
+    const token = localStorage.getItem('admin-token');
+    if (!token) {
+        navigate('/admin-login');
+        return;
+    }
+    
+    try {
+        const response = await axios.get(`${VITE_BASE_URL}/admin/dashboard`, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+        // Process response data
+    } catch (error) {
+        // Handle error
+        if (error.response?.status === 401) {
+            localStorage.removeItem('admin-token');
+            navigate('/admin-login');
+        }
+    }
+};
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">

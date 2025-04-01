@@ -12,24 +12,30 @@ class RoleBasedEventReportsService {
     console.log("Teacher role:", teacher.role);
     console.log("Teacher department:", teacher.department);
     
-    // Base filters - only include approved events
+    // Base filters - only include approved events and always filter by department
     let filters = { status: 'Approved' };
+    
+    // For all roles except Admin/Principal, apply department filtering
+    if (teacher.department && teacher.role !== 'Admin' && teacher.role !== 'Principal') {
+      filters.department = teacher.department;
+      console.log(`Applying department filter: ${teacher.department}`);
+    }
     
     // Different filtering logic based on role
     switch(teacher.role) {
       case 'HOD':
-        // HOD can see all classes in their department
+        // HOD can see all classes in their department (department already set above)
         console.log("Using HOD filters for", teacher.department);
-        filters.department = teacher.department;
         break;
         
       case 'Academic Advisor':
-        // Academic advisor sees classes they advise
+        // Academic advisor sees classes they advise, within their department
         console.log("Using Academic Advisor filters");
         
         // Get classes where teacher is academic advisor
         const advisorClasses = await Class.find({ 
-          academicAdvisors: teacher._id 
+          academicAdvisors: teacher._id,
+          ...(teacher.department ? { department: teacher.department } : {})
         }).select('_id');
         
         if (advisorClasses.length === 0) {
@@ -42,12 +48,13 @@ class RoleBasedEventReportsService {
         
       case 'Faculty':
       default:
-        // Faculty sees only their assigned classes
+        // Faculty sees only their assigned classes, within their department
         console.log("Using Faculty filters");
         
         // Get classes where teacher is assigned
         const facultyClasses = await Class.find({ 
-          facultyAssigned: teacher._id 
+          facultyAssigned: teacher._id,
+          ...(teacher.department ? { department: teacher.department } : {})
         }).select('_id');
         
         // If teacher has no classes, they see nothing
@@ -57,7 +64,18 @@ class RoleBasedEventReportsService {
           // Fallback: check if teacher has classes in the teacher.classes array
           if (teacher.classes && teacher.classes.length > 0) {
             console.log(`Using ${teacher.classes.length} classes from teacher's classes array`);
-            filters.classIds = teacher.classes;
+            
+            // Need to further filter these classes by department
+            if (teacher.department) {
+              const deptClasses = await Class.find({
+                _id: { $in: teacher.classes },
+                department: teacher.department
+              }).select('_id');
+              
+              filters.classIds = deptClasses.map(c => c._id);
+            } else {
+              filters.classIds = teacher.classes;
+            }
           } else {
             // Return dummy filter that won't match anything if no classes found
             console.log("No classes found, using dummy filter");
@@ -523,6 +541,10 @@ class RoleBasedEventReportsService {
    */
   static async getInactiveStudents(teacher, inactiveDays = 30, userFilters = {}) {
     try {
+      // Log input parameters
+      console.log(`Finding inactive students (${inactiveDays}+ days) with filters:`, userFilters);
+      console.log(`Teacher:`, teacher.name, teacher.department, teacher.role);
+      
       // Pass the year filter to getAvailableClasses
       const yearFilter = userFilters.year ? parseInt(userFilters.year) : null;
       const classes = await this.getAvailableClasses(teacher, yearFilter);
@@ -531,6 +553,8 @@ class RoleBasedEventReportsService {
         console.log("No classes found, returning empty result");
         return [];
       }
+      
+      console.log(`Found ${classes.length} classes for reports`);
       
       // Get class IDs
       const classIds = classes.map(c => c._id);
@@ -541,24 +565,40 @@ class RoleBasedEventReportsService {
         return map;
       }, {});
       
-      // Find students in those classes
-      const students = await Student.find({
+      // Build student query with department filter
+      const studentQuery = {
         $or: [
           { 'currentClass.ref': { $in: classIds } },
           { 'class': { $in: classIds } }
         ]
-      }).select('name registerNo currentClass class department updatedAt')
-      .lean();
+      };
       
-      const studentIds = students.map(s => s._id);
+      // Apply department filter if teacher has department assigned
+      if (teacher.department && teacher.role !== 'Admin' && teacher.role !== 'Chairperson') {
+        studentQuery.department = teacher.department;
+        console.log(`Filtering students by department: ${teacher.department}`);
+      }
       
-      if (studentIds.length === 0) {
-        console.log("No students found, returning empty result");
+      // Find students in those classes
+      const students = await Student.find(studentQuery)
+        .select('_id name registerNo department currentClass class updatedAt')
+        .lean();
+      
+      console.log(`Found ${students.length} students to check for inactivity`);
+      
+      if (students.length === 0) {
         return [];
       }
       
+      const studentIds = students.map(s => s._id);
+      
       // Get latest event date for each student
       const now = new Date();
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - inactiveDays);
+      
+      console.log(`Checking events since ${cutoffDate.toISOString()}`);
+      
       const latestEvents = await Event.aggregate([
         {
           $match: {
@@ -576,6 +616,8 @@ class RoleBasedEventReportsService {
         }
       ]);
       
+      console.log(`Found activity data for ${latestEvents.length} students`);
+      
       // Create map of student ID to last activity date
       const lastActivityMap = latestEvents.reduce((map, item) => {
         map[item._id.toString()] = item.lastActivity;
@@ -583,7 +625,7 @@ class RoleBasedEventReportsService {
       }, {});
       
       // Calculate inactive days for each student
-      const inactiveStudents = await Promise.all(students.map(async student => {
+      const inactiveStudents = students.map(student => {
         // Get the class name
         let className = "Unknown";
         const classId = student.currentClass?.ref || student.class;
@@ -594,24 +636,32 @@ class RoleBasedEventReportsService {
         
         // Get the last activity date (from events or account updates)
         const lastEventDate = lastActivityMap[student._id.toString()];
-        const lastUpdateDate = student.updatedAt;
         
-        // Use the most recent date
-        let lastActivity = lastEventDate;
-        if (!lastActivity || (lastUpdateDate && lastUpdateDate > lastActivity)) {
-          lastActivity = lastUpdateDate;
+        // CRITICAL FIX: Don't use updatedAt as fallback for activity calculation
+        // If there's no event activity, the student is definitely inactive
+        let lastActivity;
+        let isNoActivity = false;
+        
+        if (lastEventDate) {
+          // Student has event activity, use the event date
+          lastActivity = lastEventDate;
+          console.log(`Student ${student.name} has event activity: ${new Date(lastActivity).toISOString()}`);
+        } else {
+          // No event activity found
+          lastActivity = null;
+          isNoActivity = true;
+          console.log(`Student ${student.name} has no event activity at all`);
         }
         
-        // If no activity at all, use a placeholder date from 60 days ago
-        if (!lastActivity) {
-          const placeholder = new Date();
-          placeholder.setDate(placeholder.getDate() - 60);
-          lastActivity = placeholder;
+        // Calculate days since last activity (or use max days if no activity)
+        let diffDays;
+        if (lastActivity) {
+          const diffTime = Math.abs(now - new Date(lastActivity));
+          diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        } else {
+          // If no activity at all, set to a large number to ensure they show up
+          diffDays = 9999;
         }
-        
-        // Calculate days since last activity
-        const diffTime = Math.abs(now - new Date(lastActivity));
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         
         return {
           _id: student._id,
@@ -619,16 +669,24 @@ class RoleBasedEventReportsService {
           registerNo: student.registerNo,
           className,
           department: student.department,
-          lastActivity,
-          inactiveDays: diffDays
+          lastActivity: lastActivity || null,
+          inactiveDays: diffDays,
+          hasNoActivity: isNoActivity
         };
-      }));
+      });
       
       // Filter to students inactive for more than the specified days
       const filteredInactive = inactiveStudents
         .filter(student => student.inactiveDays >= inactiveDays)
         .sort((a, b) => b.inactiveDays - a.inactiveDays);
       
+      console.log(`Found ${filteredInactive.length} inactive students out of ${students.length} total`);
+      
+      // After calculating filteredInactive
+      console.log(`Final inactive students count: ${filteredInactive.length}`);
+      console.log(`First few inactive students:`, filteredInactive.slice(0, 3));
+      
+      // Return the inactive students directly - don't wrap in an object
       return filteredInactive;
     } catch (error) {
       console.error('Error getting inactive students:', error);
@@ -659,14 +717,24 @@ class RoleBasedEventReportsService {
         return map;
       }, {});
       
-      // Find students in those classes
-      const students = await Student.find({
+      // Build student query with department filter
+      const studentQuery = {
         $or: [
           { 'currentClass.ref': { $in: classIds } },
           { 'class': { $in: classIds } }
         ]
-      }).select('name registerNo totalPoints currentClass class department')
-      .lean();
+      };
+      
+      // Apply department filter if teacher has department assigned
+      if (teacher.department && teacher.role !== 'Admin' && teacher.role !== 'Chairperson') {
+        studentQuery.department = teacher.department;
+        console.log(`Filtering students by department: ${teacher.department}`);
+      }
+      
+      // Find students in those classes
+      const students = await Student.find(studentQuery)
+        .select('name registerNo totalPoints currentClass class department')
+        .lean();
       
       // Enhanced student data with activity counts and class names
       const enhancedStudents = await Promise.all(students.map(async student => {
@@ -1018,6 +1086,47 @@ class RoleBasedEventReportsService {
       return result.reverse(); // Most recent first
     } catch (error) {
       console.error('Error getting class participation:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get available classes for reports
+   */
+  static async getAvailableClassesForReports(teacher, filters = {}) {
+    try {
+      // Get classes based on teacher role and department
+      const query = {};
+      
+      // Apply department filter from controller
+      if (filters.department) {
+        query.department = filters.department;
+      }
+      
+      // Apply any year filters if present
+      if (filters.year) {
+        query.year = parseInt(filters.year);
+      }
+      
+      // Get all applicable classes
+      const classes = await Class.find(query)
+        .sort({ year: -1, className: 1 })
+        .lean();
+      
+      // Create a Map to deduplicate classes by className
+      const uniqueClasses = new Map();
+      
+      // Add classes to map, ensuring only one entry per className
+      classes.forEach(cls => {
+        if (!uniqueClasses.has(cls.className)) {
+          uniqueClasses.set(cls.className, cls);
+        }
+      });
+      
+      // Convert map values back to array
+      return Array.from(uniqueClasses.values());
+    } catch (error) {
+      console.error('Error getting available classes:', error);
       return [];
     }
   }
