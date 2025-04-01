@@ -23,6 +23,9 @@ const AdvisorHodDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const [filteredClasses, setFilteredClasses] = useState([]);
+  const [yearFilter, setYearFilter] = useState("all");
+  const [availableYears, setAvailableYears] = useState([]);
 
   const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
   const navigate = useNavigate();
@@ -88,7 +91,15 @@ const AdvisorHodDashboard = () => {
           );
         }
 
-        setClasses(classesResponse.data);
+        const fetchedClasses = classesResponse.data;
+        setClasses(fetchedClasses);
+        
+        // Extract unique years from classes
+        const years = [...new Set(fetchedClasses.map(cls => cls.year))].sort((a, b) => a - b);
+        setAvailableYears(years);
+        
+        // Always set filtered classes to all classes for dashboard view
+        setFilteredClasses(fetchedClasses);
         setLoading(false);
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -152,6 +163,7 @@ const AdvisorHodDashboard = () => {
       return (
         <ClassesList
           classes={classes}
+          availableYears={availableYears}
           handleBackToDashboard={() => setCurrentView("dashboard")}
         />
       );
@@ -226,7 +238,7 @@ const AdvisorHodDashboard = () => {
         {/* Classes Overview Section */}
         <div className="bg-white rounded-lg shadow-md mb-8">
           <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <Layers className="h-6 w-6 text-blue-600" />
                 <h2 className="text-xl font-semibold text-gray-800">
@@ -243,9 +255,9 @@ const AdvisorHodDashboard = () => {
           </div>
 
           <div className="p-6">
-            {classes.length > 0 ? (
+            {filteredClasses.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {classes.slice(0, 6).map((classItem) => (
+                {filteredClasses.slice(0, 6).map((classItem) => (
                   <div
                     key={classItem._id}
                     className="border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer"
@@ -271,27 +283,14 @@ const AdvisorHodDashboard = () => {
               </div>
             ) : (
               <div className="text-center py-8">
-                <p className="text-gray-500">No classes found.</p>
-                {userData?.role === "HOD" ? (
-                  <p className="text-sm text-gray-400 mt-2">
-                    Classes for your department will appear here.
-                  </p>
-                ) : (
-                  <p className="text-sm text-gray-400 mt-2">
-                    Classes assigned to you will appear here.
-                  </p>
-                )}
-              </div>
-            )}
-
-            {classes.length > 6 && (
-              <div className="mt-4 text-center">
-                <button
-                  onClick={() => setCurrentView("classes")}
-                  className="text-blue-600 hover:text-blue-800"
-                >
-                  View all {classes.length} classes
-                </button>
+                <p className="text-gray-500">No classes found with the current filter.</p>
+                <p className="text-sm text-gray-400 mt-2">
+                  {yearFilter !== "all"
+                    ? "Try selecting a different year filter."
+                    : userData?.role === "HOD"
+                    ? "Classes for your department will appear here."
+                    : "Classes assigned to you will appear here."}
+                </p>
               </div>
             )}
           </div>
