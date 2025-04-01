@@ -127,25 +127,25 @@ const EventForm = () => {
 
   const validateImage = (file) => {
     const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
-    const maxSize = 2 * 1024 * 1024; // 5MB
+    const maxSize = 2 * 1024 * 1024; // 2MB
 
     if (!validTypes.includes(file.type)) {
       return 'Please upload a valid image file (JPEG, PNG, or GIF)';
     }
     if (file.size > maxSize) {
-      return 'Image size should be less than 5MB';
+      return 'Image size should be less than 2MB';
     }
     return null;
   };
 
   const validatePDF = (file) => {
-    const maxSize = 2 * 1024 * 1024; // 5MB
+    const maxSize = 2 * 1024 * 1024; // 2MB
     
     if (file.type !== 'application/pdf') {
       return 'Please upload a valid PDF file';
     }
     if (file.size > maxSize) {
-      return 'PDF size should be less than 5MB';
+      return 'PDF size should be less than 2MB';
     }
     return null;
   };
@@ -265,24 +265,20 @@ const EventForm = () => {
     e.preventDefault();
     if (validateForm()) {
       setIsLoading(true);
-      // setUploadStatus('Uploading files...');
+      setUploadStatus('Uploading files...');
       
       try {
-        // Upload image to Cloudinary
+        // Upload image to local server instead of Cloudinary
         const formDataImage = new FormData();
-        formDataImage.append('file', formData.proofImage);
-        formDataImage.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
+        formDataImage.append('proofImage', formData.proofImage);
   
-        const cloudinaryResponse = await fetch(
-          `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`,
-          {
-            method: 'POST',
-            body: formDataImage
-          }
-        );
+        const imageResponse = await fetch(`${import.meta.env.VITE_BASE_URL}/event/upload-image`, {
+          method: 'POST',
+          body: formDataImage
+        });
   
-        if (!cloudinaryResponse.ok) throw new Error('Failed to upload image');
-        const cloudinaryData = await cloudinaryResponse.json();
+        if (!imageResponse.ok) throw new Error('Failed to upload image');
+        const imageData = await imageResponse.json();
   
         // Upload PDF
         const formDataPdf = new FormData();
@@ -298,9 +294,10 @@ const EventForm = () => {
   
         setUploadStatus('Files uploaded successfully! Submitting form...');
   
+        // Use the local server file path instead of Cloudinary URL
         const formDataToSend = {
           ...formData,
-          proofUrl: cloudinaryData.url,
+          proofUrl: imageData.filePath, // Use the local path returned by the server
           pdfDocument: pdfData.fileName,
         };
   
@@ -329,7 +326,7 @@ const EventForm = () => {
       }
     }
   };
-
+  
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
@@ -340,7 +337,8 @@ const EventForm = () => {
           </div>
           
           <form onSubmit={handleSubmit} className="p-6 space-y-8">
-            {/* Modified Basic Information section with side-by-side layout */}
+            {/* Form content remains the same */}
+            {/* Basic Information section */}
             <div className="space-y-6">
               <h3 className="text-lg font-semibold text-gray-700 border-b pb-2">
                 Basic Information

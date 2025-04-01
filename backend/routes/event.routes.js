@@ -1,9 +1,10 @@
-
 // routes/event.routes.js
 const express = require('express');
 const eventController = require('../controllers/event.controller');
 const authMiddleware = require('../middlewares/auth.middlewares');
 const fileUpload = require('../controllers/fileUpload');
+const { handleImageUpload } = require('../middlewares/imageUpload');
+const { uploadImage } = require('../controllers/imageUpload.controller');
 
 const router = express.Router();
 
@@ -21,5 +22,7 @@ router.post('/upload-pdf', fileUpload.uploadPDF);
 router.patch('/edit/:id',authMiddleware.authTeacher,eventController.editEvent);
 
 router.get('/student-events/:studentId', authMiddleware.authTeacher, eventController.getAllStudentEvents);
+
+router.post('/upload-image', handleImageUpload, uploadImage);
 
 module.exports = router;
