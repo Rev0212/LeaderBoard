@@ -36,7 +36,7 @@ module.exports.authStudent = async (req, res, next) => {
 
 module.exports.authTeacher = async (req, res, next) => {
     try {
-        console.log("Auth headers:", req.headers.authorization); // Debug log
+        // console.log("Auth headers:", req.headers.authorization); // Debug log
         
         let token;
         if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {

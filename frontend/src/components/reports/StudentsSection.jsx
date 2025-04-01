@@ -1,17 +1,51 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Calendar, X, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const StudentsSection = ({ detailedStudentPerformance, inactiveStudents, availableClasses }) => {
-  // Separate state for each section
+  // Add state to store the processed inactive students data
+  const [processedInactiveStudents, setProcessedInactiveStudents] = useState([]);
+  
+  // Other state variables remain the same
   const [performanceSearchQuery, setPerformanceSearchQuery] = useState('');
   const [performanceSelectedClass, setPerformanceSelectedClass] = useState('All');
   const [inactiveSearchQuery, setInactiveSearchQuery] = useState('');
   const [inactiveSelectedClass, setInactiveSelectedClass] = useState('All');
   const [inactiveDaysFilter, setInactiveDaysFilter] = useState(30);
-  
-  // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [studentsPerPage, setStudentsPerPage] = useState(10);
+  const [inactiveCurrentPage, setInactiveCurrentPage] = useState(1);
+  const [inactiveStudentsPerPage, setInactiveStudentsPerPage] = useState(10);
+
+  // Process the inactiveStudents prop to handle different formats
+  useEffect(() => {
+    console.log('Received inactiveStudents:', inactiveStudents);
+    
+    let studentsArray = [];
+    
+    // If it's an object with 'success' and 'data' properties, extract the data array
+    if (inactiveStudents && typeof inactiveStudents === 'object') {
+      if (Array.isArray(inactiveStudents)) {
+        // It's already an array
+        studentsArray = inactiveStudents;
+        console.log('Using inactiveStudents as array directly');
+      } else if (inactiveStudents.data && Array.isArray(inactiveStudents.data)) {
+        // It's the API response object with a data property
+        studentsArray = inactiveStudents.data;
+        console.log('Extracted data array from inactiveStudents.data');
+      } else if (inactiveStudents.success && inactiveStudents.data) {
+        // It's the API response with success flag
+        studentsArray = inactiveStudents.data;
+        console.log('Extracted data array from success response');
+      } else {
+        console.log('inactiveStudents has unexpected format:', inactiveStudents);
+      }
+    } else {
+      console.log('inactiveStudents is null or not an object');
+    }
+    
+    console.log('Processed inactiveStudents array length:', studentsArray.length);
+    setProcessedInactiveStudents(studentsArray);
+  }, [inactiveStudents]);
 
   // Filter detailed student performance based on search and class
   const filteredStudentPerformance = detailedStudentPerformance
@@ -42,18 +76,61 @@ const StudentsSection = ({ detailedStudentPerformance, inactiveStudents, availab
   };
 
   // Reset to first page when filters change
-  React.useEffect(() => {
+  useEffect(() => {
     setCurrentPage(1);
   }, [performanceSearchQuery, performanceSelectedClass]);
 
-  // Filter inactive students
-  const filteredInactiveStudents = inactiveStudents
-    .filter(student => 
-      (inactiveSelectedClass === 'All' || student.className === inactiveSelectedClass) &&
-      (student.name.toLowerCase().includes(inactiveSearchQuery.toLowerCase()) || 
-       student.registerNo.toLowerCase().includes(inactiveSearchQuery.toLowerCase())) &&
-      student.inactiveDays >= inactiveDaysFilter
-    );
+  // Rest of your filtering logic, but now using processedInactiveStudents
+  console.log('Before filtering, processedInactiveStudents:', processedInactiveStudents.length);
+  console.log('Filter settings - class:', inactiveSelectedClass, 'days:', inactiveDaysFilter, 'search:', inactiveSearchQuery);
+
+  const filteredInactiveStudents = processedInactiveStudents
+    .filter(student => {
+      // Class filter check
+      const passesClassFilter = (inactiveSelectedClass === 'All' || student.className === inactiveSelectedClass);
+      
+      // Search filter check
+      const passesSearchFilter = (
+        student.name?.toLowerCase().includes(inactiveSearchQuery.toLowerCase()) || 
+        student.registerNo?.toLowerCase().includes(inactiveSearchQuery.toLowerCase())
+      );
+      
+      // Days filter check
+      const passesDaysFilter = (student.inactiveDays >= inactiveDaysFilter);
+      
+      // Return combined result and log failures
+      if (!passesClassFilter) console.log('Failed class filter:', student.className);
+      if (!passesSearchFilter) console.log('Failed search filter');
+      if (!passesDaysFilter) console.log('Failed days filter:', student.inactiveDays);
+      
+      return passesClassFilter && passesSearchFilter && passesDaysFilter;
+    });
+
+  console.log('After filtering, filteredInactiveStudents:', filteredInactiveStudents.length);
+
+  // Calculate pagination values for inactive students
+  const inactiveTotalPages = Math.ceil(filteredInactiveStudents.length / inactiveStudentsPerPage);
+  const indexOfLastInactiveStudent = inactiveCurrentPage * inactiveStudentsPerPage;
+  const indexOfFirstInactiveStudent = indexOfLastInactiveStudent - inactiveStudentsPerPage;
+  const currentInactiveStudents = filteredInactiveStudents.slice(indexOfFirstInactiveStudent, indexOfLastInactiveStudent);
+
+  // Add these pagination handler functions
+  const goToInactivePage = (pageNumber) => {
+    setInactiveCurrentPage(Math.max(1, Math.min(pageNumber, inactiveTotalPages)));
+  };
+
+  const goToPreviousInactivePage = () => {
+    setInactiveCurrentPage(prev => Math.max(1, prev - 1));
+  };
+
+  const goToNextInactivePage = () => {
+    setInactiveCurrentPage(prev => Math.min(inactiveTotalPages, prev + 1));
+  };
+
+  // Reset to first page when inactive filters change
+  useEffect(() => {
+    setInactiveCurrentPage(1);
+  }, [inactiveSearchQuery, inactiveSelectedClass, inactiveDaysFilter]);
 
   return (
     <div>
@@ -95,8 +172,8 @@ const StudentsSection = ({ detailedStudentPerformance, inactiveStudents, availab
               className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="All">All Classes</option>
-              {availableClasses.map(classInfo => (
-                <option key={classInfo.className} value={classInfo.className}>
+              {availableClasses.map((classInfo, index) => (
+                <option key={`${classInfo.className}-${index}-${classInfo._id || ''}`} value={classInfo.className}>
                   {classInfo.className}
                 </option>
               ))}
@@ -292,8 +369,8 @@ const StudentsSection = ({ detailedStudentPerformance, inactiveStudents, availab
               className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="All">All Classes</option>
-              {availableClasses.map(classInfo => (
-                <option key={classInfo.className} value={classInfo.className}>
+              {availableClasses.map((classInfo, index) => (
+                <option key={`${classInfo.className}-${index}-${classInfo._id || ''}`} value={classInfo.className}>
                   {classInfo.className}
                 </option>
               ))}
@@ -318,6 +395,24 @@ const StudentsSection = ({ detailedStudentPerformance, inactiveStudents, availab
               </select>
             </div>
           </div>
+          
+          {/* Add this to your filters section for inactive students */}
+          <div className="md:w-48 flex items-center justify-end">
+            <span className="text-sm text-gray-600 mr-2">Rows:</span>
+            <select
+              value={inactiveStudentsPerPage}
+              onChange={e => {
+                setInactiveStudentsPerPage(Number(e.target.value));
+                setInactiveCurrentPage(1); // Reset to first page when changing rows per page
+              }}
+              className="text-sm p-1 border border-gray-300 rounded-md"
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+            </select>
+          </div>
         </div>
         
         <div className="overflow-x-auto">
@@ -332,8 +427,8 @@ const StudentsSection = ({ detailedStudentPerformance, inactiveStudents, availab
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredInactiveStudents.length > 0 ? (
-                filteredInactiveStudents.map((student, index) => (
+              {currentInactiveStudents.length > 0 ? (
+                currentInactiveStudents.map((student, index) => (
                   <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{student.name}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.registerNo}</td>
@@ -356,6 +451,106 @@ const StudentsSection = ({ detailedStudentPerformance, inactiveStudents, availab
             </tbody>
           </table>
         </div>
+        
+        {/* Add pagination controls for inactive students table */}
+        {filteredInactiveStudents.length > 0 && (
+          <div className="flex items-center justify-between border-t border-gray-200 px-4 py-3 sm:px-6 mt-4">
+            <div className="flex flex-1 justify-between sm:hidden">
+              {/* Mobile pagination */}
+              <button
+                onClick={goToPreviousInactivePage}
+                disabled={inactiveCurrentPage === 1}
+                className={`relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium ${
+                  inactiveCurrentPage === 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                Previous
+              </button>
+              <button
+                onClick={goToNextInactivePage}
+                disabled={inactiveCurrentPage === inactiveTotalPages}
+                className={`relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium ${
+                  inactiveCurrentPage === inactiveTotalPages ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                Next
+              </button>
+            </div>
+            <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-700">
+                  Showing <span className="font-medium">{indexOfFirstInactiveStudent + 1}</span> to{' '}
+                  <span className="font-medium">
+                    {Math.min(indexOfLastInactiveStudent, filteredInactiveStudents.length)}
+                  </span>{' '}
+                  of <span className="font-medium">{filteredInactiveStudents.length}</span> students
+                </p>
+              </div>
+              <div>
+                <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                  <button
+                    onClick={goToPreviousInactivePage}
+                    disabled={inactiveCurrentPage === 1}
+                    className={`relative inline-flex items-center rounded-l-md px-2 py-2 ${
+                      inactiveCurrentPage === 1 
+                        ? 'text-gray-300 cursor-not-allowed' 
+                        : 'text-gray-500 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
+                    }`}
+                  >
+                    <span className="sr-only">Previous</span>
+                    <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+                  </button>
+                  
+                  {/* Page numbers - show max 5 page numbers */}
+                  {Array.from({ length: Math.min(5, inactiveTotalPages) }).map((_, i) => {
+                    // Calculate which page numbers to show
+                    let pageNum;
+                    if (inactiveTotalPages <= 5) {
+                      // If 5 or fewer pages, show all
+                      pageNum = i + 1;
+                    } else if (inactiveCurrentPage <= 3) {
+                      // If near the start, show first 5 pages
+                      pageNum = i + 1;
+                    } else if (inactiveCurrentPage >= inactiveTotalPages - 2) {
+                      // If near the end, show last 5 pages
+                      pageNum = inactiveTotalPages - 4 + i;
+                    } else {
+                      // Otherwise show 2 pages before and after current
+                      pageNum = inactiveCurrentPage - 2 + i;
+                    }
+                    
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => goToInactivePage(pageNum)}
+                        className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
+                          inactiveCurrentPage === pageNum
+                            ? 'z-10 bg-blue-50 border-blue-500 text-blue-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600'
+                            : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                  
+                  <button
+                    onClick={goToNextInactivePage}
+                    disabled={inactiveCurrentPage === inactiveTotalPages}
+                    className={`relative inline-flex items-center rounded-r-md px-2 py-2 ${
+                      inactiveCurrentPage === inactiveTotalPages 
+                        ? 'text-gray-300 cursor-not-allowed' 
+                        : 'text-gray-500 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
+                    }`}
+                  >
+                    <span className="sr-only">Next</span>
+                    <ChevronRight className="h-5 w-5" aria-hidden="true" />
+                  </button>
+                </nav>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

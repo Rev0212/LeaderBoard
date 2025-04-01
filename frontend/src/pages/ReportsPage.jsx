@@ -137,7 +137,7 @@ const ReportsPage = ({ userData }) => {
         detailedStudentPerformance: advancedData[0].status === 'fulfilled' && advancedData[0].value.success 
           ? advancedData[0].value.data.performance || [] : [],
         inactiveStudents: advancedData[1].status === 'fulfilled' && advancedData[1].value.success 
-          ? advancedData[1].value.data.inactiveStudents || [] : [],
+          ? advancedData[1].value.data || [] : [],
         classParticipation: advancedData[2].status === 'fulfilled' && advancedData[2].value.success 
           ? advancedData[2].value.data.participation || [] : [],
         categoryPerformanceByClass: advancedData[3].status === 'fulfilled' && advancedData[3].value.success 
