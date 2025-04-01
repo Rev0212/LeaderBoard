@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Download, Loader } from 'lucide-react';
 import axios from 'axios';
 
-const ReportsDownloadSection = ({ fetchFromApi }) => {
+const ReportsDownloadSection = ({ fetchFromApi, yearFilter, departmentFilter }) => {
   const [loading, setLoading] = useState({});
   
   const downloadOptions = [
@@ -10,7 +10,8 @@ const ReportsDownloadSection = ({ fetchFromApi }) => {
     { id: 'class-performance', label: 'Class Performance Report' },
     { id: 'category-performance', label: 'Category Performance by Class Report' },
     { id: 'popular-categories', label: 'Popular Categories Report' },
-    { id: 'approval-rates', label: 'Approval Rates Report' }
+    { id: 'approval-rates', label: 'Approval Rates Report' },
+    { id: 'inactive-students', label: 'Inactive Students Report' }
   ];
 
   const handleDownload = async (reportType) => {
@@ -18,18 +19,29 @@ const ReportsDownloadSection = ({ fetchFromApi }) => {
       setLoading(prev => ({ ...prev, [reportType]: true }));
       
       // Create authenticated axios instance
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("teacher-token"); // Changed from "token" to "teacher-token"
       if (!token) {
         throw new Error("Authentication token missing");
       }
       
+      // Prepare query parameters
+      const params = {};
+      if (yearFilter) params.year = yearFilter;
+      if (departmentFilter) params.department = departmentFilter;
+      
+      console.log(`Downloading ${reportType} with params:`, params);
+      
       // We need to use direct axios with blob for downloads
-      const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/reports/download/${reportType}`, {
-        responseType: 'blob',
-        headers: {
-          Authorization: `Bearer ${token}`
+      const response = await axios.get(
+        `${import.meta.env.VITE_BASE_URL}/reports/download/${reportType}`, 
+        {
+          responseType: 'blob',
+          headers: {
+            Authorization: `Bearer ${token}`
+          },
+          params: params // Include filters in the request
         }
-      });
+      );
       
       // Create blob and trigger download
       const contentType = response.headers['content-type'] || 'text/csv';
@@ -49,7 +61,8 @@ const ReportsDownloadSection = ({ fetchFromApi }) => {
       // Better error handling
       let errorMessage = 'Failed to download report';
       if (error.response) {
-        errorMessage = error.response.data?.message || `Error: ${error.response.status}`;
+        console.error('Response status:', error.response.status);
+        errorMessage = `Error (${error.response.status}): The server couldn't process this request`;
       } else if (error.message) {
         errorMessage = error.message;
       }
