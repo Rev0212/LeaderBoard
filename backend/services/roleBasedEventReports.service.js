@@ -266,7 +266,7 @@ class RoleBasedEventReportsService {
       
       // Convert student IDs to ObjectIds
       const accessibleStudentIds = Array.from(studentClassMap.keys()).map(id => 
-        mongoose.Types.ObjectId(id)
+        new mongoose.Types.ObjectId(id)  // Fixed with 'new' keyword
       );
       
       // If no students found, return empty array
