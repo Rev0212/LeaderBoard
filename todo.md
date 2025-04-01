@@ -70,9 +70,9 @@ Revanth A Observations
 Apply Similar Updates to All Report Methods
 You'll need to apply the department filtering approach to all other report methods:
 
-getTopStudents
-getPopularCategories
-getClassPerformance
+<!-- getTopStudents -->
+<!-- getPopularCategories -->
+<!-- getClassPerformance -->
 getApprovalRates
 getCategoryPerformanceByClass
 getTrends

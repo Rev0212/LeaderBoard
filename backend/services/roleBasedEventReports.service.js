@@ -139,9 +139,9 @@ class RoleBasedEventReportsService {
       if (filters.specificClassId) {
         // Looking for a specific class
         classQuery._id = filters.specificClassId;
-      } else if (filters.accessibleClassIds && filters.accessibleClassIds.length > 0) {
+      } else if (filters.classIds && filters.classIds.length > 0) {
         // Filter to role-accessible classes
-        classQuery._id = { $in: filters.accessibleClassIds };
+        classQuery._id = { $in: filters.classIds };
       }
       
       // Apply year filter if provided
@@ -153,6 +153,7 @@ class RoleBasedEventReportsService {
       // Apply department filter if provided
       if (filters.department) {
         classQuery.department = filters.department;
+        console.log(`Filtering classes by department: ${filters.department}`);
       }
       
       console.log('Class query:', JSON.stringify(classQuery));
@@ -161,10 +162,55 @@ class RoleBasedEventReportsService {
       const classes = await Class.find(classQuery).lean();
       console.log(`Found ${classes.length} classes matching criteria`);
       
-      // Continue with the rest of your method...
+      // If no classes found, return empty map
+      if (classes.length === 0) {
+        return new Map();
+      }
+      
+      // Get class IDs
+      const classIds = classes.map(c => c._id);
+      
+      // Create a map of classId -> className for reference
+      const classNameMap = classes.reduce((map, cls) => {
+        map[cls._id.toString()] = cls.className;
+        return map;
+      }, {});
+      
+      // Find students in those classes
+      const studentQuery = {
+        $or: [
+          { 'currentClass.ref': { $in: classIds } },
+          { 'class': { $in: classIds } }
+        ]
+      };
+      
+      // Apply department filter if provided
+      if (filters.department) {
+        studentQuery.department = filters.department;
+        console.log(`Filtering students by department: ${filters.department}`);
+      }
+      
+      const students = await Student.find(studentQuery)
+        .select('_id currentClass class')
+        .lean();
+      
+      console.log(`Found ${students.length} students in these classes`);
+      
+      // Create map of student ID to class name
+      const studentClassMap = new Map();
+      
+      students.forEach(student => {
+        const classId = student.currentClass?.ref || student.class;
+        if (classId) {
+          const className = classNameMap[classId.toString()] || "Unknown";
+          studentClassMap.set(student._id.toString(), className);
+        }
+      });
+      
+      return studentClassMap;
     } catch (error) {
       console.error('Error getting student-class map:', error);
-      return [];
+      return new Map();
     }
   }
 
@@ -300,13 +346,21 @@ class RoleBasedEventReportsService {
       // Get class IDs
       const classIds = classes.map(c => c._id);
       
-      // Find students in those classes
-      const students = await Student.find({
+      // Find students in those classes with department filter if provided
+      const studentQuery = {
         $or: [
           { 'currentClass.ref': { $in: classIds } },
           { 'class': { $in: classIds } }
         ]
-      }).select('_id').lean();
+      };
+      
+      // Apply department filter if provided
+      if (userFilters.department) {
+        studentQuery.department = userFilters.department;
+        console.log(`Filtering students by department: ${userFilters.department}`);
+      }
+      
+      const students = await Student.find(studentQuery).select('_id').lean();
       
       const studentIds = students.map(s => s._id);
       
@@ -315,13 +369,31 @@ class RoleBasedEventReportsService {
         return [];
       }
       
+      // Build match condition for events
+      const matchCondition = {
+        submittedBy: { $in: studentIds },
+        status: 'Approved'
+      };
+      
+      // Apply department filter to events if provided
+      if (userFilters.department) {
+        matchCondition.department = userFilters.department;
+        console.log(`Filtering events by department: ${userFilters.department}`);
+      }
+      
+      // Apply date range filter if provided
+      if (userFilters.startDate && userFilters.endDate) {
+        matchCondition.createdAt = {
+          $gte: new Date(userFilters.startDate),
+          $lte: new Date(userFilters.endDate)
+        };
+        console.log(`Filtering events by date range: ${userFilters.startDate} to ${userFilters.endDate}`);
+      }
+      
       // Find approved events submitted by these students
       const categoryAggregation = await Event.aggregate([
         {
-          $match: {
-            submittedBy: { $in: studentIds },
-            status: 'Approved'
-          }
+          $match: matchCondition
         },
         {
           $group: {
@@ -387,60 +459,132 @@ class RoleBasedEventReportsService {
         return [];
       }
       
-      // Create a map of classId -> className for reference
-      const classMap = classes.reduce((map, cls) => {
-        map[cls._id.toString()] = cls.className;
-        return map;
-      }, {});
-      
-      // Initialize performance data for each class
-      const classPerformance = classes.map(cls => ({
-        className: cls.className,
-        totalPoints: 0,
-        totalActivities: 0,
-        averagePoints: 0,
-        studentCount: 0
-      }));
-      
-      // Get class IDs
-      const classIds = classes.map(c => c._id);
-      
-      // Get students for each class and count them
-      for (const [index, cls] of classes.entries()) {
-        const students = await Student.find({
-          $or: [
-            { 'currentClass.ref': cls._id },
-            { 'class': cls._id }
-          ]
-        }).select('_id totalPoints').lean();
+      // Apply department filter to classes if provided
+      let filteredClasses = classes;
+      if (userFilters.department) {
+        filteredClasses = classes.filter(c => c.department === userFilters.department);
+        console.log(`Filtered classes by department: ${userFilters.department}, found ${filteredClasses.length} classes`);
         
-        classPerformance[index].studentCount = students.length;
-        
-        // Calculate total points from student records
-        const totalPoints = students.reduce((sum, student) => 
-          sum + (student.totalPoints || 0), 0);
-          
-        classPerformance[index].totalPoints = totalPoints;
-        
-        // Get event count by students in this class
-        const studentIds = students.map(s => s._id);
-        if (studentIds.length > 0) {
-          const activities = await Event.countDocuments({
-            submittedBy: { $in: studentIds },
-            status: 'Approved'
-          });
-          
-          classPerformance[index].totalActivities = activities;
-          
-          // Calculate average points per student (if there are students)
-          if (students.length > 0) {
-            classPerformance[index].averagePoints = Math.round(totalPoints / students.length);
-          }
+        if (filteredClasses.length === 0) {
+          return [];
         }
       }
       
-      // Sort by total points descending
-      return classPerformance.sort((a, b) => b.totalPoints - a.totalPoints);
+      // Get class IDs
+      const classIds = filteredClasses.map(c => c._id);
+      
+      // Find students in those classes
+      const studentQuery = {
+        $or: [
+          { 'currentClass.ref': { $in: classIds } },
+          { 'class': { $in: classIds } }
+        ]
+      };
+      
+      // Apply department filter to students if provided
+      if (userFilters.department) {
+        studentQuery.department = userFilters.department;
+        console.log(`Filtering students by department: ${userFilters.department}`);
+      }
+      
+      const students = await Student.find(studentQuery).select('_id currentClass class').lean();
+      
+      if (students.length === 0) {
+        console.log("No students found, returning empty result");
+        return [];
+      }
+      
+      // Group students by class
+      const studentsByClass = {};
+      students.forEach(student => {
+        const classId = (student.currentClass?.ref || student.class).toString();
+        if (!studentsByClass[classId]) {
+          studentsByClass[classId] = [];
+        }
+        studentsByClass[classId].push(student._id);
+      });
+      
+      // Create match condition for events
+      const matchCondition = {
+        status: 'Approved'
+      };
+      
+      // Apply date range filter if provided
+      if (userFilters.startDate && userFilters.endDate) {
+        matchCondition.createdAt = {
+          $gte: new Date(userFilters.startDate),
+          $lte: new Date(userFilters.endDate)
+        };
+      }
+      
+      // Apply department filter to events if provided
+      if (userFilters.department) {
+        matchCondition.department = userFilters.department;
+        console.log(`Filtering events by department: ${userFilters.department}`);
+      }
+      
+      // Prepare result array
+      const result = [];
+      
+      // Process each class
+      for (const classId of Object.keys(studentsByClass)) {
+        const classStudents = studentsByClass[classId];
+        const classObj = filteredClasses.find(c => c._id.toString() === classId);
+        
+        if (!classObj) continue;
+        
+        // Clone match condition and add student filter
+        const classMatchCondition = { 
+          ...matchCondition,
+          submittedBy: { $in: classStudents }
+        };
+        
+        // Get event data for this class
+        const classStats = await Event.aggregate([
+          { $match: classMatchCondition },
+          { $group: {
+              _id: null,
+              totalEvents: { $sum: 1 },
+              totalPoints: { $sum: "$pointsEarned" },
+              avgPoints: { $avg: "$pointsEarned" },
+              categoryCount: { $addToSet: "$category" }
+            }
+          }
+        ]);
+        
+        // Calculate the metrics
+        const totalStudents = classStudents.length;
+        const totalEvents = classStats.length > 0 ? classStats[0].totalEvents : 0;
+        const totalPoints = classStats.length > 0 ? classStats[0].totalPoints : 0;
+        
+        // Format class performance data
+        const classData = {
+          classId: classId,
+          className: classObj.className || 'Unknown',
+          department: classObj.department || 'Unknown',
+          year: classObj.year || 'Unknown',
+          section: classObj.section || 'Unknown',
+          totalStudents: totalStudents,
+          studentCount: totalStudents, // Alias for frontend
+          totalEvents: totalEvents,
+          activityCount: totalEvents, // Alias for frontend
+          totalActivities: totalEvents, // Add missing alias that matches frontend component
+          totalPoints: totalPoints,
+          avgPointsPerStudent: totalStudents > 0 && classStats.length > 0 ? 
+            Math.round((totalPoints / totalStudents) * 10) / 10 : 0,
+          avgPointsPerEvent: totalEvents > 0 ? 
+            Math.round((totalPoints / totalEvents) * 10) / 10 : 0,
+          averagePoints: totalStudents > 0 ? 
+            Math.round((totalPoints / totalStudents) * 10) / 10 : 0, // Add alias for frontend table
+          uniqueCategories: classStats.length > 0 ? classStats[0].categoryCount.length : 0
+        };
+        
+        result.push(classData);
+      }
+      
+      // Sort by total points (descending)
+      return result.sort((a, b) => b.totalPoints - a.totalPoints);
+      
     } catch (error) {
       console.error('Error getting class performance:', error);
       return [];
@@ -458,33 +602,82 @@ class RoleBasedEventReportsService {
       
       if (classes.length === 0) {
         console.log("No classes found, returning empty result");
-        return [];
+        return [
+          { status: 'Approved', count: 0, percentage: 0 },
+          { status: 'Pending', count: 0, percentage: 0 },
+          { status: 'Rejected', count: 0, percentage: 0 }
+        ];
+      }
+      
+      // Apply department filter to classes if provided
+      let filteredClasses = classes;
+      if (userFilters.department) {
+        filteredClasses = classes.filter(c => c.department === userFilters.department);
+        console.log(`Filtered classes by department: ${userFilters.department}, found ${filteredClasses.length} classes`);
+        
+        if (filteredClasses.length === 0) {
+          return [
+            { status: 'Approved', count: 0, percentage: 0 },
+            { status: 'Pending', count: 0, percentage: 0 },
+            { status: 'Rejected', count: 0, percentage: 0 }
+          ];
+        }
       }
       
       // Get class IDs
-      const classIds = classes.map(c => c._id);
+      const classIds = filteredClasses.map(c => c._id);
       
       // Find students in those classes
-      const students = await Student.find({
+      const studentQuery = {
         $or: [
           { 'currentClass.ref': { $in: classIds } },
           { 'class': { $in: classIds } }
         ]
-      }).select('_id').lean();
+      };
+      
+      // Apply department filter to students if provided
+      if (userFilters.department) {
+        studentQuery.department = userFilters.department;
+        console.log(`Filtering students by department: ${userFilters.department}`);
+      }
+      
+      const students = await Student.find(studentQuery).select('_id').lean();
       
       const studentIds = students.map(s => s._id);
       
       if (studentIds.length === 0) {
         console.log("No students found, returning empty result");
-        return [];
+        return [
+          { status: 'Approved', count: 0, percentage: 0 },
+          { status: 'Pending', count: 0, percentage: 0 },
+          { status: 'Rejected', count: 0, percentage: 0 }
+        ];
+      }
+      
+      // Build match condition for events
+      const matchCondition = {
+        submittedBy: { $in: studentIds }
+      };
+      
+      // Apply department filter to events if provided
+      if (userFilters.department) {
+        matchCondition.department = userFilters.department;
+        console.log(`Filtering events by department: ${userFilters.department}`);
+      }
+      
+      // Apply date range filter if provided
+      if (userFilters.startDate && userFilters.endDate) {
+        matchCondition.createdAt = {
+          $gte: new Date(userFilters.startDate),
+          $lte: new Date(userFilters.endDate)
+        };
+        console.log(`Filtering events by date range: ${userFilters.startDate} to ${userFilters.endDate}`);
       }
       
       // Get status counts for events
       const statusCounts = await Event.aggregate([
         {
-          $match: {
-            submittedBy: { $in: studentIds }
-          }
+          $match: matchCondition
         },
         {
           $group: {
@@ -507,15 +700,6 @@ class RoleBasedEventReportsService {
       result.forEach(item => {
         item.percentage = total > 0 ? Math.round((item.count / total) * 100) : 0;
       });
-      
-      // If no data found, return placeholder
-      if (result.length === 0) {
-        return [
-          { status: 'Approved', count: 0, percentage: 0 },
-          { status: 'Pending', count: 0, percentage: 0 },
-          { status: 'Rejected', count: 0, percentage: 0 }
-        ];
-      }
       
       // Ensure all statuses are present
       const statuses = ['Approved', 'Pending', 'Rejected'];
@@ -811,30 +995,73 @@ class RoleBasedEventReportsService {
         return [];
       }
       
+      // Apply department filter to classes if provided
+      let filteredClasses = classes;
+      if (userFilters.department) {
+        filteredClasses = classes.filter(c => c.department === userFilters.department);
+        console.log(`Filtered classes by department: ${userFilters.department}, found ${filteredClasses.length} classes`);
+        
+        if (filteredClasses.length === 0) {
+          return [];
+        }
+      }
+      
       // Create result structure
       const result = [];
       
       // Process each class
-      for (const cls of classes) {
+      for (const cls of filteredClasses) {
         // Find students in this class
-        const students = await Student.find({
+        const studentQuery = {
           $or: [
             { 'currentClass.ref': cls._id },
             { 'class': cls._id }
           ]
-        }).select('_id').lean();
+        };
+        
+        // Apply department filter to students if provided
+        if (userFilters.department) {
+          studentQuery.department = userFilters.department;
+          console.log(`Filtering students by department: ${userFilters.department}`);
+        }
+        
+        const students = await Student.find(studentQuery).select('_id').lean();
         
         const studentIds = students.map(s => s._id);
         
         if (studentIds.length === 0) continue;
         
+        // Create match condition for events
+        const matchCondition = {
+          submittedBy: { $in: studentIds },
+          status: 'Approved'
+        };
+        
+        // Apply department filter to events if provided
+        if (userFilters.department) {
+          matchCondition.department = userFilters.department;
+          console.log(`Filtering events by department: ${userFilters.department}`);
+        }
+        
+        // Apply category filter if provided
+        if (userFilters.category) {
+          matchCondition.category = userFilters.category;
+          console.log(`Filtering events by category: ${userFilters.category}`);
+        }
+        
+        // Apply date range filter if provided
+        if (userFilters.startDate && userFilters.endDate) {
+          matchCondition.createdAt = {
+            $gte: new Date(userFilters.startDate),
+            $lte: new Date(userFilters.endDate)
+          };
+          console.log(`Filtering events by date range: ${userFilters.startDate} to ${userFilters.endDate}`);
+        }
+        
         // Get category breakdown for this class
         const categoryBreakdown = await Event.aggregate([
           {
-            $match: {
-              submittedBy: { $in: studentIds },
-              status: 'Approved'
-            }
+            $match: matchCondition
           },
           {
             $group: {
@@ -859,6 +1086,8 @@ class RoleBasedEventReportsService {
         // Add to result
         result.push({
           className: cls.className,
+          department: cls.department,
+          year: cls.year,
           categories: categoryBreakdown
         });
       }
