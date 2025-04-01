@@ -1,4 +1,4 @@
-Create the modal to show certificate new the pdf proof 
+<!-- Create the modal to show certificate new the pdf proof  -->
 
 
 <!-- #teacher profile -> class assigned should be section name -->
