@@ -6,6 +6,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { body } = require('express-validator'); // Add this import
+const { createProfileUploadMiddleware } = require('../middlewares/profileImageUpload');
 
 // Ensure uploads directory exists
 const uploadPath = path.join(__dirname, '../uploads');
@@ -72,9 +73,11 @@ router.get('/department-teachers', authMiddleware.authHOD, teacherController.get
 // Academic Advisor specific routes
 router.get('/advised-classes', authMiddleware.authAcademicAdvisor, teacherController.getAdvisedClasses);
 
-
 router.get('/verify', authMiddleware.authTeacher, (req, res) => {
     return res.status(200).json({ isAuthenticated: true });
-  });
-  
+});
+
+router.post('/upload-profile-image', authMiddleware.authTeacher, createProfileUploadMiddleware('teacher'), teacherController.uploadProfileImage);
+router.put('/update-profile-image', authMiddleware.authTeacher, teacherController.updateProfileImage);
+
 module.exports = router;

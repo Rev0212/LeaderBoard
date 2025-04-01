@@ -291,17 +291,60 @@ module.exports.getStudentProfile = async (req, res, next) => {
     }
 };
 
-module.exports.updateStudentProfile = async (req, res, next) => { 
+module.exports.uploadProfileImage = async (req, res) => {
     try {
-        const { registerNo, profileImg } = req.body;
-        console.log(registerNo, profileImg);
-        const student = await studentService.addProfileImg(registerNo, profileImg);
-
-        res.status(200).json(student);
+      if (!req.file) {
+        return res.status(400).json({
+          error: 'No image file provided',
+        });
+      }
+  
+      // Send the filename and path back to the client
+      res.status(200).json({
+        message: 'Profile image uploaded successfully',
+        fileName: req.file.filename,
+        filePath: `/uploads/profile/student/${req.file.filename}`
+      });
     } catch (error) {
-        next(error);
+      res.status(500).json({
+        error: 'Profile image upload failed',
+        details: error.message,
+      });
     }
-}
+  };
+
+module.exports.updateProfileImage = async (req, res) => {
+    try {
+      const { profileImg } = req.body;
+      
+      // Update student profile with the new image path
+      const updatedStudent = await studentModel.findByIdAndUpdate(
+        req.student._id, 
+        { profileImg }, 
+        { new: true }
+      );
+  
+      if (!updatedStudent) {
+        return res.status(404).json({ 
+          success: false,
+          message: 'Student not found' 
+        });
+      }
+  
+      res.status(200).json({
+        success: true,
+        message: 'Profile image updated successfully',
+        student: updatedStudent
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: 'Failed to update profile image',
+        details: error.message
+      });
+    }
+  };
+
 
 module.exports.changePassword = async (req, res, next) => {
     try {

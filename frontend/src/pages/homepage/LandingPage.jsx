@@ -102,7 +102,7 @@ const LandingPage = () => {
                 </nav>
 
                 {/* Hero Section */}
-                <div className="flex-1 flex flex-col justify-center items-center text-center w-full min-h-[50vh]">
+                <div className="flex-1 flex flex-col justify-center items-center text-center w-full pt-20">
                     <div className="w-full">
                         <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 via-yellow-400 to-yellow-600 whitespace-nowrap leading-normal">
                             PRO-RANK: POLICY BASED RANKING SYSTEM

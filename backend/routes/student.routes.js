@@ -3,6 +3,7 @@ const router = express.Router();
 const {body} = require("express-validator")
 const studentController = require('../controllers/student.controller')
 const authMiddleware = require('../middlewares/auth.middlewares')
+const { createProfileUploadMiddleware } = require('../middlewares/profileImageUpload');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -65,8 +66,6 @@ router.post('/bulk-register',
     studentController.registerStudentsBulk
 );
 
-router.put('/add-profile-img', studentController.updateStudentProfile);
-
 router.put('/change-password',authMiddleware.authStudent, studentController.changePassword);
 
 router.get('/logout', authMiddleware.authStudent, studentController.logoutStudent);
@@ -77,3 +76,6 @@ router.get('/events/:id',studentController.getstudentEventDetails);
 router.get('/events-history', authMiddleware.authStudent, studentController.getAllStudentEvents);
 
 router.get('/current-rank', authMiddleware.authStudent, studentController.getCurrentRank);
+
+router.post('/upload-profile-image', authMiddleware.authStudent, createProfileUploadMiddleware('student'), studentController.uploadProfileImage);
+router.put('/update-profile-image', authMiddleware.authStudent, studentController.updateProfileImage);
