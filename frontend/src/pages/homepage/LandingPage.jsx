@@ -63,7 +63,7 @@ const LandingPage = () => {
             {/* Main Content */}
             <div className="relative z-40 flex flex-col min-h-screen w-full">
                 {/* Navbar with reduced height to 75px */}
-                <nav className="h-75"> 
+                <nav className="h-[75px]"> 
                     <div className="w-full px-6">
                         <div className="flex justify-between items-center h-[75px]">
                             <div className="flex-shrink-0">
