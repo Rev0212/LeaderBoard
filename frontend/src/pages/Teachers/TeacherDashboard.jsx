@@ -182,7 +182,7 @@ const TeacherDashboard = () => {
   const navigate = useNavigate();
 
   const handleLogoutClick = async () => { 
-    const token = localStorage.getItem("token"); 
+    const token = localStorage.getItem("teacher-token"); 
     try{
       const response = await axios.get(`${VITE_BASE_URL}/teacher/logout`,{
         headers: {
@@ -517,7 +517,7 @@ const TeacherDashboard = () => {
             </button>
             <button
               onClick={handleLogoutClick}
-              className="flex items-center gap-2 p-3 rounded-lg hover:bg-red-100 transition-colors"
+              className="flex items-center w-full p-3 bg-red-500 text-white mt-3 rounded-lg hover:bg-red-600"
             >
               <LogOut size={18} />
               Logout
