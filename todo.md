@@ -39,14 +39,13 @@ Revanth A Observation In Reports Page:
 
 1. Need to check the download of Reports
 <!-- 2. Need to check the inactive students -->
-3. There are class Name Coming 2 Times Need to fix that
-4. Class Activity Summary Table Department Column must be removed
-5. Instead of Drop Down need to create card (at Last)
+<!-- 3. There are class Name Coming 2 Times Need to fix that -->
+<!-- 4. Class Activity Summary Table Department Column must be removed -->
 
 Revanth A Observation In HoD Dashboard
 
 1. Need to optimise it for mobile view
-2. Need year filter in All Classses in all classes overview
+<!-- 2. Need year filter in All Classses in all classes overview -->
 <!-- 3. The Points is not comming for students in (Class View) -->
 4. Add pagination
 
@@ -66,14 +65,14 @@ Revanth A Observations
 
 
 <!-- inactive students UI -->
-
+<!-- 
 Apply Similar Updates to All Report Methods
-You'll need to apply the department filtering approach to all other report methods:
+You'll need to apply the department filtering approach to all other report methods: -->
 
 <!-- getTopStudents -->
 <!-- getPopularCategories -->
 <!-- getClassPerformance -->
-getApprovalRates
+<!-- getApprovalRates
 getCategoryPerformanceByClass
 getTrends
-getClassParticipation
+getClassParticipation -->

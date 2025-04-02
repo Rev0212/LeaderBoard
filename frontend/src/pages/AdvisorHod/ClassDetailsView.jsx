@@ -14,6 +14,16 @@ const ClassDetailsView = () => {
 
   const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
 
+  const handleBack = () => {
+    const referrer = document.referrer;
+    
+    if (referrer.includes('advisor-hod-dashboard')) {
+      navigate('/advisor-hod-dashboard');
+    } else {
+      navigate('/advisor-hod-dashboard', { state: { returnToClasses: true } });
+    }
+  };
+
   useEffect(() => {
     const fetchClassDetails = async () => {
       try {
@@ -64,7 +74,7 @@ const ClassDetailsView = () => {
   }, [VITE_BASE_URL, classId]);
 
   const handleBackToClasses = () => {
-    navigate("/advisor-hod-dashboard");
+    navigate(-1);
   };
 
   const handleExportCSV = () => {
@@ -126,7 +136,7 @@ const ClassDetailsView = () => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center">
             <button 
-              onClick={() => navigate('/advisor-hod-dashboard')}
+              onClick={handleBack}
               className="mr-3 text-gray-600 hover:text-gray-900"
             >
               <ArrowLeft size={20} />

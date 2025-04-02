@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import {
   Building,
@@ -29,6 +29,7 @@ const AdvisorHodDashboard = () => {
 
   const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const handleResize = () => {
@@ -109,6 +110,14 @@ const AdvisorHodDashboard = () => {
 
     fetchUserData();
   }, [VITE_BASE_URL]);
+
+  useEffect(() => {
+    if (location.state?.returnToClasses) {
+      setCurrentView('classes');
+      // Clean up the state
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
 
   // Modified navigation handlers with automatic sidebar closing
   const handleViewChange = (view) => {
