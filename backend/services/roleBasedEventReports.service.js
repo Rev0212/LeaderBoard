@@ -230,21 +230,34 @@ class RoleBasedEventReportsService {
         query.year = parseInt(yearFilter);
       }
       
-      // Apply department filter for HOD/faculty
+      // Apply role-specific filters
       if (teacher.role === 'HOD' && teacher.department) {
+        // HOD sees all classes in their department
         query.department = teacher.department;
+      } 
+      else if (teacher.role === 'Academic Advisor') {
+        // Academic Advisor sees only classes they advise
+        query.academicAdvisors = teacher._id;
+        
+        // Academic Advisors are still restricted to their department
+        if (teacher.department) {
+          query.department = teacher.department;
+        }
       }
-      
-      // Apply class restrictions for faculty
-      if (teacher.role === 'faculty' && teacher.classes && teacher.classes.length > 0) {
+      else if ((teacher.role === 'Faculty' || teacher.role === 'faculty') && 
+               teacher.classes && teacher.classes.length > 0) {
+        // Faculty sees only their assigned classes
         query._id = { $in: teacher.classes };
       }
+      
+      console.log(`Class query for ${teacher.role}:`, query);
       
       // Get classes
       const classes = await Class.find(query)
         .sort({ year: 1, section: 1, department: 1 })
         .lean();
       
+      console.log(`Found ${classes.length} classes for ${teacher.role}`);
       return classes;
     } catch (error) {
       console.error('Error getting available classes:', error);

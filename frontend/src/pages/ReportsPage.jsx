@@ -160,6 +160,21 @@ const ReportsPage = ({ userData }) => {
     fetchReportsData();
   }, [navigate, userData?.role]);
 
+  // Determine if the user is an Academic Advisor
+  const isAcademicAdvisor = userData?.role === "Academic Advisor";
+
+  // Get the advisor's assigned year (assuming classes contains the advisor's classes)
+  const advisorYear = isAcademicAdvisor && classes.length > 0 ? 
+    classes[0].year : null;
+
+  // UseEffect to set the year filter when component loads
+  useEffect(() => {
+    if (isAcademicAdvisor && advisorYear) {
+      // Set the year filter to the advisor's assigned year
+      setYearFilter(advisorYear.toString());
+    }
+  }, [isAcademicAdvisor, advisorYear]);
+
   // Function to render the active section
   const renderContent = () => {
     if (loading) {
@@ -201,6 +216,21 @@ const ReportsPage = ({ userData }) => {
       default:
         return <div>Select a section from the sidebar</div>;
     }
+  };
+
+  // Modify the year filter change handler
+  const handleYearFilterChange = (e) => {
+    const selectedYear = e.target.value;
+    
+    // For Academic Advisors, prevent changing the year
+    if (isAcademicAdvisor && selectedYear !== advisorYear.toString()) {
+      toast.error("As an Academic Advisor, you can only view reports for your assigned year.");
+      return;
+    }
+    
+    // For other roles, allow year changes
+    setYearFilter(selectedYear);
+    // Additional code to handle filter change...
   };
 
   return (
@@ -255,8 +285,9 @@ const ReportsPage = ({ userData }) => {
               <Filter size={18} className="text-gray-500" />
               <select
                 value={yearFilter}
-                onChange={(e) => setYearFilter(e.target.value)}
-                className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onChange={handleYearFilterChange}
+                disabled={isAcademicAdvisor}
+                className={`${isAcademicAdvisor ? 'cursor-not-allowed opacity-75' : ''} p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
               >
                 <option value="1">1st Year</option>
                 <option value="2">2nd Year</option>
@@ -265,6 +296,12 @@ const ReportsPage = ({ userData }) => {
                 <option value="5">5th Year</option>
               </select>
             </div>
+            {/* Add a helper text for Academic Advisors */}
+            {isAcademicAdvisor && (
+              <p className="text-xs text-gray-500 mt-1">
+                As an Academic Advisor, you can only view reports for your assigned year.
+              </p>
+            )}
           </div>
         </div>
 
