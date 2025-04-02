@@ -308,6 +308,30 @@ const TeacherDashboard = () => {
     navigate('/teacher-upcoming-events');
   };
 
+const getInactiveStudentCount = () => {
+  if (!teacherData?.classes || !events.length) return 0;
+  
+  // Get total student count from classes
+  const totalStudents = teacherData.classes.reduce((total, cls) => 
+    total + (cls.students?.length || 0), 0);
+  
+  // Get unique active students (who have submitted events)
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  
+  // Get unique student IDs with activity in the last 30 days
+  const activeStudentIds = new Set();
+  events.forEach(event => {
+    const eventDate = new Date(event.timestamp || event.createdAt || event.date);
+    if (eventDate >= thirtyDaysAgo) {
+      activeStudentIds.add(event.submittedBy._id);
+    }
+  });
+  
+  // Return the difference (inactive students)
+  return totalStudents - activeStudentIds.size;
+};
+
   const renderContent = () => {
     if (currentView === "profile") {
       return (
@@ -355,45 +379,80 @@ const TeacherDashboard = () => {
       <div className="p-4 lg:p-8">
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 mb-6 lg:mb-8">
-          {/* Department Info */}
-          <div className="bg-white p-4 lg:p-6 rounded-lg shadow-md">
+          {/* Pending Reviews Card */}
+          <div className="bg-white p-4 lg:p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
             <div className="flex items-center justify-between mb-3 lg:mb-4">
-              <h3 className="text-base lg:text-lg font-semibold text-gray-700">Department</h3>
-              <Building className="h-5 w-5 lg:h-6 lg:w-6 text-blue-500" />
+              <h3 className="text-base lg:text-lg font-semibold text-gray-700">Pending Reviews</h3>
+              <Bell className="h-5 w-5 lg:h-6 lg:w-6 text-blue-500" />
             </div>
             <p className="text-2xl lg:text-3xl font-bold text-gray-900">
-              {teacherData?.department || "N/A"}
+              {events.filter(event => event.status === "Pending").length}
             </p>
-            <p className="text-xs lg:text-sm text-gray-500 mt-2">Current Department</p>
+            <div className="flex justify-between items-center mt-2">
+              <p className="text-xs lg:text-sm text-gray-500">Awaiting your feedback</p>
+              {events.filter(event => event.status === "Pending").length > 0 && (
+                <button 
+                  onClick={() => document.getElementById('events-section').scrollIntoView({ behavior: 'smooth' })}
+                  className="text-sm text-blue-500 hover:text-blue-700 font-medium"
+                >
+                  Review Now →
+                </button>
+              )}
+            </div>
           </div>
         
-          {/* Role Info */}
-          <div className="bg-white p-4 lg:p-6 rounded-lg shadow-md">
+          {/* Class Participation Card */}
+          <div className="bg-white p-4 lg:p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
             <div className="flex items-center justify-between mb-3 lg:mb-4">
-              <h3 className="text-base lg:text-lg font-semibold text-gray-700">Role</h3>
-              <User className="h-5 w-5 lg:h-6 lg:w-6 text-green-500" />
+              <h3 className="text-base lg:text-lg font-semibold text-gray-700">Active Students</h3>
+              <Users className="h-5 w-5 lg:h-6 lg:w-6 text-green-500" />
             </div>
             <p className="text-2xl lg:text-3xl font-bold text-gray-900">
-              {teacherData?.role || "N/A"}
+              {teacherData?.classes?.reduce((total, cls) => total + (cls.students?.length || 0), 0) > 0 
+                ? `${Math.round((events.reduce((unique, event) => {
+                    unique.add(event.submittedBy._id);
+                    return unique;
+                  }, new Set()).size / teacherData?.classes?.reduce((total, cls) => total + (cls.students?.length || 0), 0)) * 100)}%` 
+                : "N/A"
+              }
             </p>
-            <p className="text-xs lg:text-sm text-gray-500 mt-2">Faculty Role</p>
+            <div className="flex justify-between items-center mt-2">
+              <p className="text-xs lg:text-sm text-gray-500">Students with submissions</p>
+              <button 
+                onClick={() => setCurrentView("classList")}
+                className="text-sm text-blue-500 hover:text-blue-700 font-medium"
+              >
+                View Class →
+              </button>
+            </div>
           </div>
         
-          {/* Register Number */}
-          <div className="bg-white p-4 lg:p-6 rounded-lg shadow-md">
+          {/* Student Engagement Card */}
+          <div className="bg-white p-4 lg:p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
             <div className="flex items-center justify-between mb-3 lg:mb-4">
-              <h3 className="text-base lg:text-lg font-semibold text-gray-700">Register No.</h3>
-              <Hash className="h-5 w-5 lg:h-6 lg:w-6 text-purple-500" />
+              <h3 className="text-base lg:text-lg font-semibold text-gray-700">Inactive Students</h3>
+              <Calendar className="h-5 w-5 lg:h-6 lg:w-6 text-red-500" />
             </div>
+            {/* Calculate inactive students (no activity in 30+ days) */}
             <p className="text-2xl lg:text-3xl font-bold text-gray-900">
-              {teacherData?.registerNo || "N/A"}
+              {getInactiveStudentCount()}
             </p>
-            <p className="text-xs lg:text-sm text-gray-500 mt-2">Faculty ID</p>
+            <div className="flex justify-between items-center mt-2">
+              <p className="text-xs lg:text-sm text-gray-500">No activity in 30+ days</p>
+              {getInactiveStudentCount() > 0 && (
+                <button 
+                  onClick={() => setCurrentView("facultyReports")}
+                  className="text-sm text-blue-500 hover:text-blue-700 font-medium"
+                >
+                  View Reports →
+                </button>
+              )}
+            </div>
           </div>
         </div>
   
         {/* Events Section */}
-        <div className="bg-white rounded-lg shadow-md">
+        <div id="events-section" className="bg-white rounded-lg shadow-md">
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-center gap-2">
               <Bell className="h-6 w-6 text-blue-600" />
