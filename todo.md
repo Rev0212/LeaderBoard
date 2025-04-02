@@ -82,3 +82,9 @@ getClassParticipation -->
 
 
 acadmic advisor report page year filter remove (if adivisor remove the filter if hod keep the filter)
+
+
+now hod year filter is not working 
+
+only when clicked on that its coming
+    reason first it pushes the assgined class report to report page so all reports come in report page need to change that behaviour
