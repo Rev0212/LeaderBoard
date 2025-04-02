@@ -76,3 +76,10 @@ You'll need to apply the department filtering approach to all other report metho
 getCategoryPerformanceByClass
 getTrends
 getClassParticipation -->
+
+
+
+
+
+acadmic advisor report is not working
+shows whole years data without department filter

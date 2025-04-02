@@ -35,6 +35,7 @@ const upcomingEventRoutes = require('./routes/upcomingEvent.routes');
 const assignmentRoutes = require('./routes/assignment.routes');
 const roleBasedEventReportsRoutes = require('./routes/roleBasedEventReports.routes');
 const feedbackRoutes = require('./routes/feedback.routes');
+const facultyReportRoutes = require('./routes/facultyReport.routes');
 
 // Mount routes
 app.use('/student', studentRoutes);
@@ -47,6 +48,7 @@ app.use('/upcoming-events', upcomingEventRoutes);
 app.use('/assignment', assignmentRoutes);
 app.use('/reports', roleBasedEventReportsRoutes);
 app.use('/feedback', feedbackRoutes);
+app.use('/faculty-reports', facultyReportRoutes);
 
 app.get('/', (req, res) => {
     res.send('Server is running!');

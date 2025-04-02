@@ -12,10 +12,12 @@ import {
   BarChart,
   Calendar,
   ExternalLink,
+  BarChart3,
 } from "lucide-react";
 import TeacherProfile from "../../components/TeacherProfile";
 import ClassDetails from "../../components/ClassList";
 import UpcomingEvents from "../UpcomingEvents";
+import FacultyReportPage from "./FacultyReportPage";
 
 // Format event date helper function
 const formatEventDate = (event) => {
@@ -302,10 +304,6 @@ const TeacherDashboard = () => {
     setSelectedImage(null);
   };
 
-  const handleViewReports = () => {
-    navigate('/reports');
-  };
-
   const handleViewAllUpcomingEvents = () => {
     navigate('/teacher-upcoming-events');
   };
@@ -340,6 +338,14 @@ const TeacherDashboard = () => {
             showBackButton={false}
             title="Upcoming Events" 
           />
+        </div>
+      );
+    }
+
+    if (currentView === "facultyReports") {
+      return (
+        <div className="p-6">
+          <FacultyReportPage />
         </div>
       );
     }
@@ -499,11 +505,13 @@ const TeacherDashboard = () => {
               Class List
             </button>
             <button
-              onClick={handleViewReports}
-              className="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-100 transition-colors"
+              onClick={() => setCurrentView("facultyReports")}
+              className={`flex items-center gap-2 p-3 rounded-lg hover:bg-gray-100 transition-colors ${
+                currentView === "facultyReports" ? "bg-gray-100" : ""
+              }`}
             >
-              <BarChart size={18} />
-              Reports
+              <BarChart3 size={18} />
+              Faculty Reports
             </button>
             {/* Update this button to navigate directly to the new route */}
             <button
