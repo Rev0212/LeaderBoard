@@ -81,5 +81,4 @@ getClassParticipation -->
 
 
 
-acadmic advisor report is not working
-shows whole years data without department filter
+acadmic advisor report page year filter remove (if adivisor remove the filter if hod keep the filter)
