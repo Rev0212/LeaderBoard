@@ -278,7 +278,7 @@ class RoleBasedEventReportsService {
         }
       }
       
-      console.log(`Class query for ${teacher.role}:`, query);
+      // console.log(`Class query for ${teacher.role}:`, query);
       
       // Get classes
       const classes = await Class.find(query)
@@ -908,8 +908,8 @@ class RoleBasedEventReportsService {
       console.log(`Found ${filteredInactive.length} inactive students out of ${students.length} total`);
       
       // After calculating filteredInactive
-      console.log(`Final inactive students count: ${filteredInactive.length}`);
-      console.log(`First few inactive students:`, filteredInactive.slice(0, 3));
+      // console.log(`Final inactive students count: ${filteredInactive.length}`);
+      // console.log(`First few inactive students:`, filteredInactive.slice(0, 3));
       
       // Return the inactive students directly - don't wrap in an object
       return filteredInactive;
