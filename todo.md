@@ -81,8 +81,7 @@ getClassParticipation -->
 
 
 
-acadmic advisor report page year filter remove (if adivisor remove the filter if hod keep the filter)
-
+academic advisor report page year filter remove (if advisor remove the filter if hod keep the filter)
 
 now hod year filter is not working 
 
