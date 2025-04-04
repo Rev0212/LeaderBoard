@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   PieChart, BarChart2, Users, Download, Filter
 } from 'lucide-react';
+import { toast } from 'react-toastify'; // Add toast import if missing
 
 // Import section components - removed OverviewSection
 import CategoriesSection from '../components/reports/CategoriesSection';
@@ -14,9 +15,11 @@ import ReportsDownloadSection from '../components/reports/ReportsDownloadSection
 const ReportsPage = ({ userData }) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [yearFilter, setYearFilter] = useState("");
+  const [advisorYear, setAdvisorYear] = useState(null);
+  const isAcademicAdvisor = userData?.role === "Academic Advisor";
   const [error, setError] = useState(null);
   const [activeSection, setActiveSection] = useState('categories'); // Changed default to categories
-  const [yearFilter, setYearFilter] = useState('1');
   const [reportData, setReportData] = useState({
     availableClasses: [],
     topStudents: [],
@@ -160,6 +163,62 @@ const ReportsPage = ({ userData }) => {
     fetchReportsData();
   }, [navigate, userData?.role]);
 
+  // UseEffect to set the year filter when component loads
+  useEffect(() => {
+    if (isAcademicAdvisor && advisorYear) {
+      // Set the year filter to the advisor's assigned year
+      setYearFilter(advisorYear.toString());
+    }
+  }, [isAcademicAdvisor, advisorYear]);
+
+  // Detect advisor's assigned year when component loads
+  useEffect(() => {
+    const fetchAdvisorYear = async () => {
+      if (userData?.role === "Academic Advisor") {
+        try {
+          const token = localStorage.getItem("teacher-token");
+          // Use a dedicated API endpoint to just get the advisor's year
+          const response = await axios.get(
+            `${import.meta.env.VITE_BASE_URL}/reports/advisor-year`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          
+          if (response.data.success && response.data.year) {
+            // Set the year filter to the advisor's year
+            setYearFilter(response.data.year.toString());
+            setAdvisorYear(response.data.year);
+          }
+        } catch (error) {
+          console.error("Error fetching advisor's year:", error);
+          toast.error("Failed to determine your assigned year");
+        }
+      }
+    };
+    
+    fetchAdvisorYear();
+  }, [userData]);
+
+  // Add useEffect to detect advisor year from available classes
+  useEffect(() => {
+    // Only run this effect when classes are loaded and user is an Academic Advisor
+    if (isAcademicAdvisor && reportData.availableClasses && reportData.availableClasses.length > 0) {
+      // Extract year from classes (they should all be the same year for an advisor)
+      const year = reportData.availableClasses[0].year;
+      
+      console.log("Setting advisor year to:", year);
+      
+      // Set the advisor's year
+      setAdvisorYear(year);
+      
+      // Also update the year filter to match
+      setYearFilter(year.toString());
+    }
+  }, [reportData.availableClasses, isAcademicAdvisor]);
+
   // Function to render the active section
   const renderContent = () => {
     if (loading) {
@@ -201,6 +260,21 @@ const ReportsPage = ({ userData }) => {
       default:
         return <div>Select a section from the sidebar</div>;
     }
+  };
+
+  // Modify the year filter change handler
+  const handleYearFilterChange = (e) => {
+    const selectedYear = e.target.value;
+    
+    // For Academic Advisors, prevent changing the year
+    if (isAcademicAdvisor && advisorYear) {
+      if (parseInt(selectedYear) !== advisorYear) {
+        toast.error("As an Academic Advisor, you can only view reports for your assigned year");
+        return;
+      }
+    }
+    
+    setYearFilter(selectedYear);
   };
 
   return (
@@ -255,8 +329,9 @@ const ReportsPage = ({ userData }) => {
               <Filter size={18} className="text-gray-500" />
               <select
                 value={yearFilter}
-                onChange={(e) => setYearFilter(e.target.value)}
-                className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onChange={handleYearFilterChange}
+                disabled={isAcademicAdvisor}
+                className={`${isAcademicAdvisor ? 'cursor-not-allowed opacity-75' : ''} p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
               >
                 <option value="1">1st Year</option>
                 <option value="2">2nd Year</option>
@@ -265,6 +340,12 @@ const ReportsPage = ({ userData }) => {
                 <option value="5">5th Year</option>
               </select>
             </div>
+            {/* Add a helper text for Academic Advisors */}
+            {isAcademicAdvisor && advisorYear && (
+              <p className="text-xs text-gray-500 mt-1">
+                As an Academic Advisor, you can only view reports for year {advisorYear}.
+              </p>
+            )}
           </div>
         </div>
 

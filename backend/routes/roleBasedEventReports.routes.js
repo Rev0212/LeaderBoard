@@ -15,7 +15,7 @@ router.get('/class-performance', RoleBasedEventReportsController.getClassPerform
 router.get('/popular-categories', RoleBasedEventReportsController.getPopularCategories);
 router.get('/approval-rates', RoleBasedEventReportsController.getApprovalRates);
 router.get('/trends', RoleBasedEventReportsController.getTrends);
-
+router.get('/advisor-year', authMiddleware.authTeacher, RoleBasedEventReportsController.getAdvisorYear);
 // HOD-only routes
 router.get('/prize-money-by-class', 
   (req, res, next) => {

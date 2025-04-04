@@ -22,11 +22,11 @@ const createProfileUploadMiddleware = (userType) => {
   });
 
   const fileFilter = (req, file, cb) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    const allowedTypes = ['image/jpeg', 'image/png'];
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Only JPEG, PNG, WEBP and GIF images are allowed!'), false);
+      cb(new Error('Only JPEG, PNG images are allowed!'), false);
     }
   };
 
@@ -34,7 +34,7 @@ const createProfileUploadMiddleware = (userType) => {
     storage: storage,
     fileFilter: fileFilter,
     limits: {
-      fileSize: 2 * 1024 * 1024, // 2MB file limit
+      fileSize: 0.5 * 1024 * 1024, // 0.5MB file limit
     },
   });
 
