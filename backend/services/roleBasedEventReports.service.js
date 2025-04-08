@@ -225,26 +225,67 @@ class RoleBasedEventReportsService {
       // Build query based on teacher's role
       let query = {};
       
-      // Apply year filter if provided
-      if (yearFilter && !isNaN(parseInt(yearFilter))) {
-        query.year = parseInt(yearFilter);
-      }
-      
-      // Apply department filter for HOD/faculty
       if (teacher.role === 'HOD' && teacher.department) {
+        // HOD sees all classes in their department
         query.department = teacher.department;
+        
+        // Apply year filter if provided for HOD
+        if (yearFilter && !isNaN(parseInt(yearFilter))) {
+          query.year = parseInt(yearFilter);
+        }
+      } 
+      else if (teacher.role === 'Academic Advisor') {
+        // Academic Advisor sees only classes they advise
+        query.academicAdvisors = teacher._id;
+        
+        // Academic Advisors are restricted to their department
+        if (teacher.department) {
+          query.department = teacher.department;
+        }
+        
+        // For Academic Advisor, first determine their assigned year
+        const advisorClasses = await Class.find({
+          academicAdvisors: teacher._id,
+          ...(teacher.department ? { department: teacher.department } : {})
+        }).distinct('year');
+        
+        if (advisorClasses.length > 0) {
+          console.log(`Academic Advisor is assigned to year(s): ${advisorClasses}`);
+          
+          // If year filter is provided, check if it matches the advisor's assigned years
+          if (yearFilter && !isNaN(parseInt(yearFilter))) {
+            if (!advisorClasses.includes(parseInt(yearFilter))) {
+              console.log(`Academic Advisor attempted to access unauthorized year: ${yearFilter}`);
+              // Return empty array if trying to access unauthorized year
+              return [];
+            }
+            query.year = parseInt(yearFilter);
+          } else {
+            // If no year filter specified, use the advisor's assigned year
+            // Typically advisors handle only one year, so use the first one
+            query.year = advisorClasses[0];
+          }
+        }
+      }
+      else if ((teacher.role === 'Faculty' || teacher.role === 'faculty') && 
+               teacher.classes && teacher.classes.length > 0) {
+        // Faculty sees only their assigned classes
+        query._id = { $in: teacher.classes };
+        
+        // Apply year filter if provided for Faculty
+        if (yearFilter && !isNaN(parseInt(yearFilter))) {
+          query.year = parseInt(yearFilter);
+        }
       }
       
-      // Apply class restrictions for faculty
-      if (teacher.role === 'faculty' && teacher.classes && teacher.classes.length > 0) {
-        query._id = { $in: teacher.classes };
-      }
+      // console.log(`Class query for ${teacher.role}:`, query);
       
       // Get classes
       const classes = await Class.find(query)
         .sort({ year: 1, section: 1, department: 1 })
         .lean();
       
+      console.log(`Found ${classes.length} classes for ${teacher.role}`);
       return classes;
     } catch (error) {
       console.error('Error getting available classes:', error);
@@ -829,12 +870,12 @@ class RoleBasedEventReportsService {
         if (lastEventDate) {
           // Student has event activity, use the event date
           lastActivity = lastEventDate;
-          console.log(`Student ${student.name} has event activity: ${new Date(lastActivity).toISOString()}`);
+          // console.log(`Student ${student.name} has event activity: ${new Date(lastActivity).toISOString()}`);
         } else {
           // No event activity found
           lastActivity = null;
           isNoActivity = true;
-          console.log(`Student ${student.name} has no event activity at all`);
+          // console.log(`Student ${student.name} has no event activity at all`);
         }
         
         // Calculate days since last activity (or use max days if no activity)
@@ -867,8 +908,8 @@ class RoleBasedEventReportsService {
       console.log(`Found ${filteredInactive.length} inactive students out of ${students.length} total`);
       
       // After calculating filteredInactive
-      console.log(`Final inactive students count: ${filteredInactive.length}`);
-      console.log(`First few inactive students:`, filteredInactive.slice(0, 3));
+      // console.log(`Final inactive students count: ${filteredInactive.length}`);
+      // console.log(`First few inactive students:`, filteredInactive.slice(0, 3));
       
       // Return the inactive students directly - don't wrap in an object
       return filteredInactive;

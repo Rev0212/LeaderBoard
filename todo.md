@@ -76,3 +76,24 @@ You'll need to apply the department filtering approach to all other report metho
 getCategoryPerformanceByClass
 getTrends
 getClassParticipation -->
+
+
+
+
+
+academic advisor report page year filter remove (if advisor remove the filter if hod keep the filter)
+
+now hod year filter is not working 
+
+only when clicked on that its coming
+    reason first it pushes the assgined class report to report page so all reports come in report page need to change that behaviour
+
+
+
+
+FUTURE UPDATES
+HOD, chair mam can ask question to student, so if she wanna ask question to whole department, class or even sepeate couse
+    1 - CHAIRMAM all 4 department 
+    2 associate
+        1- 2 department
+        2- 2 department
