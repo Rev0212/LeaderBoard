@@ -81,8 +81,7 @@ getClassParticipation -->
 
 
 
-acadmic advisor report page year filter remove (if adivisor remove the filter if hod keep the filter)
-
+academic advisor report page year filter remove (if advisor remove the filter if hod keep the filter)
 
 now hod year filter is not working 
 
@@ -92,7 +91,7 @@ only when clicked on that its coming
 
 
 
-FURTURE UPDATES
+FUTURE UPDATES
 HOD, chair mam can ask question to student, so if she wanna ask question to whole department, class or even sepeate couse
     1 - CHAIRMAM all 4 department 
     2 associate
