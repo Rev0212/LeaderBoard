@@ -24,6 +24,12 @@ app.use(cookieParser());
 // Ensure this line exists and is using the correct path
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Serve static files from the React frontend app
+app.use(express.static(path.join(__dirname, '../frontend/dist')));
+
+// Serve uploads directory for file access
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Routes
 const studentRoutes = require('./routes/student.routes');
 const teacherRoutes = require('./routes/teacher.routes');
@@ -52,6 +58,11 @@ app.use('/faculty-reports', facultyReportRoutes);
 
 app.get('/', (req, res) => {
     res.send('Server is running!');
+});
+
+// Handle any requests that don't match the ones above
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
 });
 
 module.exports = app;
