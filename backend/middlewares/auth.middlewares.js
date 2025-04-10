@@ -75,33 +75,87 @@ module.exports.authTeacher = async (req, res, next) => {
     }
 } 
 
-module.exports.authAdmin = async (req, res, next) => {
-    const token = req.cookies['admin-token'] || req.headers.authorization?.split(' ')[1];
 
-    if (!token) {
-        return res.status(401).json({ message: 'Unauthorized: Admin token missing' });
-    }
-
-    const isBlacklisted = await blackListTokenModel.findOne({ token: token });
-
-    if (isBlacklisted) {
-        return res.status(401).json({ message: 'Unauthorized: Token revoked' });
-    }
-
+exports.authAdmin = async (req, res, next) => {
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const admin = await adminModel.findById(decoded._id);
-
-        if (!admin) {
-            return res.status(401).json({ message: 'Unauthorized: Admin not found' });
-        }
-
-        req.admin = admin;
-        return next();
-    } catch (err) {
-        return res.status(401).json({ message: 'Unauthorized: Invalid token' });
+      // Get token from header
+      const token = req.header('Authorization')?.replace('Bearer ', '');
+      
+      if (!token) {
+        return res.status(401).json({ 
+          success: false, 
+          message: 'Authentication failed. No token provided.' 
+        });
+      }
+      
+      // Verify token
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      
+      // Find admin
+      const admin = await adminModel.findById(decoded._id);
+      
+      if (!admin) {
+        return res.status(401).json({ 
+          success: false, 
+          message: 'Authentication failed. Admin not found.' 
+        });
+      }
+      
+      // Attach admin to request
+      req.admin = admin;
+      next();
+    } catch (error) {
+      console.error('Admin authentication error:', error);
+      res.status(401).json({
+        success: false,
+        message: 'Authentication failed. Invalid token.'
+      });
     }
-};
+  };
+  
+  exports.requireSuperAdmin = (req, res, next) => {
+    if (!req.admin) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required'
+      });
+    }
+    
+    if (req.admin.role !== 'Super Admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Super Admin privileges required.'
+      });
+    }
+    
+    next();
+  };
+  
+  exports.restrictToDepartment = (req, res, next) => {
+    if (!req.admin) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required'
+      });
+    }
+    
+    // Super admin can access any department
+    if (req.admin.role === 'Super Admin') {
+      return next();
+    }
+    
+    // Department admin can only access their department
+    const requestedDept = req.params.department || req.query.department || req.body.department;
+    
+    if (requestedDept && requestedDept !== req.admin.department) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. You can only access your department.'
+      });
+    }
+    
+    next();
+  };
 
 module.exports.authHOD = async (req, res, next) => {
     try {

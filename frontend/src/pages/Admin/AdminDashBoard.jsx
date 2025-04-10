@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, Users, FileText, Download, UserPlus, Calendar, MessageSquare } from 'lucide-react';
+import { Upload, Users, FileText, Download, UserPlus, Calendar, MessageSquare, Settings } from 'lucide-react';
 import AdminUpcomingEventForm from '../../components/AdminUpcomingEventForm';
 import UpcomingEventsList from '../../components/UpcomingEventsList';
 import ReportsPage from '../ReportsPage';
 import AdminFeedbackReview from './AdminFeedbackReview';
+import EnumManagement from './EnumManagement';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -280,6 +281,15 @@ const AdminDashboard = () => {
               <MessageSquare size={20} />
               Feedback Review
             </button>
+            <button
+              onClick={() => setActiveTab('enum-management')}
+              className={`w-full p-4 flex items-center gap-2 ${
+                activeTab === 'enum-management' ? 'bg-blue-50 text-blue-600' : 'text-gray-600'
+              }`}
+            >
+              <Settings size={20} />
+              System Configuration
+            </button>
           </nav>
         </div>
 
@@ -409,6 +419,10 @@ const AdminDashboard = () => {
           <div className="bg-white p-6 rounded-lg shadow">
             <AdminFeedbackReview />
           </div>
+        )}
+
+        {activeTab === 'enum-management' && (
+          <EnumManagement />
         )}
       </div>
     </div>

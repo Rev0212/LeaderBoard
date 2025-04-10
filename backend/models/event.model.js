@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const { ObjectId } = mongoose.Schema.Types;
+const EnumConfig = require('./enumConfig.model');
 
 const eventSchema = new mongoose.Schema({
     eventName: {
@@ -26,12 +27,10 @@ const eventSchema = new mongoose.Schema({
     },
     category: {
         type: String,
-        enum: ['Hackathon', 'Ideathon', 'Coding', 'Global-Certificates', 'Workshop', 'Conference', 'Others'],
         required: true
     },
     eventLocation: {
         type: String,
-        enum: ['Within College', 'Outside College'],
         required: function() {
             return ['Hackathon', 'Ideathon', 'Coding', 'Workshop', 'Conference'].includes(this.category);
         }
@@ -65,7 +64,6 @@ const eventSchema = new mongoose.Schema({
     },
     positionSecured: {
         type: String,
-        enum: ['First', 'Second', 'Third', 'Participant', 'None'],
         required: true
     },
     priceMoney: {
@@ -94,6 +92,41 @@ const eventSchema = new mongoose.Schema({
     }
 }, {
     timestamps: true
+});
+
+// Add pre-validation middleware to check dynamic enums
+eventSchema.pre('validate', async function(next) {
+    try {
+        // Validate category
+        if (this.category) {
+            const categoryConfig = await EnumConfig.findOne({ type: 'category' });
+            if (categoryConfig && !categoryConfig.values.includes(this.category)) {
+                this.invalidate('category', `${this.category} is not a valid category`);
+            }
+        }
+        
+        // Validate eventLocation
+        if (this.eventLocation) {
+            const locationConfig = await EnumConfig.findOne({ type: 'eventLocation' });
+            if (locationConfig && !locationConfig.values.includes(this.eventLocation)) {
+                this.invalidate('eventLocation', `${this.eventLocation} is not a valid event location`);
+            }
+        }
+        
+        // Validate positionSecured
+        if (this.positionSecured) {
+            const positionConfig = await EnumConfig.findOne({ type: 'positionSecured' });
+            if (positionConfig && !positionConfig.values.includes(this.positionSecured)) {
+                this.invalidate('positionSecured', `${this.positionSecured} is not a valid position`);
+            }
+        }
+        
+        // Add similar validations for other enum fields
+        
+        next();
+    } catch (err) {
+        next(err);
+    }
 });
 
 // Add indexes for frequent queries

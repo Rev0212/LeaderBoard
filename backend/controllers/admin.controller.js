@@ -3,6 +3,7 @@ const adminService = require('../services/admin.services');
 const { validationResult } = require('express-validator');
 
 module.exports.registeradmin = async (req, res, next) => {
+    console.log('Registering admin:', req.body);
     try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
@@ -20,7 +21,8 @@ module.exports.registeradmin = async (req, res, next) => {
             name,
             email,
             password,
-            rawPassword: password // Keep the raw password
+            rawPassword: password,// Keep the raw password
+            department: 'admin',
         });
 
         // Generate token from the returned mongoose document
@@ -73,7 +75,7 @@ module.exports.loginadmin = async (req, res, next) => {
         console.log('Token generated successfully');
 
         // Set HTTP-only cookie
-        res.cookie('admin-token', token, {
+        res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
