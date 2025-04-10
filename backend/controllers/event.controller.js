@@ -3,15 +3,76 @@ const studentModel = require('../models/student.model');
 const teacherModel = require('../models/teacher.model');
 const eventModel = require('../models/event.model');
 const PointsCalculationService = require('../services/pointsCalculation.service');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+// Configure multer storage for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    let uploadDir;
+    if (file.fieldname === 'certificateImages') {
+      uploadDir = path.join(__dirname, '../uploads/certificates');
+    } else {
+      uploadDir = path.join(__dirname, '../uploads/documents');
+    }
+    
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, file.fieldname + '-' + uniqueSuffix + ext);
+  }
+});
+
+// Configure file filter to validate file types
+const fileFilter = function(req, file, cb) {
+  if (file.fieldname === 'certificateImages') {
+    // Accept only image files
+    if (!file.mimetype.startsWith('image/')) {
+      return cb(new Error('Only image files are allowed for certificates!'), false);
+    }
+  } else if (file.fieldname === 'pdfDocument') {
+    // Accept only PDF files
+    if (file.mimetype !== 'application/pdf') {
+      return cb(new Error('Only PDF files are allowed for proof documents!'), false);
+    }
+  }
+  cb(null, true);
+};
+
+// Create multer upload instance
+const upload = multer({
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 20 * 1024 * 1024 // 20MB max file size
+  }
+});
+
+// Middleware for file upload
+const uploadMiddleware = upload.fields([
+  { name: 'certificateImages', maxCount: 10 },
+  { name: 'pdfDocument', maxCount: 1 }
+]);
 
 // Student submits a new event
 const submitEvent = async (req, res) => {
     try {
+        // Extract the files from the request
+        const certificateImages = req.files?.['certificateImages'] || [];
+        const pdfDocument = req.files?.['pdfDocument']?.[0];
+        
         const {
             eventName,
             description,
             date,
-            proofUrl,
             category,
             eventLocation,
             otherCollegeName,
@@ -19,8 +80,7 @@ const submitEvent = async (req, res) => {
             eventOrganizer,
             participationType,
             positionSecured,
-            priceMoney,
-            pdfDocument
+            priceMoney
         } = req.body;
         
         const studentId = req.student._id;
@@ -30,12 +90,29 @@ const submitEvent = async (req, res) => {
             eventName,
             description,
             date,
-            proofUrl,
             category,
             positionSecured,
-            pdfDocument,
-            submittedBy: studentId
+            // Use file paths from uploaded files
+            proofUrl: certificateImages.map(file => file.path),
+            pdfDocument: pdfDocument ? pdfDocument.path : null,
+            submittedBy: studentId,
+            // Initialize custom answers object
+            customAnswers: {}
         };
+
+        // Process custom question answers
+        Object.keys(req.body).forEach(key => {
+            if (key.startsWith('customAnswer_')) {
+                const questionId = key.replace('customAnswer_', '');
+                if (key.endsWith('[]')) {
+                    // This is an array for multiple choice questions
+                    eventData.customAnswers[questionId] = Array.isArray(req.body[key]) ? 
+                        req.body[key] : [req.body[key]];
+                } else {
+                    eventData.customAnswers[questionId] = req.body[key];
+                }
+            }
+        });
 
         // Add conditional fields based on category
         if (['Hackathon', 'Ideathon', 'Coding', 'Workshop', 'Conference'].includes(category)) {
@@ -56,14 +133,17 @@ const submitEvent = async (req, res) => {
 
         const newEvent = await eventService.createEvent(eventData);
 
-        res.status(201).json({ 
+        res.status(201).json({
+            success: true,
             message: 'Event submitted successfully', 
             event: newEvent 
         });
     } catch (error) {
+        console.error('Error submitting event:', error);
         res.status(500).json({ 
-            error: 'Failed to submit event', 
-            details: error.message 
+            success: false,
+            message: 'Failed to submit event', 
+            error: error.message 
         });
     }
 };
@@ -246,4 +326,14 @@ const getAllStudentEvents = async (req, res) => {
     }
 };
 
-module.exports = { submitEvent, reviewEvent, getEvents, editEvent, getAllStudentEvents };
+// Export the middleware for use in routes
+module.exports.uploadEventFiles = uploadMiddleware;
+
+module.exports = { 
+    submitEvent,
+    uploadEventFiles: uploadMiddleware, // Use uploadMiddleware directly
+    reviewEvent, 
+    getEvents, 
+    editEvent, 
+    getAllStudentEvents 
+};

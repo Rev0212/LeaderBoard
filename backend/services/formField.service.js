@@ -14,7 +14,15 @@ class FormFieldService {
     return {
       requiredFields: config.requiredFields || [],
       optionalFields: config.optionalFields || [],
-      conditionalFields: config.conditionalFields || {}
+      conditionalFields: config.conditionalFields || {},
+      proofConfig: config.proofConfig || {
+        requireCertificateImage: false,
+        requirePdfProof: true,
+        maxCertificateSize: 5,
+        maxPdfSize: 10,
+        allowMultipleCertificates: false
+      },
+      customQuestions: config.customQuestions || []
     };
   }
   
@@ -30,7 +38,15 @@ class FormFieldService {
           dependsOn: 'positionSecured',
           showWhen: ['First', 'Second', 'Third']
         }
-      }
+      },
+      proofConfig: {
+        requireCertificateImage: false,
+        requirePdfProof: true,
+        maxCertificateSize: 5,
+        maxPdfSize: 10,
+        allowMultipleCertificates: false
+      },
+      customQuestions: []
     };
   }
   
