@@ -1,16 +1,78 @@
 const eventService = require('../services/event.services');
-const studentModel = require('../models/student.model')
-const teacherModel = require('../models/teacher.model')
-const eventModel = require('../models/event.model')
+const studentModel = require('../models/student.model');
+const teacherModel = require('../models/teacher.model');
+const eventModel = require('../models/event.model');
+const PointsCalculationService = require('../services/pointsCalculation.service');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+// Configure multer storage for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    let uploadDir;
+    if (file.fieldname === 'certificateImages') {
+      uploadDir = path.join(__dirname, '../uploads/certificates');
+    } else {
+      uploadDir = path.join(__dirname, '../uploads/documents');
+    }
+    
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, file.fieldname + '-' + uniqueSuffix + ext);
+  }
+});
+
+// Configure file filter to validate file types
+const fileFilter = function(req, file, cb) {
+  if (file.fieldname === 'certificateImages') {
+    // Accept only image files
+    if (!file.mimetype.startsWith('image/')) {
+      return cb(new Error('Only image files are allowed for certificates!'), false);
+    }
+  } else if (file.fieldname === 'pdfDocument') {
+    // Accept only PDF files
+    if (file.mimetype !== 'application/pdf') {
+      return cb(new Error('Only PDF files are allowed for proof documents!'), false);
+    }
+  }
+  cb(null, true);
+};
+
+// Create multer upload instance
+const upload = multer({
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 20 * 1024 * 1024 // 20MB max file size
+  }
+});
+
+// Middleware for file upload
+const uploadMiddleware = upload.fields([
+  { name: 'certificateImages', maxCount: 10 },
+  { name: 'pdfDocument', maxCount: 1 }
+]);
 
 // Student submits a new event
 const submitEvent = async (req, res) => {
     try {
+        // Extract the files from the request
+        const certificateImages = req.files?.['certificateImages'] || [];
+        const pdfDocument = req.files?.['pdfDocument']?.[0];
+        
         const {
             eventName,
             description,
             date,
-            proofUrl,
             category,
             eventLocation,
             otherCollegeName,
@@ -18,8 +80,7 @@ const submitEvent = async (req, res) => {
             eventOrganizer,
             participationType,
             positionSecured,
-            priceMoney,
-            pdfDocument
+            priceMoney
         } = req.body;
         
         const studentId = req.student._id;
@@ -29,12 +90,29 @@ const submitEvent = async (req, res) => {
             eventName,
             description,
             date,
-            proofUrl,
             category,
             positionSecured,
-            pdfDocument,
-            submittedBy: studentId
+            // Use file paths from uploaded files
+            proofUrl: certificateImages.map(file => file.path),
+            pdfDocument: pdfDocument ? pdfDocument.path : null,
+            submittedBy: studentId,
+            // Initialize custom answers object
+            customAnswers: {}
         };
+
+        // Process custom question answers
+        Object.keys(req.body).forEach(key => {
+            if (key.startsWith('customAnswer_')) {
+                const questionId = key.replace('customAnswer_', '');
+                if (key.endsWith('[]')) {
+                    // This is an array for multiple choice questions
+                    eventData.customAnswers[questionId] = Array.isArray(req.body[key]) ? 
+                        req.body[key] : [req.body[key]];
+                } else {
+                    eventData.customAnswers[questionId] = req.body[key];
+                }
+            }
+        });
 
         // Add conditional fields based on category
         if (['Hackathon', 'Ideathon', 'Coding', 'Workshop', 'Conference'].includes(category)) {
@@ -55,14 +133,17 @@ const submitEvent = async (req, res) => {
 
         const newEvent = await eventService.createEvent(eventData);
 
-        res.status(201).json({ 
+        res.status(201).json({
+            success: true,
             message: 'Event submitted successfully', 
             event: newEvent 
         });
     } catch (error) {
+        console.error('Error submitting event:', error);
         res.status(500).json({ 
-            error: 'Failed to submit event', 
-            details: error.message 
+            success: false,
+            message: 'Failed to submit event', 
+            error: error.message 
         });
     }
 };
@@ -72,74 +153,50 @@ const reviewEvent = async (req, res) => {
     try {
         const { id } = req.params;
         const { status } = req.body;
-
-        console.log(id);
-        console.log(status);
-
-        // Ensure teacherId exists and is valid
-        if (!req.teacher || !req.teacher._id) {
-            throw new Error("Teacher ID is missing.");
-        }
-
-        const teacherId = req.teacher._id;
-
-        // Retrieve the teacher and their classes
-        const teacher = await teacherModel.findById(teacherId);
-        if (!teacher || !teacher.classes || teacher.classes.length === 0) {
-            throw new Error("Teacher or teacher's classes not found.");
-        }
-
-        const teacherClassIds = teacher.classes; 
-
-        // Fetch the event details to get the student ID
-        const event = await eventModel.findById(id).populate('submittedBy');
+        
+        const event = await eventModel.findById(id);
         if (!event) {
-            throw new Error("Event not found.");
+            return res.status(404).json({
+                success: false,
+                message: 'Event not found'
+            });
         }
-
-        const studentId = event.submittedBy._id;
-        // Don't populate class since we're using currentClass
-        const student = await studentModel.findById(studentId);
-
-        if (!student) {
-            throw new Error("Student not found.");
+        
+        event.status = status;
+        event.approvedBy = req.teacher._id;
+        
+        if (status === 'Approved') {
+            // Use new points calculation service
+            event.pointsEarned = await PointsCalculationService.calculatePoints(event);
+            
+            // Update student total points
+            await studentModel.findByIdAndUpdate(
+                event.submittedBy,
+                { $inc: { totalPoints: event.pointsEarned } }
+            );
+        } else {
+            // If event was previously approved, subtract points
+            if (event.status === 'Approved' && event.pointsEarned > 0) {
+                await studentModel.findByIdAndUpdate(
+                    event.submittedBy,
+                    { $inc: { totalPoints: -event.pointsEarned } }
+                );
+            }
+            event.pointsEarned = 0;
         }
-
-        // Check if student has currentClass assigned
-        if (!student.currentClass || !student.currentClass.ref) {
-            throw new Error("Student's class information is missing.");
-        }
-
-        // Convert both IDs to strings for comparison
-        const studentClassId = student.currentClass.ref.toString();
-        if (!teacherClassIds.some(classId => classId.toString() === studentClassId)) {
-            throw new Error("Teacher and student are not in the same class.");
-        }
-
-        // Update the event after confirming the class match
-        const updatedEvent = await eventService.reviewEvent(id, status, teacherId);
-
-        // Update the student's eventsParticipated and totalPoints
-        if (!student.eventsParticipated) {
-            student.eventsParticipated = [];
-        }
-
-        student.eventsParticipated.push(updatedEvent._id);
-        const oldPoints = student.totalPoints;
-        console.log(oldPoints);
-        student.totalPoints = oldPoints + updatedEvent.pointsEarned;
-        console.log(student.totalPoints);
-        await student.save();
-
-        res.status(200).json({ 
-            message: 'Event reviewed successfully', 
-            event: updatedEvent 
+        
+        await event.save();
+        
+        res.status(200).json({
+            success: true,
+            data: event,
+            message: `Event ${status.toLowerCase()} successfully`
         });
     } catch (error) {
-        console.error("Error:", error);
-        res.status(500).json({ 
-            error: 'Failed to review event', 
-            details: error.message 
+        console.error('Error reviewing event:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message
         });
     }
 };
@@ -269,4 +326,14 @@ const getAllStudentEvents = async (req, res) => {
     }
 };
 
-module.exports = { submitEvent, reviewEvent, getEvents, editEvent, getAllStudentEvents };
+// Export the middleware for use in routes
+module.exports.uploadEventFiles = uploadMiddleware;
+
+module.exports = { 
+    submitEvent,
+    uploadEventFiles: uploadMiddleware, // Use uploadMiddleware directly
+    reviewEvent, 
+    getEvents, 
+    editEvent, 
+    getAllStudentEvents 
+};

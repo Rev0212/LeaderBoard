@@ -1,6 +1,6 @@
 const Event = require('../models/event.model');
 const studentModel = require('../models/student.model');
-
+const PointsCalculationService = require('./pointsCalculation.service');
 
 const createEvent = async (eventData) => {
     try {
@@ -38,35 +38,25 @@ const createEvent = async (eventData) => {
 
 const reviewEvent = async (eventId, status, teacherId) => {
     console.log('Inside reviewEvent service');
-    console.log(eventId, status, teacherId);
     try {
         const event = await Event.findById(eventId);
         if (!event) {
             throw new Error('Event not found');
         }
 
-
         event.status = status;
- 
         event.approvedBy = teacherId;
 
         if (status === 'Approved') {
-            const pointsMap = {
-                First: 100,
-                Second: 75,
-                Third: 50,
-                Participated: 25
-            };
-            event.pointsEarned = pointsMap[event.positionSecured] || 0;
-            console.log(`${event.pointsEarned} --- check444`);
+            // Use the new points calculation service
+            event.pointsEarned = await PointsCalculationService.calculatePoints(event);
+            console.log(`Calculated ${event.pointsEarned} points for event`);
         } else {
             event.pointsEarned = 0;
         }
-        
 
         // Save the updated event
         const updatedEvent = await event.save();
-    
         return updatedEvent;
     } catch (error) {
         throw new Error(`Failed to review event: ${error.message}`);
@@ -78,7 +68,6 @@ const editEventStatus = async (eventId, newStatus, teacherId) => {
     try {
         const event = await Event.findById(eventId);
 
-        // Check if event exists
         if (!event) {
             console.error(`Event not found for ID: ${eventId}`);
             return { success: false, error: 'Event not found' };
@@ -89,18 +78,14 @@ const editEventStatus = async (eventId, newStatus, teacherId) => {
             return { success: false, error: `Event status is already ${newStatus}` };
         }
 
-        // Update event status and points
+        // Update event status
         event.status = newStatus;
         event.approvedBy = teacherId;
 
         if (newStatus === 'Approved') {
-            const pointsMap = {
-                First: 100,
-                Second: 75,
-                Third: 50,
-                Participated: 25,
-            };
-            event.pointsEarned = pointsMap[event.positionSecured] || 0;
+            // Use the new points calculation service
+            event.pointsEarned = await PointsCalculationService.calculatePoints(event);
+            console.log(`Calculated ${event.pointsEarned} points for event ${eventId}`);
         } else if (newStatus === 'Rejected') {
             event.pointsEarned = 0;
         }
@@ -114,8 +99,6 @@ const editEventStatus = async (eventId, newStatus, teacherId) => {
     }
 };
 
-
-
 const getEventById = async (eventId) => {
     try {
         const event = await Event.findById(eventId);
@@ -128,4 +111,4 @@ const getEventById = async (eventId) => {
     }
 };
 
-module.exports = { createEvent,reviewEvent,editEventStatus ,getEventById };
+module.exports = { createEvent, reviewEvent, editEventStatus, getEventById };

@@ -4,14 +4,22 @@ const pointsConfigSchema = new mongoose.Schema({
   configType: {
     type: String,
     required: true,
-    enum: ['positionPoints', 'categoryMultipliers'],
+    enum: ['positionPoints', 'categoryRules'],
     default: 'positionPoints'
   },
   configuration: {
-    type: Map,
-    of: Number,
+    type: mongoose.Schema.Types.Mixed, // Changed from Map to Mixed to support nested structures
     required: true
-    // e.g. { "First": 100, "Second": 75, "Third": 50 }
+    // Now supports hierarchical structures like:
+    // {
+    //   "Hackathon": {
+    //     "Team": {
+    //       "International": {
+    //         "Industry Based": { "First": 200, "Second": 150 }
+    //       }
+    //     }
+    //   }
+    // }
   },
   effectiveDate: {
     type: Date,
@@ -32,7 +40,7 @@ const pointsConfigSchema = new mongoose.Schema({
   notes: String
 }, { timestamps: true });
 
-// Add a static method to get the current active configuration
+// Get current active configuration
 pointsConfigSchema.statics.getCurrentConfig = async function(configType = 'positionPoints') {
   return await this.findOne({ configType, isActive: true })
     .sort({ effectiveDate: -1, version: -1 })

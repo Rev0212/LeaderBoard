@@ -88,7 +88,8 @@ module.exports.loginadmin = async (req, res, next) => {
             admin: {
                 _id: admin._id,
                 name: admin.name,
-                email: admin.email
+                email: admin.email,
+                role: admin.role
             }
         });
     } catch (error) {

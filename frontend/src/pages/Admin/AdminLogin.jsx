@@ -68,10 +68,14 @@ const AdminLogin = () => {
         const response = await axios.post(`${VITE_BASE_URL}/admin/login`, formData);
         console.log('Login response:', response.data);
         localStorage.setItem('admin-token', response.data.token);
+        
+        // Fix: Store the admin data with the correct property name
+        localStorage.setItem('admin-data', JSON.stringify(response.data.admin));
+        
         setSuccessMessage('Login successful!');
         navigate('/admin-dashboard');
     } catch (error) {
-        setApiError(error.response?.data?.message || 'Login failed'); // Use setApiError not setError
+        setApiError(error.response?.data?.message || 'Login failed');
     } finally {
         setIsLoading(false);
     }

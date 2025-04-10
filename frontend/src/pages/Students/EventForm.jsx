@@ -1,517 +1,761 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft } from 'lucide-react';
+import axios from 'axios';
+import { toast } from 'react-toastify';
+import {
+  TextField, FormControl, InputLabel, Select, MenuItem,
+  Button, Typography, Paper, Box, CircularProgress,
+  RadioGroup, FormControlLabel, Radio, FormGroup, Checkbox, IconButton, Alert
+} from '@mui/material';
+import { X, FileText, Info, Image } from 'react-feather';
+
+const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const EventForm = () => {
-  const [formData, setFormData] = useState({
-    eventName: '',
-    description: '',
-    date: '',
-    proofImage: null,
-    pdfDocument: null,
-    category: '',
-    positionSecured: '',
-    priceMoney: '',
-    participationType: '',
-    eventLocation: '',
-    otherCollegeName: '',
-    eventScope: '',
-    eventOrganizer: ''
+  const [categories, setCategories] = useState([]);
+  const [positions, setPositions] = useState([]);
+  const [eventScopes, setEventScopes] = useState([]);
+  const [eventLocations, setEventLocations] = useState([]);
+  const [eventOrganizers, setEventOrganizers] = useState([]);
+  const [participationTypes, setParticipationTypes] = useState([]);
+  
+  const [formFields, setFormFields] = useState({
+    requiredFields: [],
+    optionalFields: [],
+    conditionalFields: {},
+    customQuestions: [],
+    proofConfig: {}
   });
 
-  const [imagePreview, setImagePreview] = useState(null);
-  const [pdfPreview, setPdfPreview] = useState(null);
-  const [uploadStatus, setUploadStatus] = useState('');
-  const [errors, setErrors] = useState({});
+  const [formData, setFormData] = useState({
+    title: '',
+    date: '',
+    category: '',
+    positionSecured: '',
+    eventLocation: '',
+    eventScope: '',
+    eventOrganizer: '',
+    participationType: '',
+    priceMoney: '',
+    teamSize: '',
+    teamName: '',
+    publicationType: '',
+    description: ''
+  });
+
+  const [visibleFields, setVisibleFields] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [apiError, setApiError] = useState('');
-  const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pdfFile, setPdfFile] = useState(null);
+  const [certificateFiles, setCertificateFiles] = useState([]);
+  const [customAnswers, setCustomAnswers] = useState({});
+  const [formError, setFormError] = useState(null);
 
-  // Check various conditions for showing fields
-  const shouldShowPrizeMoney = ['First', 'Second', 'Third'].includes(formData.positionSecured);
-  const shouldShowCollegeName = formData.eventLocation === 'Outside College';
-  const shouldShowEventDetails = ['Hackathon', 'Ideathon', 'Coding', 'Workshop', 'Conference'].includes(formData.category);
+  const defaultConditionalFields = {
+    priceMoney: {
+      dependsOn: 'positionSecured',
+      showWhen: ['First', 'Second', 'Third']
+    }
+  };
 
-  const getBasicFields = () => [
-    {
-      section: 'Basic Information',
-      fields: [
-        { name: 'eventName', label: 'Event Name', type: 'text', placeholder: 'Enter Event Name' },
-        { name: 'description', label: 'Description', type: 'textarea', placeholder: 'Enter Description' },
-        { name: 'date', label: 'Date', type: 'date' },
+  useEffect(() => {
+    fetchFormConfiguration();
+  }, []);
+
+  useEffect(() => {
+    if (formData.category) {
+      fetchFormFields(formData.category);
+    }
+  }, [formData.category]);
+
+  useEffect(() => {
+    updateVisibleFields();
+  }, [formData, formFields]);
+
+  const fetchFormConfiguration = async () => {
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem("student-token");
+      
+      const response = await axios.get(
+        `${VITE_BASE_URL}/event/form-configuration`,
         { 
-          name: 'category', 
-          label: 'Category', 
-          type: 'select', 
-          options: ['Select a category', 'Hackathon', 'Ideathon', 'Coding', 'Global-Certificates', 'Workshop', 'Conference', 'Others'] 
+          headers: { 
+            Authorization: `Bearer ${token}`
+          }
         }
-      ]
+      );
+      
+      if (response.data.success) {
+        const config = response.data.data;
+        
+        console.log("Form configuration loaded successfully:", config);
+        setCategories(config.categories || []);
+        setPositions(config.positionTypes || []);
+        setEventScopes(config.eventScopes || []);
+        setEventLocations(config.eventLocations || []);
+        setEventOrganizers(config.eventOrganizers || []);
+        setParticipationTypes(config.participationTypes || []);
+      } else {
+        throw new Error(`Failed to load form configuration: ${response.data.message || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error("Error fetching form configuration:", error);
+      toast.error("Could not load form options. Please try again later.");
+    } finally {
+      setIsLoading(false);
     }
-  ];
+  };
 
-  const getEventDetailFields = () => shouldShowEventDetails ? [
-    {
-      section: 'Event Details',
-      fields: [
+  const fetchFormFields = async (category) => {
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem("student-token");
+      
+      const encodedCategory = encodeURIComponent(category);
+      console.log(`Fetching form fields for category: ${category}`);
+      
+      const response = await axios.get(
+        `${VITE_BASE_URL}/event/form-fields/${encodedCategory}`,
         { 
-          name: 'eventLocation', 
-          label: 'Event Location', 
-          type: 'select', 
-          options: ['Select location', 'Within College', 'Outside College']
-        },
-        ...(shouldShowCollegeName ? [{
-          name: 'otherCollegeName',
-          label: 'College Name',
-          type: 'text',
-          placeholder: 'Enter College Name'
-        }] : []),
-        { 
-          name: 'eventScope', 
-          label: 'Event Scope', 
-          type: 'select', 
-          options: ['Select scope', 'International', 'National', 'State'] 
-        },
-        { 
-          name: 'eventOrganizer', 
-          label: 'Event Organizer', 
-          type: 'select', 
-          options: ['Select organizer type', 'Industry Based', 'College Based'] 
-        },
-        { 
-          name: 'participationType', 
-          label: 'Participation Type', 
-          type: 'select', 
-          options: ['Select type', 'Individual', 'Team'] 
+          headers: { 
+            Authorization: `Bearer ${token}`
+          } 
         }
-      ]
-    }
-  ] : [];
+      );
 
-  const getAchievementFields = () => [
-    {
-      section: 'Achievement Details',
-      fields: [
-        { 
-          name: 'positionSecured', 
-          label: 'Position Secured', 
-          type: 'select', 
-          options: ['Select position', 'First', 'Second', 'Third', 'Participant', 'None'] 
-        },
-        ...(shouldShowPrizeMoney ? [{
-          name: 'priceMoney',
-          label: 'Prize Money',
-          type: 'text',
-          placeholder: 'Enter Prize Amount'
-        }] : [])
-      ]
-    }
-  ];
+      if (response.data.success && response.data.data) {
+        const formFieldsData = response.data.data;
+        
+        // Ensure prize money is handled as a conditional field
+        if (!formFieldsData.conditionalFields) {
+          formFieldsData.conditionalFields = {};
+        }
+        
+        // Remove priceMoney from required/optional fields if present
+        formFieldsData.requiredFields = formFieldsData.requiredFields.filter(f => f !== 'priceMoney');
+        formFieldsData.optionalFields = formFieldsData.optionalFields.filter(f => f !== 'priceMoney');
+        
+        // Add default conditional fields if not already set
+        formFieldsData.conditionalFields = {
+          ...defaultConditionalFields,
+          ...formFieldsData.conditionalFields
+        };
 
-  const getDocumentFields = () => [
-    {
-      section: 'Supporting Documents',
-      fields: [
-        { name: 'proofImage', label: 'Proof Image', type: 'file', accept: 'image/*' },
-        { name: 'pdfDocument', label: 'PDF Document', type: 'file', accept: 'application/pdf' }
-      ]
-    }
-  ];
-
-  // Combine all sections based on conditions
-  const formFields = [
-    ...getBasicFields(),
-    ...getEventDetailFields(),
-    ...getAchievementFields(),
-    ...getDocumentFields()
-  ];
-
-  const validateImage = (file) => {
-    const validTypes = ['image/jpeg', 'image/png'];
-    const maxSize = 1 * 1024 * 1024; // 1MB
-
-    if (!validTypes.includes(file.type)) {
-      return 'Please upload a valid image file (JPEG, PNG)';
-    }
-    if (file.size > maxSize) {
-      return 'Image size should be less than 1MB';
-    }
-    return null;
-  };
-
-  const validatePDF = (file) => {
-    const maxSize = 1 * 1024 * 1024; // 1MB
-    
-    if (file.type !== 'application/pdf') {
-      return 'Please upload a valid PDF file';
-    }
-    if (file.size > maxSize) {
-      return 'PDF size should be less than 1MB';
-    }
-    return null;
-  };
-
-  const handleChange = (e) => {
-    const { name, value, files } = e.target;
-    
-    // Reset dependent fields when category changes
-    if (name === 'category') {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value,
-        eventLocation: '',
-        otherCollegeName: '',
-        eventScope: '',
-        eventOrganizer: '',
-        participationType: ''
-      }));
-      return;
-    }
-    
-    if (name === 'proofImage' && files[0]) {
-      const file = files[0];
-      const error = validateImage(file);
-      
-      if (error) {
-        setErrors(prev => ({ ...prev, proofImage: error }));
-        return;
+        setFormFields(formFieldsData);
+        
+        // Initialize custom answers
+        if (formFieldsData.customQuestions?.length > 0) {
+          const initialAnswers = {};
+          formFieldsData.customQuestions.forEach(q => {
+            initialAnswers[q.id] = q.type === 'multipleChoice' ? [] : '';
+          });
+          setCustomAnswers(initialAnswers);
+        } else {
+          setCustomAnswers({});
+        }
+      } else {
+        throw new Error('Invalid response format from server');
       }
-      setErrors(prev => ({ ...prev, proofImage: null }));
-      
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
-      
-      setFormData(prev => ({
-        ...prev,
-        proofImage: file
-      }));
-    } else if (name === 'pdfDocument' && files[0]) {
-      const file = files[0];
-      const error = validatePDF(file);
-      
-      if (error) {
-        setErrors(prev => ({ ...prev, pdfDocument: error }));
-        e.target.value = ''; // Reset the file input
-        return;
-      }
-      setErrors(prev => ({ ...prev, pdfDocument: null }));
-      
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPdfPreview(file.name); // Just store the filename for display
-      };
-      reader.readAsDataURL(file);
-      
-      setFormData(prev => ({
-        ...prev,
-        pdfDocument: file
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
+    } catch (error) {
+      console.error("Failed to fetch form fields:", error);
+      toast.error(`Could not load form configuration for ${category}. Please try again later.`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const validateForm = () => {
-    const newErrors = {};
-
-    // Always validate basic fields
-    const basicFields = getBasicFields().flatMap(section => section.fields);
-    basicFields.forEach(field => {
-      if (!formData[field.name]?.trim()) {
-        newErrors[field.name] = `${field.label} is required`;
+  const updateVisibleFields = () => {
+    // Start with base fields
+    let fieldsToShow = [
+      ...formFields.requiredFields,
+      ...formFields.optionalFields
+    ];
+    
+    // Remove fields that should be conditional
+    fieldsToShow = fieldsToShow.filter(field => 
+      !Object.keys(formFields.conditionalFields || {}).includes(field)
+    );
+    
+    // Add conditional fields if their conditions are met
+    Object.entries(formFields.conditionalFields || {}).forEach(([field, condition]) => {
+      const { dependsOn, showWhen } = condition;
+      if (formData[dependsOn] && showWhen.includes(formData[dependsOn])) {
+        fieldsToShow.push(field);
       }
     });
+    
+    setVisibleFields([...new Set(fieldsToShow)]); // Remove any duplicates
+  };
 
-    // Validate event detail fields only if category requires them
-    if (shouldShowEventDetails) {
-      const eventDetailFields = getEventDetailFields().flatMap(section => section.fields);
-      eventDetailFields.forEach(field => {
-        if (!formData[field.name]?.trim()) {
-          newErrors[field.name] = `${field.label} is required`;
-        }
-      });
-    }
-
-    // Validate achievement and document fields
-    const otherFields = [...getAchievementFields(), ...getDocumentFields()].flatMap(section => section.fields);
-    otherFields.forEach(field => {
-      if (field.name === 'proofImage' && !formData.proofImage) {
-        newErrors[field.name] = 'Proof image is required';
-      } else if (field.name === 'pdfDocument' && !formData.pdfDocument) {
-        newErrors[field.name] = 'PDF document is required';
-      } else if (field.type !== 'file' && !formData[field.name]?.trim()) {
-        newErrors[field.name] = `${field.label} is required`;
-      }
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value
     });
+  };
 
-    // Additional validations
-    if (shouldShowPrizeMoney && !formData.priceMoney?.trim()) {
-      newErrors.priceMoney = 'Prize money is required for winning positions';
-    }
-    if (shouldShowCollegeName && !formData.otherCollegeName?.trim()) {
-      newErrors.otherCollegeName = 'College name is required for outside college events';
-    }
+  const handleFileChange = (e) => {
+    setPdfFile(e.target.files[0]);
+  };
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  const handleCertificateFilesChange = (e) => {
+    const files = Array.from(e.target.files);
+    setCertificateFiles(prevFiles => [...prevFiles, ...files]);
+  };
+
+  const removeCertificateFile = (index) => {
+    setCertificateFiles(prevFiles => prevFiles.filter((_, i) => i !== index));
+  };
+
+  const handleCustomAnswerChange = (questionId, value) => {
+    setCustomAnswers({
+      ...customAnswers,
+      [questionId]: value
+    });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (validateForm()) {
-      setIsLoading(true);
-      setUploadStatus('Uploading files...');
-      
-      try {
-        // Upload image to local server instead of Cloudinary
-        const formDataImage = new FormData();
-        formDataImage.append('proofImage', formData.proofImage);
-  
-        const imageResponse = await fetch(`${import.meta.env.VITE_BASE_URL}/event/upload-image`, {
-          method: 'POST',
-          body: formDataImage
-        });
-  
-        if (!imageResponse.ok) throw new Error('Failed to upload image');
-        const imageData = await imageResponse.json();
-  
-        // Upload PDF
-        const formDataPdf = new FormData();
-        formDataPdf.append('pdfDocument', formData.pdfDocument);
-  
-        const pdfResponse = await fetch(`${import.meta.env.VITE_BASE_URL}/event/upload-pdf`, {
-          method: 'POST',
-          body: formDataPdf
-        });
-  
-        if (!pdfResponse.ok) throw new Error('Failed to upload PDF');
-        const pdfData = await pdfResponse.json();
-  
-        setUploadStatus('Files uploaded successfully! Submitting form...');
-  
-        // Use the local server file path instead of Cloudinary URL
-        const formDataToSend = {
-          ...formData,
-          proofUrl: imageData.filePath, // Use the local path returned by the server
-          pdfDocument: pdfData.fileName,
-        };
-  
-        // Submit form data
-        const token = localStorage.getItem('student-token');
-        const response = await fetch(`${import.meta.env.VITE_BASE_URL}/event/submit`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(formDataToSend)
-        });
-  
-        if (!response.ok) throw new Error('Failed to submit form');
-  
-        setUploadStatus('Form submitted successfully!');
-        setTimeout(() => navigate("/student-dashboard"), 1500);
-  
-      } catch (error) {
-        console.error('Submission error:', error);
-        setApiError(error.message || 'An error occurred');
-        setUploadStatus('');
-      } finally {
-        setIsLoading(false);
+    
+    if (!validateForm()) {
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    const submitData = new FormData();
+    
+    Object.keys(formData).forEach(key => {
+      if (visibleFields.includes(key) && formData[key]) {
+        submitData.append(key, formData[key]);
       }
+    });
+    
+    Object.entries(customAnswers).forEach(([questionId, answer]) => {
+      if (Array.isArray(answer)) {
+        answer.forEach(option => submitData.append(`customAnswer_${questionId}[]`, option));
+      } else {
+        submitData.append(`customAnswer_${questionId}`, answer);
+      }
+    });
+
+    certificateFiles.forEach(file => {
+      submitData.append('certificateImages', file);
+    });
+
+    if (pdfFile) {
+      submitData.append('pdfDocument', pdfFile);
+    }
+    
+    try {
+      const token = localStorage.getItem("student-token");
+      const response = await axios.post(
+        `${VITE_BASE_URL}/event/submit`,
+        submitData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
+      
+      if (response.data.success) {
+        toast.success('Event submitted successfully!');
+        resetForm();
+      } else {
+        toast.error(response.data.message || 'Failed to submit event');
+      }
+    } catch (error) {
+      console.error('Error submitting event:', error);
+      toast.error(error.response?.data?.message || 'Error submitting event');
+    } finally {
+      setIsSubmitting(false);
     }
   };
-  
-  return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
+
+  const validateForm = () => {
+    const missingFields = formFields.requiredFields.filter(
+      field => !formData[field]
+    );
+    
+    if (missingFields.length > 0) {
+      setFormError(`Please fill in all required fields: ${missingFields.join(', ')}`);
+      return false;
+    }
+    
+    const requiredQuestions = formFields.customQuestions?.filter(q => q.required) || [];
+    const missingAnswers = requiredQuestions.filter(q => {
+      const answer = customAnswers[q.id];
+      if (q.type === 'multipleChoice') {
+        return !answer || answer.length === 0;
+      }
+      return !answer;
+    });
+    
+    if (missingAnswers.length > 0) {
+      setFormError(`Please answer all required questions: ${missingAnswers.map(q => q.text).join(', ')}`);
+      return false;
+    }
+    
+    if (formFields.proofConfig?.requireCertificateImage && certificateFiles.length === 0) {
+      setFormError('Please upload at least one certificate image');
+      return false;
+    }
+    
+    if (formFields.proofConfig?.requirePdfProof && !pdfFile) {
+      setFormError('Please attach a PDF document as proof');
+      return false;
+    }
+    
+    setFormError(null);
+    return true;
+  };
+
+  const resetForm = () => {
+    setFormData({
+      title: '',
+      date: '',
+      category: '',
+      positionSecured: '',
+      eventLocation: '',
+      eventScope: '',
+      eventOrganizer: '',
+      participationType: '',
+      priceMoney: '',
+      teamSize: '',
+      teamName: '',
+      publicationType: '',
+      description: ''
+    });
+    setPdfFile(null);
+    setCertificateFiles([]);
+    setCustomAnswers({});
+    setFormError(null);
+  };
+
+  const renderField = (fieldName) => {
+    const isRequired = formFields.requiredFields.includes(fieldName);
+    
+    switch (fieldName) {
+      case 'title':
+        return (
+          <TextField
+            name="title"
+            label="Event Title"
+            value={formData.title}
+            onChange={handleInputChange}
+            fullWidth
+            margin="normal"
+            required={isRequired}
+          />
+        );
         
-        <div className="bg-white rounded-xl shadow-md overflow-hidden">
-          <div className="bg-blue-600 py-4 px-6">
-            <h2 className="text-2xl font-bold text-white text-center">Event Details Form</h2>
-          </div>
-          
-          <form onSubmit={handleSubmit} className="p-6 space-y-8">
-            {/* Form content remains the same */}
-            {/* Basic Information section */}
-            <div className="space-y-6">
-              <h3 className="text-lg font-semibold text-gray-700 border-b pb-2">
-                Basic Information
-              </h3>
-              
-              <div className="grid grid-cols-2 gap-6">
-                {/* Left column */}
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Event Name
-                    </label>
-                    <input
-                      type="text"
-                      name="eventName"
-                      value={formData.eventName}
-                      onChange={handleChange}
-                      placeholder="Enter Event Name"
-                      className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-                    />
-                    {errors.eventName && (
-                      <p className="mt-1 text-sm text-red-600">{errors.eventName}</p>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Date
-                    </label>
-                    <input
-                      type="date"
-                      name="date"
-                      value={formData.date}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-                    />
-                    {errors.date && (
-                      <p className="mt-1 text-sm text-red-600">{errors.date}</p>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Category
-                    </label>
-                    <select
-                      name="category"
-                      value={formData.category}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-                    >
-                      {['Select a category', 'Hackathon', 'Ideathon', 'Coding', 'Global-Certificates', 'Workshop', 'Conference', 'Others'].map((option, i) => (
-                        <option key={i} value={option}>{option}</option>
-                      ))}
-                    </select>
-                    {errors.category && (
-                      <p className="mt-1 text-sm text-red-600">{errors.category}</p>
-                    )}
-                  </div>
-                </div>
-                
-                {/* Right column - Description */}
-                <div className="h-full">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Description
-                  </label>
-                  <textarea
-                    name="description"
-                    value={formData.description}
-                    onChange={handleChange}
-                    placeholder="Enter Description"
-                    className="w-full h-[calc(100%-2rem)] px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 resize-none"
-                    rows="8"
-                  />
-                  {errors.description && (
-                    <p className="mt-1 text-sm text-red-600">{errors.description}</p>
-                  )}
-                </div>
+      case 'date':
+        return (
+          <TextField
+            name="date"
+            label="Event Date"
+            type="date"
+            value={formData.date}
+            onChange={handleInputChange}
+            InputLabelProps={{ shrink: true }}
+            fullWidth
+            margin="normal"
+            required={isRequired}
+          />
+        );
+        
+      case 'category':
+        return (
+          <FormControl fullWidth margin="normal" required={isRequired}>
+            <InputLabel>Category</InputLabel>
+            <Select
+              name="category"
+              value={formData.category}
+              onChange={handleInputChange}
+              label="Category"
+              MenuProps={{
+                PaperProps: {
+                  style: {
+                    maxHeight: 300
+                  }
+                }
+              }}
+            >
+              {categories.length > 0 ? (
+                categories.map(category => (
+                  <MenuItem key={category} value={category}>{category}</MenuItem>
+                ))
+              ) : (
+                <MenuItem disabled>Loading categories...</MenuItem>
+              )}
+            </Select>
+          </FormControl>
+        );
+        
+      case 'positionSecured':
+        return (
+          <FormControl fullWidth margin="normal" required={isRequired}>
+            <InputLabel>Position Secured</InputLabel>
+            <Select
+              name="positionSecured"
+              value={formData.positionSecured}
+              onChange={handleInputChange}
+              label="Position Secured"
+            >
+              {positions.map(position => (
+                <MenuItem key={position} value={position}>{position}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        );
+        
+      case 'eventLocation':
+        return (
+          <FormControl fullWidth margin="normal" required={isRequired}>
+            <InputLabel>Event Location</InputLabel>
+            <Select
+              name="eventLocation"
+              value={formData.eventLocation}
+              onChange={handleInputChange}
+              label="Event Location"
+            >
+              {eventLocations.map(location => (
+                <MenuItem key={location} value={location}>{location}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        );
+        
+      case 'eventScope':
+        return (
+          <FormControl fullWidth margin="normal" required={isRequired}>
+            <InputLabel>Event Scope</InputLabel>
+            <Select
+              name="eventScope"
+              value={formData.eventScope}
+              onChange={handleInputChange}
+              label="Event Scope"
+            >
+              {eventScopes.map(scope => (
+                <MenuItem key={scope} value={scope}>{scope}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        );
+        
+      case 'eventOrganizer':
+        return (
+          <FormControl fullWidth margin="normal" required={isRequired}>
+            <InputLabel>Event Organizer</InputLabel>
+            <Select
+              name="eventOrganizer"
+              value={formData.eventOrganizer}
+              onChange={handleInputChange}
+              label="Event Organizer"
+            >
+              {eventOrganizers.map(organizer => (
+                <MenuItem key={organizer} value={organizer}>{organizer}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        );
+        
+      case 'participationType':
+        return (
+          <FormControl fullWidth margin="normal" required={isRequired}>
+            <InputLabel>Participation Type</InputLabel>
+            <Select
+              name="participationType"
+              value={formData.participationType}
+              onChange={handleInputChange}
+              label="Participation Type"
+            >
+              {participationTypes.map(type => (
+                <MenuItem key={type} value={type}>{type}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        );
+        
+      case 'priceMoney':
+        return (
+          <TextField
+            name="priceMoney"
+            label="Prize Money"
+            value={formData.priceMoney}
+            onChange={handleInputChange}
+            fullWidth
+            margin="normal"
+            required={isRequired}
+            type="number"
+          />
+        );
+        
+      case 'teamSize':
+        return (
+          <TextField
+            name="teamSize"
+            label="Team Size"
+            value={formData.teamSize}
+            onChange={handleInputChange}
+            fullWidth
+            margin="normal"
+            required={isRequired}
+            type="number"
+          />
+        );
+        
+      case 'teamName':
+        return (
+          <TextField
+            name="teamName"
+            label="Team Name"
+            value={formData.teamName}
+            onChange={handleInputChange}
+            fullWidth
+            margin="normal"
+            required={isRequired}
+          />
+        );
+        
+      case 'publicationType':
+        return (
+          <FormControl fullWidth margin="normal" required={isRequired}>
+            <InputLabel>Publication Type</InputLabel>
+            <Select
+              name="publicationType"
+              value={formData.publicationType}
+              onChange={handleInputChange}
+              label="Publication Type"
+            >
+              {["IEEE", "Springer", "ACM", "Other"].map(type => (
+                <MenuItem key={type} value={type}>{type}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        );
+        
+      case 'description':
+        return (
+          <TextField
+            name="description"
+            label="Description"
+            value={formData.description}
+            onChange={handleInputChange}
+            fullWidth
+            margin="normal"
+            required={isRequired}
+            multiline
+            rows={4}
+          />
+        );
+        
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="p-6">
+      <Paper className="p-6 shadow-md">
+        <Typography variant="h5" className="mb-4 font-medium text-gray-800">
+          Submit New Event
+        </Typography>
+        
+        {formError && (
+          <Alert severity="error" className="mb-4" onClose={() => setFormError(null)}>
+            {formError}
+          </Alert>
+        )}
+        
+        {isLoading ? (
+          <Box className="flex justify-center my-8">
+            <CircularProgress />
+          </Box>
+        ) : (
+          <form onSubmit={handleSubmit}>
+            {formData.category && (
+              <div className="mb-6 bg-blue-50 p-4 rounded border border-blue-100">
+                <Typography variant="subtitle1" className="flex items-center">
+                  <Info size={16} className="mr-2 text-blue-500" />
+                  Submitting an event in the <strong className="mx-1">{formData.category}</strong> category
+                </Typography>
+              </div>
+            )}
+            
+            <div className="mb-6">
+              <Typography variant="h6" className="mb-2 text-gray-800 font-medium">1. Event Category</Typography>
+              <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                {renderField('category')}
               </div>
             </div>
-
-            {/* Rest of the form sections */}
-            {formFields.slice(1).map((section, sectionIndex) => (
-              <div key={sectionIndex} className="space-y-6">
-                <h3 className="text-lg font-semibold text-gray-700 border-b pb-2">
-                  {section.section}
-                </h3>
-                
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                  {section.fields.map((field, fieldIndex) => (
-                    <div key={fieldIndex}>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        {field.label}
-                        {field.name === 'pdfDocument' && " (Max 2MB)"}
-                        {field.name === 'proofImage' && " (Max 2MB)"}
-                      </label>
+            
+            {formData.category && visibleFields.length > 0 ? (
+              <div className="mb-6">
+                <Typography variant="h6" className="mb-2 text-gray-800 font-medium">2. Event Details</Typography>
+                <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm space-y-4">
+                  {visibleFields
+                    .filter(field => field !== 'category')
+                    .map(field => (
+                      <div key={field} className="border-b border-gray-100 pb-4 last:border-b-0 last:pb-0">
+                        {renderField(field)}
+                      </div>
+                    ))
+                  }
+                </div>
+              </div>
+            ) : formData.category ? (
+              <div className="bg-yellow-50 p-4 border border-yellow-200 rounded-md my-4">
+                <Typography variant="body2" className="text-yellow-800">
+                  Loading form fields for this category...
+                </Typography>
+              </div>
+            ) : null}
+            
+            {formFields.customQuestions?.length > 0 && (
+              <div className="mb-6">
+                <Typography variant="h6" className="mb-2 text-gray-800 font-medium">3. Additional Information</Typography>
+                <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                  {formFields.customQuestions.map(question => (
+                    <div key={question.id} className="mb-4 border-b border-gray-100 pb-4 last:border-b-0 last:pb-0">
+                      <Typography 
+                        variant="subtitle1" 
+                        className="mb-2 font-medium"
+                      >
+                        {question.text} {question.required && <span className="text-red-500">*</span>}
+                      </Typography>
                       
-                      {field.type === 'select' ? (
-                        <select
-                          name={field.name}
-                          value={formData[field.name]}
-                          onChange={handleChange}
-                          className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-                        >
-                          {field.options.map((option, i) => (
-                            <option key={i} value={option}>{option}</option>
-                          ))}
-                        </select>
-                      ) : (
-                        <div>
-                          <input
-                            type={field.type}
-                            name={field.name}
-                            onChange={handleChange}
-                            value={field.type !== 'file' ? formData[field.name] : undefined}
-                            placeholder={field.placeholder}
-                            accept={field.accept}
-                            className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-                          />
-                          {field.name === 'proofImage' && imagePreview && (
-                            <div className="mt-3">
-                              <img
-                                src={imagePreview}
-                                alt="Preview"
-                                className="w-32 h-32 object-cover rounded-md"
-                              />
-                            </div>
-                          )}
-                          {field.name === 'pdfDocument' && pdfPreview && !errors.pdfDocument && (
-                            <div className="mt-3 flex items-center space-x-2 text-sm text-gray-600">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
-                              </svg>
-                              <span>{formData.pdfDocument.name}</span>
-                              <span className="text-xs">
-                                ({(formData.pdfDocument.size / (1024 * 1024)).toFixed(2)} MB)
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      
-                      {errors[field.name] && (
-                        <p className="mt-1 text-sm text-red-600">{errors[field.name]}</p>
+                      {question.type === 'text' && (
+                        <TextField
+                          fullWidth
+                          multiline
+                          rows={2}
+                          value={customAnswers[question.id] || ''}
+                          onChange={(e) => handleCustomAnswerChange(question.id, e.target.value)}
+                          required={question.required}
+                        />
                       )}
                     </div>
                   ))}
                 </div>
               </div>
-            ))}
-            
-            {apiError && (
-              <div className="text-red-500 text-center p-3 bg-red-50 rounded-md">
-                {apiError}
+            )}
+
+            {(formFields.proofConfig?.requireCertificateImage || formFields.proofConfig?.requirePdfProof) && (
+              <div className="mb-6">
+                <Typography variant="h6" className="mb-2 text-gray-800 font-medium">4. Supporting Evidence</Typography>
+                <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                  
+                  {formFields.proofConfig?.requireCertificateImage && (
+                    <div className="mb-6">
+                      <Typography variant="subtitle1" className="mb-2 flex items-center font-medium">
+                        <Image size={18} className="mr-2 text-blue-500" />
+                        Certificate Images {formFields.proofConfig.requireCertificateImage && <span className="text-red-500 ml-1">*</span>}
+                      </Typography>
+                      
+                      <input
+                        accept="image/*"
+                        type="file"
+                        onChange={handleCertificateFilesChange}
+                        multiple={formFields.proofConfig.allowMultipleCertificates}
+                        className="w-full border p-2 rounded mb-2"
+                      />
+                      
+                      {formFields.proofConfig.maxCertificateSize && (
+                        <Typography variant="caption" color="textSecondary">
+                          Max file size: {formFields.proofConfig.maxCertificateSize}MB
+                          {formFields.proofConfig.allowMultipleCertificates ? '. Multiple files allowed.' : ''}
+                        </Typography>
+                      )}
+                      
+                      {certificateFiles.length > 0 && (
+                        <div className="mt-3 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                          {certificateFiles.map((file, index) => (
+                            <div key={index} className="relative border rounded overflow-hidden">
+                              <img 
+                                src={URL.createObjectURL(file)}
+                                alt={`Certificate ${index + 1}`}
+                                className="w-full h-20 object-cover"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeCertificateFile(index)}
+                                className="absolute top-0 right-0 bg-red-500 text-white p-1 rounded-bl"
+                              >
+                                <X size={14} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {formFields.proofConfig?.requirePdfProof && (
+                    <div>
+                      <Typography variant="subtitle1" className="mb-2 flex items-center font-medium">
+                        <FileText size={18} className="mr-2 text-blue-500" />
+                        PDF Proof Document {formFields.proofConfig.requirePdfProof && <span className="text-red-500 ml-1">*</span>}
+                      </Typography>
+                      
+                      <input
+                        accept="application/pdf"
+                        type="file"
+                        onChange={handleFileChange}
+                        className="w-full border p-2 rounded mb-2"
+                      />
+                      
+                      {formFields.proofConfig.maxPdfSize && (
+                        <Typography variant="caption" color="textSecondary">
+                          Max file size: {formFields.proofConfig.maxPdfSize}MB
+                        </Typography>
+                      )}
+                      
+                      {pdfFile && (
+                        <div className="mt-2 p-2 bg-gray-50 border rounded flex items-center justify-between">
+                          <div className="flex items-center">
+                            <FileText className="mr-2 text-blue-500" size={18} />
+                            <Typography variant="body2">{pdfFile.name}</Typography>
+                          </div>
+                          <IconButton size="small" onClick={() => setPdfFile(null)}>
+                            <X size={16} />
+                          </IconButton>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
             
-            <div className="flex items-center justify-between mt-6 pt-6 border-t">
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+            <Box className="mt-8 flex justify-end border-t pt-4">
+              <Button
+                type="button"
+                variant="outlined"
+                color="secondary"
+                className="mr-4"
+                onClick={resetForm}
+                disabled={isSubmitting}
               >
-                {isLoading ? 'Submitting...' : 'Submit Event'}
-              </button>
-            </div>
-            
-            {uploadStatus && (
-              <p className="text-sm text-center mt-4 text-gray-600">{uploadStatus}</p>
-            )}
+                Reset Form
+              </Button>
+              <Button
+                type="submit"
+                variant="contained"
+                color="primary"
+                disabled={isSubmitting}
+                startIcon={isSubmitting ? <CircularProgress size={20} color="inherit" /> : null}
+                className="px-6"
+              >
+                {isSubmitting ? 'Submitting...' : 'Submit Event'}
+              </Button>
+            </Box>
           </form>
-        </div>
-      </div>
+        )}
+      </Paper>
     </div>
   );
 };
