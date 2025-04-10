@@ -87,8 +87,9 @@ const AdminDashboard = () => {
     formData.append('file', studentsFile);
 
     try {
-      const response = await fetch(`${VITE_BASE_URL}/class/add-students-in-bulk`, {
-        method: 'PUT',
+      // Updated API endpoint to match expected functionality
+      const response = await fetch(`${VITE_BASE_URL}/student/register-bulk`, {
+        method: 'POST',  // Changed to POST since we're creating new records
         body: formData
       });
       const data = await response.json();
@@ -123,7 +124,7 @@ const AdminDashboard = () => {
 
     try {
       // Replace with your API endpoint
-      const response = await fetch(`${VITE_BASE_URL}/teacher//bulk-register`, {
+      const response = await fetch(`${VITE_BASE_URL}/teacher/bulk-register`, {
          method: 'POST',
          body: formData
        });
