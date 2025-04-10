@@ -192,7 +192,10 @@ const CategoryRulesConfig = () => {
   const renderCategoryRules = () => {
     console.log("Rendering categories:", categories);
     
-    if (!categories || categories.length === 0) {
+    // Filter out the "Others" category entirely as requested
+    const filteredCategories = categories.filter(category => category !== 'Others');
+    
+    if (!filteredCategories || filteredCategories.length === 0) {
       return (
         <Alert severity="warning" className="mb-4">
           No categories available. Please check your configuration.
@@ -200,7 +203,7 @@ const CategoryRulesConfig = () => {
       );
     }
     
-    return categories.map(category => {
+    return filteredCategories.map(category => {
       // Get configuration depth metrics to show in the UI
       const hasConfig = !!rulesConfig[category];
       let participationTypes = [];

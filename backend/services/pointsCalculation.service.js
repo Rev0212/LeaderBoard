@@ -25,6 +25,11 @@ class PointsCalculationService {
    */
   static async calculateFromCategoryRules(event, rules) {
     if (!rules || !rules[event.category]) {
+      // If no specific rule for this category, try to use a default rule
+      if (rules && rules['Others']) {
+        console.log(`No specific rule for ${event.category}, using 'Others' rules`);
+        return this.calculateFromCategoryRules({...event, category: 'Others'}, rules);
+      }
       return null;
     }
     

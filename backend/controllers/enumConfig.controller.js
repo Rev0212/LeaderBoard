@@ -34,9 +34,19 @@ const getEnumByType = async (req, res) => {
     const enumConfig = await EnumConfig.findOne({ type });
     
     if (!enumConfig) {
-      return res.status(404).json({
-        success: false,
-        message: `No enum configuration found for type: ${type}`
+      // Create default empty config if not found
+      const defaultConfig = new EnumConfig({
+        type,
+        values: [],
+        lastUpdated: Date.now(),
+        updatedBy: req.admin._id
+      });
+      await defaultConfig.save();
+      
+      return res.status(200).json({
+        success: true,
+        data: defaultConfig,
+        message: `Created new empty ${type} configuration`
       });
     }
     
@@ -45,7 +55,7 @@ const getEnumByType = async (req, res) => {
       data: enumConfig
     });
   } catch (error) {
-    console.error('Error fetching enum configuration:', error);
+    console.error(`Error fetching enum configuration for ${req.params.type}:`, error);
     res.status(500).json({
       success: false,
       message: error.message
@@ -244,9 +254,15 @@ const getCategoryRules = async (req, res) => {
   try {
     const config = await PointsConfig.getCurrentConfig('categoryRules');
     
+    // Get all available categories
+    const categoryEnum = await EnumConfig.findOne({ type: 'category' });
+    const availableCategories = categoryEnum ? categoryEnum.values : [];
+    
+    // Enhance response with available categories
     res.status(200).json({
       success: true,
-      data: config || { configuration: {} }
+      data: config || { configuration: {} },
+      availableCategories
     });
   } catch (error) {
     console.error('Error fetching category rules:', error);
