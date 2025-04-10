@@ -100,6 +100,11 @@ only when clicked on that its coming
 
 
 
+MongoDB server
+Edit your MongoDB config file (usually at /etc/mongod.conf
+replication:
+  replSetName: "rs0"
+
 FUTURE UPDATES
 HOD, chair mam can ask question to student, so if she wanna ask question to whole department, class or even sepeate couse
     1 - CHAIRMAM all 4 department 

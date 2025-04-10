@@ -196,9 +196,12 @@ exports.updatePointsConfig = async (req, res) => {
           const pointsDiff = newPoints - oldPoints;
           
           if (pointsDiff !== 0) {
-            // Update event points
-            event.pointsEarned = newPoints;
-            await event.save({ session });
+            // Update only the pointsEarned field without triggering full validation
+            await Event.findByIdAndUpdate(
+              event._id,
+              { pointsEarned: newPoints },
+              { session, runValidators: false }
+            );
             
             // Update student total points
             await Student.findByIdAndUpdate(
