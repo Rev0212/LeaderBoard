@@ -3,11 +3,13 @@ const PointsConfig = require('../models/pointsConfig.model');
 const Event = require('../models/event.model');
 const Student = require('../models/student.model');
 const mongoose = require('mongoose');
+const FormFieldService = require('../services/formField.service');
+const PointsCalculationService = require('../services/pointsCalculation.service');
 
 /**
  * Get all enum configurations
  */
-exports.getAllEnums = async (req, res) => {
+const getAllEnums = async (req, res) => {
   try {
     const enums = await EnumConfig.find();
     res.status(200).json({
@@ -26,7 +28,7 @@ exports.getAllEnums = async (req, res) => {
 /**
  * Get enum configuration by type
  */
-exports.getEnumByType = async (req, res) => {
+const getEnumByType = async (req, res) => {
   try {
     const { type } = req.params;
     const enumConfig = await EnumConfig.findOne({ type });
@@ -54,7 +56,7 @@ exports.getEnumByType = async (req, res) => {
 /**
  * Update enum values
  */
-exports.updateEnum = async (req, res) => {
+const updateEnum = async (req, res) => {
   try {
     const { type } = req.params;
     const { values } = req.body;
@@ -113,7 +115,7 @@ exports.updateEnum = async (req, res) => {
 /**
  * Get current points configuration
  */
-exports.getPointsConfig = async (req, res) => {
+const getPointsConfig = async (req, res) => {
   try {
     const config = await PointsConfig.getCurrentConfig();
     
@@ -133,7 +135,7 @@ exports.getPointsConfig = async (req, res) => {
 /**
  * Update points configuration
  */
-exports.updatePointsConfig = async (req, res) => {
+const updatePointsConfig = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
   
@@ -233,4 +235,188 @@ exports.updatePointsConfig = async (req, res) => {
   } finally {
     session.endSession();
   }
+};
+
+/**
+ * Get category-based rules configuration
+ */
+const getCategoryRules = async (req, res) => {
+  try {
+    const config = await PointsConfig.getCurrentConfig('categoryRules');
+    
+    res.status(200).json({
+      success: true,
+      data: config || { configuration: {} }
+    });
+  } catch (error) {
+    console.error('Error fetching category rules:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+/**
+ * Update category-based rules configuration
+ */
+const updateCategoryRules = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  
+  try {
+    const { configuration, notes } = req.body;
+    
+    if (!configuration || typeof configuration !== 'object') {
+      return res.status(400).json({
+        success: false,
+        message: 'Configuration must be provided as an object'
+      });
+    }
+    
+    // Get current configuration
+    const currentConfig = await PointsConfig.getCurrentConfig('categoryRules');
+    
+    // Create new configuration
+    const newConfig = new PointsConfig({
+      configType: 'categoryRules',
+      configuration,
+      updatedBy: req.admin._id,
+      notes,
+      version: currentConfig ? currentConfig.version + 1 : 1
+    });
+    
+    await newConfig.save({ session });
+    
+    // Mark previous configuration as inactive
+    if (currentConfig) {
+      await PointsConfig.updateMany(
+        { configType: 'categoryRules', _id: { $ne: newConfig._id } },
+        { isActive: false },
+        { session }
+      );
+    }
+    
+    // Recalculate all approved events
+    const events = await Event.find({ status: 'Approved' }).session(session);
+    console.log(`Found ${events.length} approved events to recalculate`);
+    
+    for (const event of events) {
+      // Calculate new points based on all factors
+      const newPoints = await PointsCalculationService.calculatePoints(event);
+      const oldPoints = event.pointsEarned || 0;
+      const pointsDiff = newPoints - oldPoints;
+      
+      if (pointsDiff !== 0) {
+        // Update event points
+        await Event.findByIdAndUpdate(
+          event._id,
+          { pointsEarned: newPoints },
+          { session, runValidators: false }
+        );
+        
+        // Update student total points
+        await Student.findByIdAndUpdate(
+          event.submittedBy,
+          { $inc: { totalPoints: pointsDiff } },
+          { session }
+        );
+        
+        console.log(`Updated event ${event._id}, points change: ${pointsDiff}`);
+      }
+    }
+    
+    await session.commitTransaction();
+    
+    res.status(200).json({
+      success: true,
+      data: newConfig,
+      message: 'Category rules updated successfully'
+    });
+  } catch (error) {
+    await session.abortTransaction();
+    console.error('Error updating category rules:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  } finally {
+    session.endSession();
+  }
+};
+
+/**
+ * Get form field configuration for a category
+ */
+const getFormFieldConfig = async (req, res) => {
+  try {
+    const { category } = req.params;
+    
+    if (!category) {
+      return res.status(400).json({
+        success: false,
+        message: 'Category parameter is required'
+      });
+    }
+    
+    const formFields = await FormFieldService.getFieldsForCategory(category);
+    
+    res.status(200).json({
+      success: true,
+      data: formFields
+    });
+  } catch (error) {
+    console.error('Error fetching form field configuration:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+/**
+ * Update form field configuration
+ */
+const updateFormFieldConfig = async (req, res) => {
+  try {
+    const { category } = req.params;
+    const { requiredFields, optionalFields, conditionalFields } = req.body;
+    
+    if (!category) {
+      return res.status(400).json({
+        success: false,
+        message: 'Category parameter is required'
+      });
+    }
+    
+    const updatedConfig = await FormFieldService.updateFieldsForCategory(
+      category,
+      { requiredFields, optionalFields, conditionalFields },
+      req.admin._id
+    );
+    
+    res.status(200).json({
+      success: true,
+      data: updatedConfig,
+      message: 'Form field configuration updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating form field configuration:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+module.exports = {
+  getAllEnums,
+  getEnumByType,
+  updateEnum,
+  getPointsConfig,
+  updatePointsConfig,
+  getCategoryRules,
+  updateCategoryRules,
+  getFormFieldConfig,
+  updateFormFieldConfig
 };

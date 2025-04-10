@@ -1,7 +1,8 @@
 const eventService = require('../services/event.services');
-const studentModel = require('../models/student.model')
-const teacherModel = require('../models/teacher.model')
-const eventModel = require('../models/event.model')
+const studentModel = require('../models/student.model');
+const teacherModel = require('../models/teacher.model');
+const eventModel = require('../models/event.model');
+const PointsCalculationService = require('../services/pointsCalculation.service');
 
 // Student submits a new event
 const submitEvent = async (req, res) => {
@@ -72,74 +73,50 @@ const reviewEvent = async (req, res) => {
     try {
         const { id } = req.params;
         const { status } = req.body;
-
-        console.log(id);
-        console.log(status);
-
-        // Ensure teacherId exists and is valid
-        if (!req.teacher || !req.teacher._id) {
-            throw new Error("Teacher ID is missing.");
-        }
-
-        const teacherId = req.teacher._id;
-
-        // Retrieve the teacher and their classes
-        const teacher = await teacherModel.findById(teacherId);
-        if (!teacher || !teacher.classes || teacher.classes.length === 0) {
-            throw new Error("Teacher or teacher's classes not found.");
-        }
-
-        const teacherClassIds = teacher.classes; 
-
-        // Fetch the event details to get the student ID
-        const event = await eventModel.findById(id).populate('submittedBy');
+        
+        const event = await eventModel.findById(id);
         if (!event) {
-            throw new Error("Event not found.");
+            return res.status(404).json({
+                success: false,
+                message: 'Event not found'
+            });
         }
-
-        const studentId = event.submittedBy._id;
-        // Don't populate class since we're using currentClass
-        const student = await studentModel.findById(studentId);
-
-        if (!student) {
-            throw new Error("Student not found.");
+        
+        event.status = status;
+        event.approvedBy = req.teacher._id;
+        
+        if (status === 'Approved') {
+            // Use new points calculation service
+            event.pointsEarned = await PointsCalculationService.calculatePoints(event);
+            
+            // Update student total points
+            await studentModel.findByIdAndUpdate(
+                event.submittedBy,
+                { $inc: { totalPoints: event.pointsEarned } }
+            );
+        } else {
+            // If event was previously approved, subtract points
+            if (event.status === 'Approved' && event.pointsEarned > 0) {
+                await studentModel.findByIdAndUpdate(
+                    event.submittedBy,
+                    { $inc: { totalPoints: -event.pointsEarned } }
+                );
+            }
+            event.pointsEarned = 0;
         }
-
-        // Check if student has currentClass assigned
-        if (!student.currentClass || !student.currentClass.ref) {
-            throw new Error("Student's class information is missing.");
-        }
-
-        // Convert both IDs to strings for comparison
-        const studentClassId = student.currentClass.ref.toString();
-        if (!teacherClassIds.some(classId => classId.toString() === studentClassId)) {
-            throw new Error("Teacher and student are not in the same class.");
-        }
-
-        // Update the event after confirming the class match
-        const updatedEvent = await eventService.reviewEvent(id, status, teacherId);
-
-        // Update the student's eventsParticipated and totalPoints
-        if (!student.eventsParticipated) {
-            student.eventsParticipated = [];
-        }
-
-        student.eventsParticipated.push(updatedEvent._id);
-        const oldPoints = student.totalPoints;
-        console.log(oldPoints);
-        student.totalPoints = oldPoints + updatedEvent.pointsEarned;
-        console.log(student.totalPoints);
-        await student.save();
-
-        res.status(200).json({ 
-            message: 'Event reviewed successfully', 
-            event: updatedEvent 
+        
+        await event.save();
+        
+        res.status(200).json({
+            success: true,
+            data: event,
+            message: `Event ${status.toLowerCase()} successfully`
         });
     } catch (error) {
-        console.error("Error:", error);
-        res.status(500).json({ 
-            error: 'Failed to review event', 
-            details: error.message 
+        console.error('Error reviewing event:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message
         });
     }
 };

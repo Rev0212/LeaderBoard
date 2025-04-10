@@ -67,5 +67,5 @@ app.use('/reports', roleBasedEventReportsRoutes);
 app.use('/feedback', feedbackRoutes);
 app.use('/faculty-reports', facultyReportRoutes);
 app.use('/admin/config', enumConfigRoutes);
-
+app.use('/admin/enums', enumConfigRoutes);  // This should match the path you're accessing
 module.exports = app;
