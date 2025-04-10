@@ -24,11 +24,21 @@ app.use(cookieParser());
 // Ensure this line exists and is using the correct path
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Serve static files from the React frontend app
-app.use(express.static(path.join(__dirname, '../frontend/dist')));
-
-// Serve uploads directory for file access
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Modify your Express static file middleware to check if the environment is production
+if (process.env.NODE_ENV === 'production') {
+  // Only serve static files in production
+  app.use(express.static(path.join(__dirname, '../frontend/dist')));
+  
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
+  });
+} else {
+  // In development, only handle API routes
+  // Don't try to serve frontend static files
+  app.get('/', (req, res) => {
+    res.send('API is running in development mode');
+  });
+}
 
 // Routes
 const studentRoutes = require('./routes/student.routes');
@@ -42,6 +52,7 @@ const assignmentRoutes = require('./routes/assignment.routes');
 const roleBasedEventReportsRoutes = require('./routes/roleBasedEventReports.routes');
 const feedbackRoutes = require('./routes/feedback.routes');
 const facultyReportRoutes = require('./routes/facultyReport.routes');
+const enumConfigRoutes = require('./routes/enumConfig.routes');
 
 // Mount routes
 app.use('/student', studentRoutes);
@@ -55,14 +66,6 @@ app.use('/assignment', assignmentRoutes);
 app.use('/reports', roleBasedEventReportsRoutes);
 app.use('/feedback', feedbackRoutes);
 app.use('/faculty-reports', facultyReportRoutes);
-
-app.get('/', (req, res) => {
-    res.send('Server is running!');
-});
-
-// Handle any requests that don't match the ones above
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
-});
+app.use('/admin/config', enumConfigRoutes);
 
 module.exports = app;

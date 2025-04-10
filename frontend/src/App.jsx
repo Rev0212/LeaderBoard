@@ -22,6 +22,8 @@ import ClassDetailsView from './pages/AdvisorHod/ClassDetailsView';
 import UpcomingEvents from './pages/UpcomingEvents';
 import StudentEventHistory from './components/StudentEventHistory';
 import AdminFeedbackReview from './pages/Admin/AdminFeedbackReview';
+import EnumManagement from './pages/Admin/EnumManagement';
+import ProtectedRoute from './components/ProtectedRoute';
 
 const App = () => {
   return (
@@ -52,6 +54,11 @@ const App = () => {
       <Route path='/events' element={<EventHistoryTable />} />
       <Route path='/admin-dashboard' element={<AdminDashboard />} />
       <Route path="/admin/feedback" element={<AdminFeedbackReview />} />
+      <Route path="/admin/system-config" element={
+        <ProtectedRoute allowedRoles={['admin']}>
+          <EnumManagement />
+        </ProtectedRoute>
+      } />
     </Routes>
   );
 };

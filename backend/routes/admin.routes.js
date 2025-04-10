@@ -2,11 +2,12 @@ const express = require('express');
 const router = express.Router();
 const { body } = require("express-validator");
 const adminController = require('../controllers/admin.controller');
-const { authAdmin } = require('../middlewares/auth.middlewares');
+const { authAdmin, requireSuperAdmin } = require('../middlewares/auth.middlewares');
 const adminModel = require('../models/admin.model');
 const classController = require('../controllers/class.controller');
 const eventController = require('../controllers/event.controller');
 const Feedback = require('../models/feedback.model');
+const impactAnalysisController = require('../controllers/impactAnalysis.controller');
 
 // Password validation regex pattern
 const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
@@ -47,9 +48,9 @@ adminController.loginadmin);
 router.get('/profile', authAdmin, adminController.getAdminProfile);
 
 // Update dashboard routes - make sure there are no references to missing controller functions
-router.get('/dashboard', authAdmin, adminController.getDashboardData);
-// Comment out this line if adminController.someAdminAction doesn't exist
-// router.post('/some-admin-action', authAdmin, adminController.someAdminAction);
+router.get('/dashboard', authAdmin, (req, res) => {
+    res.json({ message: 'Dashboard data endpoint - implementation pending' });
+});
 
 // Logout route (commented out but available if needed)
 // router.get('/logout', authMiddleware.authAdmin, adminController.logoutadmin);
@@ -82,5 +83,7 @@ router.get('/feedback', async (req, res) => {
         res.status(500).json({ message: 'Error fetching feedbacks' });
     }
 });
+
+router.post('/points/impact-analysis', requireSuperAdmin, impactAnalysisController.analyzePointsChange);
 
 module.exports = router;

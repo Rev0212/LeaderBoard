@@ -66,6 +66,7 @@ const AdminLogin = () => {
     setIsLoading(true);
     try {
         const response = await axios.post(`${VITE_BASE_URL}/admin/login`, formData);
+        console.log('Login response:', response.data);
         localStorage.setItem('admin-token', response.data.token);
         setSuccessMessage('Login successful!');
         navigate('/admin-dashboard');

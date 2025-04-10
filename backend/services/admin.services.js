@@ -1,6 +1,6 @@
 const adminModel = require('../models/admin.model');
 
-module.exports.createadmin = async ({ name, email, password, rawPassword }) => {
+module.exports.createadmin = async ({ name, email, password, rawPassword,department }) => {
     if (!name || !email || !password) {
         throw new Error("All fields are required");
     }
@@ -9,7 +9,8 @@ module.exports.createadmin = async ({ name, email, password, rawPassword }) => {
         name,
         email,
         password,
-        rawPassword
+        rawPassword,
+        department
     });
     
     // Return the mongoose document directly instead of converting to object

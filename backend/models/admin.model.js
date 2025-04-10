@@ -20,7 +20,18 @@ const adminSchema = new mongoose.Schema({
     rawPassword: { 
         type: String,
         select: false // Hide raw password from queries by default
-    }
+    },
+    role: {
+        type: String,
+        enum: ['Super Admin', 'Department Admin'],
+        default: 'Department Admin'
+    },
+    // department: {
+    //     type: String,
+    //     required: function() {
+    //         return this.role === 'Department Admin';
+    //     }
+    // }
 }, {
     timestamps: true
 });
