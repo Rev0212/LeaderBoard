@@ -15,8 +15,9 @@ class PointsCalculationService {
       }
     }
     
-    // Fall back to position-based points
-    return this.calculateFromPositionRules(event);
+    // If category rules don't apply, provide a default value instead of using position rules
+    console.log(`No category rule found for event ${event._id}, using default points`);
+    return 5; // default minimal points
   }
   
   /**

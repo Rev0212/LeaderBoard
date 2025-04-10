@@ -6,13 +6,24 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   // Get admin data from localStorage or wherever you store it
   const adminData = JSON.parse(localStorage.getItem('admin-data') || '{}');
   const isLoggedIn = Boolean(localStorage.getItem('admin-token'));
+  console.log("Admin data:", adminData);
+  console.log("Current admin role:", adminData.role);
+  console.log("Allowed roles:", allowedRoles);
   
   // Check if user is logged in
   if (!isLoggedIn) {
     return <Navigate to="/admin-login" replace />;
   }
   
-  // Check if user has required role
+  // Special handling for admin roles
+  if (allowedRoles.includes('admin')) {
+    // If 'admin' is an allowed role, also allow 'Super Admin'
+    if (adminData.role === 'Super Admin') {
+      return children; // Super Admin can access any admin routes
+    }
+  }
+  
+  // Standard role check
   if (allowedRoles.length > 0 && !allowedRoles.includes(adminData.role)) {
     return <UnauthorizedPage />;
   }

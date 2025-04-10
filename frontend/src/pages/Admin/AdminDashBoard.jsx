@@ -282,7 +282,7 @@ const AdminDashboard = () => {
               Feedback Review
             </button>
             <button
-              onClick={() => setActiveTab('enum-management')}
+              onClick={() => navigate('/admin/system-config')}
               className={`w-full p-4 flex items-center gap-2 ${
                 activeTab === 'enum-management' ? 'bg-blue-50 text-blue-600' : 'text-gray-600'
               }`}
@@ -422,7 +422,17 @@ const AdminDashboard = () => {
         )}
 
         {activeTab === 'enum-management' && (
-          <EnumManagement />
+          <div className="bg-white p-6 rounded-lg shadow">
+            <button 
+              onClick={() => navigate('/admin/system-config')}
+              className="mb-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            >
+              Open Advanced Configuration
+            </button>
+            <p className="text-gray-600">
+              Manage categories, points rules, and form configurations in the advanced system configuration page.
+            </p>
+          </div>
         )}
       </div>
     </div>
