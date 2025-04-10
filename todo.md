@@ -78,6 +78,15 @@ getTrends
 getClassParticipation -->
 
 
+10 Apr
+
+Right to modify the enum (add remove update the catogory)
+Create the points calculation
+Update the admin frontend
+if incase the admin changes the point table in must reflect for the past events where students have already secured the points
+    my plan is example
+        if event x secured position's points has been changed
+            go to event table find all the events of it update the respective points in events and update the students +- of his total points
 
 
 
@@ -97,3 +106,4 @@ HOD, chair mam can ask question to student, so if she wanna ask question to whol
     2 associate
         1- 2 department
         2- 2 department
+
