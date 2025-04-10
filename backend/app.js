@@ -24,6 +24,12 @@ app.use(cookieParser());
 // Ensure this line exists and is using the correct path
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Serve static files from the React frontend app
+app.use(express.static(path.join(__dirname, '../frontend/dist')));
+
+// Serve uploads directory for file access
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Routes
 const studentRoutes = require('./routes/student.routes');
 const teacherRoutes = require('./routes/teacher.routes');
@@ -35,6 +41,7 @@ const upcomingEventRoutes = require('./routes/upcomingEvent.routes');
 const assignmentRoutes = require('./routes/assignment.routes');
 const roleBasedEventReportsRoutes = require('./routes/roleBasedEventReports.routes');
 const feedbackRoutes = require('./routes/feedback.routes');
+const facultyReportRoutes = require('./routes/facultyReport.routes');
 
 // Mount routes
 app.use('/student', studentRoutes);
@@ -47,9 +54,15 @@ app.use('/upcoming-events', upcomingEventRoutes);
 app.use('/assignment', assignmentRoutes);
 app.use('/reports', roleBasedEventReportsRoutes);
 app.use('/feedback', feedbackRoutes);
+app.use('/faculty-reports', facultyReportRoutes);
 
 app.get('/', (req, res) => {
     res.send('Server is running!');
+});
+
+// Handle any requests that don't match the ones above
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
 });
 
 module.exports = app;

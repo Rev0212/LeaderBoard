@@ -6,8 +6,62 @@ import LeaderboardTable from "../../components/LeaderBoard";
 import StudentEventHistory from "../../components/StudentEventHistory";
 import UpcomingEventsList from "../../components/UpcomingEventsList";
 import FeedbackForm from '../../components/FeedbackForm';
+import { motion, AnimatePresence } from "framer-motion";
 
 const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
+
+// Add these animation variants
+const fadeInUp = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.5 }
+};
+
+const staggerContainer = {
+  animate: {
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
+// First, update the iconSpin animation variant at the top of the file
+const iconSpin = {
+  initial: { rotate: 0 },
+  animate: { 
+    rotate: 360,
+    transition: {
+      duration: 2,
+      ease: "easeInOut",
+      repeat: 0,
+      repeatDelay: 0
+    }
+  }
+};
+
+// Add these new animation variants after the existing ones
+const slideInRight = {
+  initial: { x: 100, opacity: 0 },
+  animate: { x: 0, opacity: 1 },
+  transition: { duration: 0.6, ease: "easeOut" }
+};
+
+const scaleIn = {
+  initial: { scale: 0.8, opacity: 0 },
+  animate: { scale: 1, opacity: 1 },
+  transition: { duration: 0.5 }
+};
+
+const pulseAnimation = {
+  animate: {
+    scale: [1, 1.05, 1],
+    transition: {
+      duration: 2,
+      repeat: Infinity,
+      ease: "easeInOut"
+    }
+  }
+};
 
 const StudentDashboard = () => {
   const [studentData, setStudentData] = useState(null);
@@ -115,14 +169,17 @@ const StudentDashboard = () => {
   }
 
   const Sidebar = () => (
-    <div className={`
-      ${windowWidth >= 1024 
-        ? 'fixed left-0 top-0 h-full w-64 bg-white shadow-lg p-6 z-20' 
-        : `fixed z-50 top-0 left-0 w-64 h-full bg-white shadow-lg p-6 transform transition-transform duration-300 ${
-            isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-          }`
-      }
-    `}>
+    <motion.div
+      initial={windowWidth < 1024 ? { x: -300 } : false}
+      animate={{ x: 0 }}
+      transition={{ type: "spring", stiffness: 100 }}
+      className={`
+        ${windowWidth >= 1024 
+          ? 'fixed left-0 top-0 h-full w-64 bg-white shadow-lg p-6 z-20' 
+          : 'fixed z-50 top-0 left-0 w-64 h-full bg-white shadow-lg p-6'
+        }
+      `}
+    >
       <div className="flex flex-col justify-start">
         <h1 className="text-2xl font-bold text-gray-800 mb-6">Student Portal</h1>
         <nav className="space-y-2 flex-grow">
@@ -158,11 +215,16 @@ const StudentDashboard = () => {
           Logout
         </button>
       </div>
-    </div>
+    </motion.div>
   );
 
   const UpcomingEventsSection = () => (
-    <div className="bg-white rounded-lg shadow-md p-4">
+    <motion.div 
+      className="bg-white rounded-lg shadow-md p-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Calendar className="h-5 w-5 text-blue-500" />
@@ -176,11 +238,18 @@ const StudentDashboard = () => {
         </button>
       </div>
       
-      <div className="space-y-3">
+      <motion.div 
+        className="space-y-3"
+        variants={staggerContainer}
+        initial="initial"
+        animate="animate"
+      >
         {upcomingEvents.length > 0 ? (
           upcomingEvents.slice(0, 3).map((event) => (
-            <div
+            <motion.div
               key={event._id}
+              variants={fadeInUp}
+              whileHover={{ scale: 1.02 }}
               className="p-3 border rounded-lg hover:bg-gray-50 transition-colors"
             >
               <div className="flex flex-col gap-2">
@@ -203,13 +272,18 @@ const StudentDashboard = () => {
                   </a>
                 </div>
               </div>
-            </div>
+            </motion.div>
           ))
         ) : (
-          <p className="text-gray-500 text-center py-4">No upcoming events</p>
+          <motion.p 
+            variants={fadeInUp}
+            className="text-gray-500 text-center py-4"
+          >
+            No upcoming events
+          </motion.p>
         )}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 
   const DashboardContent = () => {
@@ -218,31 +292,55 @@ const StudentDashboard = () => {
 
     if (currentView === "feedback") {
       return (
-        <div className="bg-gray-50 min-h-screen p-6">
+        <motion.div 
+          className="bg-gray-50 min-h-screen p-6"
+          variants={slideInRight}
+          initial="initial"
+          animate="animate"
+        >
           <FeedbackForm />
-        </div>
+        </motion.div>
       );
     }
 
     if (currentView === "eventHistory") {
       return (
-        <div className="bg-gray-50 min-h-screen">
+        <motion.div 
+          className="bg-gray-50 min-h-screen"
+          variants={slideInRight}
+          initial="initial"
+          animate="animate"
+        >
           <StudentEventHistory handleBackToDashboard={() => setCurrentView("dashboard")} />
-        </div>
+        </motion.div>
       );
     }
 
     return (
       <div className="bg-gray-50 min-h-screen">
         {windowWidth < 1024 && (
-          <div className="flex justify-between items-center mb-4">
-            <button onClick={() => setIsMobileMenuOpen(true)}>
+          <motion.div 
+            className="flex justify-between items-center mb-4"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <motion.button 
+              onClick={() => setIsMobileMenuOpen(true)}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+            >
               <Menu size={24} />
-            </button>
-          </div>
+            </motion.button>
+          </motion.div>
         )}
 
-        <div className="grid grid-cols-3 gap-3 mb-6">
+        <motion.div 
+          className="grid grid-cols-3 gap-3 mb-6"
+          variants={staggerContainer}
+          initial="initial"
+          animate="animate"
+        >
           {[
             { 
               icon: Calendar, 
@@ -263,24 +361,69 @@ const StudentDashboard = () => {
               color: 'text-purple-500' 
             }
           ].map(({ icon: Icon, title, value, color }) => (
-            <div key={title} className="bg-white p-4 rounded-lg shadow-md">
+            <motion.div
+              key={title}
+              variants={fadeInUp}
+              whileHover={{ 
+                scale: 1.05,
+                boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+              }}
+              transition={{ type: "spring", stiffness: 300 }}
+              className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow"
+            >
               <div className="flex justify-between items-center mb-3">
                 <h3 className="text-base font-semibold text-gray-700">{title}</h3>
-                <Icon className={`h-5 w-5 ${color}`} />
+                <motion.div 
+                  initial="initial"
+                  animate="animate"
+                  variants={iconSpin}
+                  whileHover={{ scale: 1.1 }}
+                  key={title} // Add this to ensure unique animations
+                >
+                  <Icon className={`h-5 w-5 ${color}`} />
+                </motion.div>
               </div>
-              <p className="text-2xl font-bold text-gray-900">{value}</p>
-            </div>
+              <motion.p
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 0.5 }}
+                className="text-2xl font-bold text-gray-900"
+              >
+                {value}
+              </motion.p>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="lg:col-span-1">
+        <motion.div 
+          className="grid grid-cols-1 lg:grid-cols-3 gap-4"
+          variants={staggerContainer}
+          initial="initial"
+          animate="animate"
+        >
+          <motion.div 
+            variants={fadeInUp}
+            className="lg:col-span-1"
+          >
             <UpcomingEventsSection />
-          </div>
-          <div className="lg:col-span-2 bg-white rounded-lg shadow-md">
-            <LeaderboardTable />
-          </div>
-        </div>
+          </motion.div>
+          <motion.div 
+            variants={fadeInUp}
+            className="lg:col-span-2 bg-white rounded-lg shadow-md"
+            whileHover={{ 
+              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+            }}
+            transition={{ type: "spring", stiffness: 300 }}
+          >
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              <LeaderboardTable />
+            </motion.div>
+          </motion.div>
+        </motion.div>
       </div>
     );
   };

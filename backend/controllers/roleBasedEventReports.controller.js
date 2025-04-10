@@ -517,6 +517,46 @@ class RoleBasedEventReportsController {
       });
     }
   }
+
+  /**
+   * Get Academic Advisor's assigned year
+   */
+  static async getAdvisorYear(req, res, next) {
+    try {
+      // Only for Academic Advisors
+      if (req.teacher.role !== 'Academic Advisor') {
+        return res.status(200).json({ 
+          success: true, 
+          year: null
+        });
+      }
+      
+      // Find the advisor's classes and get their year
+      const advisorClasses = await Class.find({
+        academicAdvisors: req.teacher._id,
+        ...(req.teacher.department ? { department: req.teacher.department } : {})
+      }).distinct('year');
+      
+      if (advisorClasses.length === 0) {
+        return res.status(200).json({
+          success: true,
+          year: null
+        });
+      }
+      
+      // Return the first year (advisors typically handle one year)
+      res.status(200).json({ 
+        success: true, 
+        year: advisorClasses[0]
+      });
+    } catch (error) {
+      console.error('Error in getAdvisorYear controller:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to get advisor year'
+      });
+    }
+  }
 }
 
 module.exports = RoleBasedEventReportsController;

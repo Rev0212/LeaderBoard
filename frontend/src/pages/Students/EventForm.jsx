@@ -126,26 +126,26 @@ const EventForm = () => {
   ];
 
   const validateImage = (file) => {
-    const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
-    const maxSize = 2 * 1024 * 1024; // 2MB
+    const validTypes = ['image/jpeg', 'image/png'];
+    const maxSize = 1 * 1024 * 1024; // 1MB
 
     if (!validTypes.includes(file.type)) {
-      return 'Please upload a valid image file (JPEG, PNG, or GIF)';
+      return 'Please upload a valid image file (JPEG, PNG)';
     }
     if (file.size > maxSize) {
-      return 'Image size should be less than 2MB';
+      return 'Image size should be less than 1MB';
     }
     return null;
   };
 
   const validatePDF = (file) => {
-    const maxSize = 2 * 1024 * 1024; // 2MB
+    const maxSize = 1 * 1024 * 1024; // 1MB
     
     if (file.type !== 'application/pdf') {
       return 'Please upload a valid PDF file';
     }
     if (file.size > maxSize) {
-      return 'PDF size should be less than 2MB';
+      return 'PDF size should be less than 1MB';
     }
     return null;
   };
