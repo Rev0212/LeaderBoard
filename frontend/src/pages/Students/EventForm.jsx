@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import {
   TextField, FormControl, InputLabel, Select, MenuItem,
   Button, Typography, Paper, Box, CircularProgress,
-  RadioGroup, FormControlLabel, Radio, FormGroup, Checkbox, IconButton, Alert
+  RadioGroup, FormControlLabel, Radio, FormGroup, Checkbox, IconButton, Alert, Tooltip
 } from '@mui/material';
-import { X, FileText, Info, Image } from 'react-feather';
+import { X, FileText, Info, Image, HelpCircle, Award } from 'react-feather';
 
 const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -27,7 +27,7 @@ const EventForm = () => {
   });
 
   const [formData, setFormData] = useState({
-    title: '',
+    eventName: '',
     date: '',
     category: '',
     positionSecured: '',
@@ -57,8 +57,19 @@ const EventForm = () => {
     }
   };
 
+  const [pointsPreview, setPointsPreview] = useState({
+    total: 0,
+    breakdown: {},
+    scoringFields: []
+  });
+  
+  const [categoryHelpText, setCategoryHelpText] = useState('');
+  const [scoringRules, setScoringRules] = useState({});
+  const pointsCalculationTimeout = useRef(null);
+
   useEffect(() => {
     fetchFormConfiguration();
+    fetchScoringRules();
   }, []);
 
   useEffect(() => {
@@ -106,6 +117,22 @@ const EventForm = () => {
     }
   };
 
+  const fetchScoringRules = async () => {
+    try {
+      const token = localStorage.getItem("student-token");
+      const response = await axios.get(
+        `${VITE_BASE_URL}/event/scoring-rules`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      if (response.data.success) {
+        setScoringRules(response.data.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch scoring rules:", error);
+    }
+  };
+
   const fetchFormFields = async (category) => {
     setIsLoading(true);
     try {
@@ -141,6 +168,14 @@ const EventForm = () => {
           ...formFieldsData.conditionalFields
         };
 
+        // Set category help text if available
+        if (response.data.data.categoryHelpText) {
+          setCategoryHelpText(response.data.data.categoryHelpText);
+        } else {
+          // Generate generic help text based on category
+          setCategoryHelpText(`Submit your ${category} achievement with all required details for proper evaluation.`);
+        }
+
         setFormFields(formFieldsData);
         
         // Initialize custom answers
@@ -153,6 +188,9 @@ const EventForm = () => {
         } else {
           setCustomAnswers({});
         }
+        
+        // Calculate initial points once form fields are set
+        calculatePointsPreview({...formData, category});
       } else {
         throw new Error('Invalid response format from server');
       }
@@ -189,10 +227,20 @@ const EventForm = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData({
+    const updatedFormData = {
       ...formData,
       [name]: value
-    });
+    };
+    
+    setFormData(updatedFormData);
+    
+    // Debounce point calculation to avoid excessive calculations
+    if (pointsCalculationTimeout.current) {
+      clearTimeout(pointsCalculationTimeout.current);
+    }
+    pointsCalculationTimeout.current = setTimeout(() => {
+      calculatePointsPreview(updatedFormData);
+    }, 300);
   };
 
   const handleFileChange = (e) => {
@@ -209,10 +257,50 @@ const EventForm = () => {
   };
 
   const handleCustomAnswerChange = (questionId, value) => {
-    setCustomAnswers({
+    const updatedAnswers = {
       ...customAnswers,
       [questionId]: value
-    });
+    };
+    setCustomAnswers(updatedAnswers);
+    
+    // Trigger points calculation
+    if (pointsCalculationTimeout.current) {
+      clearTimeout(pointsCalculationTimeout.current);
+    }
+    pointsCalculationTimeout.current = setTimeout(() => {
+      calculatePointsPreview({...formData}, updatedAnswers);
+    }, 300);
+  };
+
+  const calculatePointsPreview = async (formData, customAnswers = null) => {
+    // Only calculate points if category is selected
+    if (!formData.category) return;
+    
+    try {
+      const token = localStorage.getItem("student-token");
+      // Use current customAnswers state if not provided
+      const answersToSend = customAnswers || customAnswers;
+      
+      const response = await axios.post(
+        `${VITE_BASE_URL}/event/calculate-points-preview`, 
+        { 
+          formData, 
+          customAnswers: answersToSend 
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      if (response.data.success) {
+        setPointsPreview({
+          total: response.data.data.totalPoints,
+          breakdown: response.data.data.breakdown,
+          scoringFields: response.data.data.scoringFields || []
+        });
+      }
+    } catch (error) {
+      console.error("Failed to calculate points preview:", error);
+      // Don't show error toast to user as this is a background calculation
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -225,10 +313,19 @@ const EventForm = () => {
     setIsSubmitting(true);
     
     const submitData = new FormData();
+    console.log("1.Submitting form data:", formData);
     
+    // Always include the category field
+    if (formData.category) {
+      submitData.append('category', formData.category);
+      console.log(`Appending category: ${formData.category}`);
+    }
+    
+    // Append other visible fields
     Object.keys(formData).forEach(key => {
-      if (visibleFields.includes(key) && formData[key]) {
+      if (key !== 'category' && visibleFields.includes(key) && formData[key]) {
         submitData.append(key, formData[key]);
+        console.log(`Appending ${key}: ${formData[key]}`);
       }
     });
     
@@ -276,6 +373,7 @@ const EventForm = () => {
   };
 
   const validateForm = () => {
+    // Existing validation for required fields
     const missingFields = formFields.requiredFields.filter(
       field => !formData[field]
     );
@@ -285,13 +383,17 @@ const EventForm = () => {
       return false;
     }
     
+    // Validation for custom questions
     const requiredQuestions = formFields.customQuestions?.filter(q => q.required) || [];
     const missingAnswers = requiredQuestions.filter(q => {
       const answer = customAnswers[q.id];
+      
       if (q.type === 'multipleChoice') {
         return !answer || answer.length === 0;
       }
-      return !answer;
+      
+      // For both text and singleChoice
+      return !answer || answer.trim() === '';
     });
     
     if (missingAnswers.length > 0) {
@@ -315,7 +417,7 @@ const EventForm = () => {
 
   const resetForm = () => {
     setFormData({
-      title: '',
+      eventName: '',
       date: '',
       category: '',
       positionSecured: '',
@@ -335,227 +437,311 @@ const EventForm = () => {
     setFormError(null);
   };
 
+  const isScoreAffectingField = (fieldName) => {
+    return pointsPreview.scoringFields.includes(fieldName);
+  };
+
+  const renderCategoryHelp = () => {
+    if (!categoryHelpText) return null;
+    
+    return (
+      <Alert severity="info" className="mb-4">
+        <div className="flex">
+          <HelpCircle size={20} className="mr-2" />
+          <Typography variant="body2">{categoryHelpText}</Typography>
+        </div>
+      </Alert>
+    );
+  };
+
   const renderField = (fieldName) => {
     const isRequired = formFields.requiredFields.includes(fieldName);
+    const affectsScore = isScoreAffectingField(fieldName);
+    
+    const FieldWrapper = ({ children }) => (
+      <div className={`relative ${affectsScore ? 'score-affecting-field' : ''}`}>
+        {affectsScore && (
+          <Tooltip title="This field affects your score" placement="top">
+            <span className="absolute right-2 top-2">
+              <Award size={16} className="text-yellow-500" />
+            </span>
+          </Tooltip>
+        )}
+        {children}
+      </div>
+    );
     
     switch (fieldName) {
-      case 'title':
+      case 'eventName':
         return (
-          <TextField
-            name="title"
-            label="Event Title"
-            value={formData.title}
-            onChange={handleInputChange}
-            fullWidth
-            margin="normal"
-            required={isRequired}
-          />
+          <FieldWrapper>
+            <TextField
+              name="eventName"
+              label="Event Name"
+              value={formData.eventName}
+              onChange={handleInputChange}
+              fullWidth
+              margin="normal"
+              required={isRequired}
+            />
+          </FieldWrapper>
         );
         
       case 'date':
         return (
-          <TextField
-            name="date"
-            label="Event Date"
-            type="date"
-            value={formData.date}
-            onChange={handleInputChange}
-            InputLabelProps={{ shrink: true }}
-            fullWidth
-            margin="normal"
-            required={isRequired}
-          />
+          <FieldWrapper>
+            <TextField
+              name="date"
+              label="Event Date"
+              type="date"
+              value={formData.date}
+              onChange={handleInputChange}
+              InputLabelProps={{ shrink: true }}
+              fullWidth
+              margin="normal"
+              required={isRequired}
+            />
+          </FieldWrapper>
         );
         
       case 'category':
         return (
-          <FormControl fullWidth margin="normal" required={isRequired}>
-            <InputLabel>Category</InputLabel>
-            <Select
-              name="category"
-              value={formData.category}
-              onChange={handleInputChange}
-              label="Category"
-              MenuProps={{
-                PaperProps: {
-                  style: {
-                    maxHeight: 300
+          <FieldWrapper>
+            <FormControl fullWidth margin="normal" required={isRequired}>
+              <InputLabel>Category</InputLabel>
+              <Select
+                name="category"
+                value={formData.category}
+                onChange={handleInputChange}
+                label="Category"
+                MenuProps={{
+                  PaperProps: {
+                    style: {
+                      maxHeight: 300
+                    }
                   }
-                }
-              }}
-            >
-              {categories.length > 0 ? (
-                categories.map(category => (
-                  <MenuItem key={category} value={category}>{category}</MenuItem>
-                ))
-              ) : (
-                <MenuItem disabled>Loading categories...</MenuItem>
-              )}
-            </Select>
-          </FormControl>
+                }}
+              >
+                {categories.length > 0 ? (
+                  categories.map(category => (
+                    <MenuItem key={category} value={category}>{category}</MenuItem>
+                  ))
+                ) : (
+                  <MenuItem disabled>Loading categories...</MenuItem>
+                )}
+              </Select>
+            </FormControl>
+          </FieldWrapper>
         );
         
       case 'positionSecured':
         return (
-          <FormControl fullWidth margin="normal" required={isRequired}>
-            <InputLabel>Position Secured</InputLabel>
-            <Select
-              name="positionSecured"
-              value={formData.positionSecured}
-              onChange={handleInputChange}
-              label="Position Secured"
-            >
-              {positions.map(position => (
-                <MenuItem key={position} value={position}>{position}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <FieldWrapper>
+            <FormControl fullWidth margin="normal" required={isRequired}>
+              <InputLabel>Position Secured</InputLabel>
+              <Select
+                name="positionSecured"
+                value={formData.positionSecured}
+                onChange={handleInputChange}
+                label="Position Secured"
+              >
+                {positions.map(position => (
+                  <MenuItem key={position} value={position}>{position}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </FieldWrapper>
         );
         
       case 'eventLocation':
         return (
-          <FormControl fullWidth margin="normal" required={isRequired}>
-            <InputLabel>Event Location</InputLabel>
-            <Select
-              name="eventLocation"
-              value={formData.eventLocation}
-              onChange={handleInputChange}
-              label="Event Location"
-            >
-              {eventLocations.map(location => (
-                <MenuItem key={location} value={location}>{location}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <FieldWrapper>
+            <FormControl fullWidth margin="normal" required={isRequired}>
+              <InputLabel>Event Location</InputLabel>
+              <Select
+                name="eventLocation"
+                value={formData.eventLocation}
+                onChange={handleInputChange}
+                label="Event Location"
+              >
+                {eventLocations.map(location => (
+                  <MenuItem key={location} value={location}>{location}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </FieldWrapper>
         );
         
       case 'eventScope':
         return (
-          <FormControl fullWidth margin="normal" required={isRequired}>
-            <InputLabel>Event Scope</InputLabel>
-            <Select
-              name="eventScope"
-              value={formData.eventScope}
-              onChange={handleInputChange}
-              label="Event Scope"
-            >
-              {eventScopes.map(scope => (
-                <MenuItem key={scope} value={scope}>{scope}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <FieldWrapper>
+            <FormControl fullWidth margin="normal" required={isRequired}>
+              <InputLabel>Event Scope</InputLabel>
+              <Select
+                name="eventScope"
+                value={formData.eventScope}
+                onChange={handleInputChange}
+                label="Event Scope"
+              >
+                {eventScopes.map(scope => (
+                  <MenuItem key={scope} value={scope}>{scope}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </FieldWrapper>
         );
         
       case 'eventOrganizer':
         return (
-          <FormControl fullWidth margin="normal" required={isRequired}>
-            <InputLabel>Event Organizer</InputLabel>
-            <Select
-              name="eventOrganizer"
-              value={formData.eventOrganizer}
-              onChange={handleInputChange}
-              label="Event Organizer"
-            >
-              {eventOrganizers.map(organizer => (
-                <MenuItem key={organizer} value={organizer}>{organizer}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <FieldWrapper>
+            <FormControl fullWidth margin="normal" required={isRequired}>
+              <InputLabel>Event Organizer</InputLabel>
+              <Select
+                name="eventOrganizer"
+                value={formData.eventOrganizer}
+                onChange={handleInputChange}
+                label="Event Organizer"
+              >
+                {eventOrganizers.map(organizer => (
+                  <MenuItem key={organizer} value={organizer}>{organizer}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </FieldWrapper>
         );
         
       case 'participationType':
         return (
-          <FormControl fullWidth margin="normal" required={isRequired}>
-            <InputLabel>Participation Type</InputLabel>
-            <Select
-              name="participationType"
-              value={formData.participationType}
-              onChange={handleInputChange}
-              label="Participation Type"
-            >
-              {participationTypes.map(type => (
-                <MenuItem key={type} value={type}>{type}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <FieldWrapper>
+            <FormControl fullWidth margin="normal" required={isRequired}>
+              <InputLabel>Participation Type</InputLabel>
+              <Select
+                name="participationType"
+                value={formData.participationType}
+                onChange={handleInputChange}
+                label="Participation Type"
+              >
+                {participationTypes.map(type => (
+                  <MenuItem key={type} value={type}>{type}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </FieldWrapper>
         );
         
       case 'priceMoney':
         return (
-          <TextField
-            name="priceMoney"
-            label="Prize Money"
-            value={formData.priceMoney}
-            onChange={handleInputChange}
-            fullWidth
-            margin="normal"
-            required={isRequired}
-            type="number"
-          />
+          <FieldWrapper>
+            <TextField
+              name="priceMoney"
+              label="Prize Money"
+              value={formData.priceMoney}
+              onChange={handleInputChange}
+              fullWidth
+              margin="normal"
+              required={isRequired}
+              type="number"
+            />
+          </FieldWrapper>
         );
         
       case 'teamSize':
         return (
-          <TextField
-            name="teamSize"
-            label="Team Size"
-            value={formData.teamSize}
-            onChange={handleInputChange}
-            fullWidth
-            margin="normal"
-            required={isRequired}
-            type="number"
-          />
+          <FieldWrapper>
+            <TextField
+              name="teamSize"
+              label="Team Size"
+              value={formData.teamSize}
+              onChange={handleInputChange}
+              fullWidth
+              margin="normal"
+              required={isRequired}
+              type="number"
+            />
+          </FieldWrapper>
         );
         
       case 'teamName':
         return (
-          <TextField
-            name="teamName"
-            label="Team Name"
-            value={formData.teamName}
-            onChange={handleInputChange}
-            fullWidth
-            margin="normal"
-            required={isRequired}
-          />
+          <FieldWrapper>
+            <TextField
+              name="teamName"
+              label="Team Name"
+              value={formData.teamName}
+              onChange={handleInputChange}
+              fullWidth
+              margin="normal"
+              required={isRequired}
+            />
+          </FieldWrapper>
         );
         
       case 'publicationType':
         return (
-          <FormControl fullWidth margin="normal" required={isRequired}>
-            <InputLabel>Publication Type</InputLabel>
-            <Select
-              name="publicationType"
-              value={formData.publicationType}
-              onChange={handleInputChange}
-              label="Publication Type"
-            >
-              {["IEEE", "Springer", "ACM", "Other"].map(type => (
-                <MenuItem key={type} value={type}>{type}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <FieldWrapper>
+            <FormControl fullWidth margin="normal" required={isRequired}>
+              <InputLabel>Publication Type</InputLabel>
+              <Select
+                name="publicationType"
+                value={formData.publicationType}
+                onChange={handleInputChange}
+                label="Publication Type"
+              >
+                {["IEEE", "Springer", "ACM", "Other"].map(type => (
+                  <MenuItem key={type} value={type}>{type}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </FieldWrapper>
         );
         
       case 'description':
         return (
-          <TextField
-            name="description"
-            label="Description"
-            value={formData.description}
-            onChange={handleInputChange}
-            fullWidth
-            margin="normal"
-            required={isRequired}
-            multiline
-            rows={4}
-          />
+          <FieldWrapper>
+            <TextField
+              name="description"
+              label="Description"
+              value={formData.description}
+              onChange={handleInputChange}
+              fullWidth
+              margin="normal"
+              required={isRequired}
+              multiline
+              rows={4}
+            />
+          </FieldWrapper>
         );
         
       default:
         return null;
     }
+  };
+
+  const PointsPreviewComponent = () => {
+    if (pointsPreview.total === 0) return null;
+    
+    return (
+      <div className="mt-6 bg-gray-50 border border-gray-200 rounded-lg p-4">
+        <Typography variant="h6" className="flex items-center mb-2">
+          <Award size={20} className="mr-2 text-yellow-500" />
+          Estimated Points: <span className="ml-2 font-bold text-yellow-600">{pointsPreview.total}</span>
+        </Typography>
+        
+        {Object.keys(pointsPreview.breakdown).length > 0 && (
+          <div className="mt-2">
+            <Typography variant="subtitle2" className="mb-1">Point Breakdown:</Typography>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {Object.entries(pointsPreview.breakdown).map(([key, value]) => (
+                <div key={key} className="flex justify-between">
+                  <Typography variant="body2">{key}:</Typography>
+                  <Typography variant="body2" className="font-medium">+{value} points</Typography>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -577,6 +763,8 @@ const EventForm = () => {
           </Box>
         ) : (
           <form onSubmit={handleSubmit}>
+            {formData.category && renderCategoryHelp()}
+            
             {formData.category && (
               <div className="mb-6 bg-blue-50 p-4 rounded border border-blue-100">
                 <Typography variant="subtitle1" className="flex items-center">
@@ -617,7 +805,9 @@ const EventForm = () => {
             
             {formFields.customQuestions?.length > 0 && (
               <div className="mb-6">
-                <Typography variant="h6" className="mb-2 text-gray-800 font-medium">3. Additional Information</Typography>
+                <Typography variant="h6" className="mb-2 text-gray-800 font-medium">
+                  3. Additional Information
+                </Typography>
                 <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
                   {formFields.customQuestions.map(question => (
                     <div key={question.id} className="mb-4 border-b border-gray-100 pb-4 last:border-b-0 last:pb-0">
@@ -637,6 +827,53 @@ const EventForm = () => {
                           onChange={(e) => handleCustomAnswerChange(question.id, e.target.value)}
                           required={question.required}
                         />
+                      )}
+
+                      {question.type === 'singleChoice' && (
+                        <RadioGroup
+                          value={customAnswers[question.id] || ''}
+                          onChange={(e) => handleCustomAnswerChange(question.id, e.target.value)}
+                          required={question.required}
+                        >
+                          {question.options.map((option, index) => (
+                            <FormControlLabel
+                              key={index}
+                              value={option}
+                              control={<Radio />}
+                              label={
+                                <Typography variant="body2">
+                                  {option}
+                                </Typography>
+                              }
+                            />
+                          ))}
+                        </RadioGroup>
+                      )}
+
+                      {question.type === 'multipleChoice' && (
+                        <FormGroup>
+                          {question.options.map((option, index) => (
+                            <FormControlLabel
+                              key={index}
+                              control={
+                                <Checkbox
+                                  checked={customAnswers[question.id]?.includes(option) || false}
+                                  onChange={(e) => {
+                                    const currentAnswers = customAnswers[question.id] || [];
+                                    let newAnswers;
+                                    if (e.target.checked) {
+                                      newAnswers = [...currentAnswers, option];
+                                    } else {
+                                      newAnswers = currentAnswers.filter(ans => ans !== option);
+                                    }
+                                    handleCustomAnswerChange(question.id, newAnswers);
+                                  }}
+                                />
+                              }
+                              label={<Typography variant="body2">{option}</Typography>}
+                            />
+                          ))}
+                        </FormGroup>
                       )}
                     </div>
                   ))}
@@ -730,6 +967,8 @@ const EventForm = () => {
                 </div>
               </div>
             )}
+            
+            {formData.category && <PointsPreviewComponent />}
             
             <Box className="mt-8 flex justify-end border-t pt-4">
               <Button

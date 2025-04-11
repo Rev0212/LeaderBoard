@@ -1,35 +1,63 @@
 const Event = require('../models/event.model');
 const studentModel = require('../models/student.model');
 const PointsCalculationService = require('./pointsCalculation.service');
+const FormFieldConfig = require('../models/formFieldConfig.model');
 
 const createEvent = async (eventData) => {
+    console.log('Inside createEvent service');
+    console.log('Event data:', eventData);
     try {
-        // Validate required fields based on category
-        if (['Hackathon', 'Ideathon', 'Coding', 'Workshop', 'Conference'].includes(eventData.category)) {
-            if (!eventData.eventLocation) {
-                throw new Error('Event location is required for this category');
-            }
-            if (!eventData.eventScope) {
-                throw new Error('Event scope is required for this category');
-            }
-            if (!eventData.eventOrganizer) {
-                throw new Error('Event organizer is required for this category');
-            }
-            if (!eventData.participationType) {
-                throw new Error('Participation type is required for this category');
-            }
-            if (eventData.eventLocation === 'Outside College' && !eventData.otherCollegeName) {
-                throw new Error('College name is required for outside college events');
-            }
+        // Get form configuration
+        const config = await FormFieldConfig.findOne({ category: eventData.category });
+        if (!config) {
+            throw new Error('No form configuration found for this category');
+        }
+        console.log('Form configuration:', config.requiredFields);
+        // Validate required fields
+        const missingFields = config.requiredFields.filter(field => !eventData[field]);
+        if (missingFields.length > 0) {
+            throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
         }
 
-        // Validate prize money for winning positions
-        if (['First', 'Second', 'Third'].includes(eventData.positionSecured) && !eventData.priceMoney) {
-            throw new Error('Prize money is required for winning positions');
+        // Handle certificate images
+        if (config.proofConfig.requireCertificateImage && (!eventData.proofUrl || eventData.proofUrl.length === 0)) {
+            throw new Error('Certificate image is required');
         }
 
-        const newEvent = new Event(eventData);
-        const savedEvent = await newEvent.save();
+        // Handle PDF requirement
+        if (config.proofConfig.requirePdfProof && !eventData.pdfDocument) {
+            throw new Error('PDF document is required');
+        }
+
+        // Create event with validated data using dynamic approach
+        // First define the base fields every event needs
+        const baseEventData = {
+            eventName: eventData.eventName,
+            description: eventData.description,
+            date: eventData.date,
+            category: eventData.category,
+            proofUrl: eventData.proofUrl || [],
+            pdfDocument: eventData.pdfDocument || null,
+            submittedBy: eventData.submittedBy,
+            customAnswers: eventData.customAnswers || new Map(),
+            status: 'Pending',
+            pointsEarned: 0,
+        };
+
+        // Extract dynamic fields
+        const dynamicFields = new Map();
+        Object.entries(eventData).forEach(([key, value]) => {
+            if (!Object.keys(baseEventData).includes(key) && key !== 'dynamicFields') {
+                dynamicFields.set(key, value);
+            }
+        });
+
+        const eventToSave = new Event({
+            ...baseEventData,
+            dynamicFields
+        });
+
+        const savedEvent = await eventToSave.save();
         return savedEvent;
     } catch (error) {
         throw new Error(`Failed to create event: ${error.message}`);

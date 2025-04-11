@@ -6,54 +6,84 @@ import {
   FormControl, InputLabel, Select, MenuItem, Paper, Card, CardContent,
   CardHeader, Chip, FormControlLabel, Switch, IconButton, Tab, Tabs,
   List, ListItem, ListItemText, ListItemSecondaryAction, Radio, RadioGroup,
-  FormGroup, Checkbox, FormLabel
+  FormGroup, Checkbox, FormLabel, Dialog, DialogTitle, DialogContent, DialogActions
 } from '@mui/material';
-import { Save, PlusCircle, Trash2, AlertTriangle, Edit, Image, FileText, Plus, X, Check } from 'lucide-react';
+import { Save, PlusCircle, Trash2, AlertTriangle, Edit, Image, FileText, Plus, X, Check, FileCode, Download, Upload } from 'lucide-react';
 
 const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
+
+const fetchTemplatesForCategory = async (category) => {
+  try {
+    const token = localStorage.getItem("admin-token");
+    const response = await axios.get(
+      `${VITE_BASE_URL}/admin/config/templates/${category}`,
+      {
+        headers: { Authorization: `Bearer ${token}` }
+      }
+    );
+
+    if (response.data.success) {
+      return response.data.templates;
+    }
+  } catch (error) {
+    console.log("Fetching from localStorage instead");
+  }
+
+  const savedTemplates = localStorage.getItem('formFieldTemplates');
+  if (savedTemplates) {
+    const templates = JSON.parse(savedTemplates);
+    return templates[category] || {};
+  }
+
+  return {};
+};
 
 const FormFieldsConfig = () => {
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
-  
-  // Basic fields configuration
+
   const [requiredFields, setRequiredFields] = useState([]);
   const [optionalFields, setOptionalFields] = useState([]);
   const [conditionalFields, setConditionalFields] = useState({});
-  
-  // Proof configuration
+
   const [proofConfig, setProofConfig] = useState({
     requireCertificateImage: false,
     requirePdfProof: true,
-    maxCertificateSize: 5, // MB
-    maxPdfSize: 10, // MB
+    maxCertificateSize: 5,
+    maxPdfSize: 10,
     allowMultipleCertificates: false
   });
-  
-  // Custom questions
+
   const [customQuestions, setCustomQuestions] = useState([]);
   const [newQuestion, setNewQuestion] = useState({
     text: '',
-    type: 'text', // text, singleChoice, multipleChoice
+    type: 'text',
     required: true,
-    options: [''] // for choice questions
+    options: ['']
   });
-  
-  // UI state
+
+  const [editingQuestion, setEditingQuestion] = useState(null);
+
   const [activeTab, setActiveTab] = useState(0);
   const [availableFields, setAvailableFields] = useState([
-    'title', 'date', 'eventLocation', 'eventScope', 'eventOrganizer', 
+    'title', 'date', 'eventLocation', 'eventScope', 'eventOrganizer',
     'participationType', 'priceMoney', 'teamSize', 'teamName', 'publicationType',
     'description'
   ]);
   const [newConditionalField, setNewConditionalField] = useState('');
   const [dependsOn, setDependsOn] = useState('');
   const [showWhen, setShowWhen] = useState([]);
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+
+  const [showTemplateDialog, setShowTemplateDialog] = useState(false);
+  const [templates, setTemplates] = useState({});
+  const [selectedTemplateName, setSelectedTemplateName] = useState('');
+  const [templatePreview, setTemplatePreview] = useState(null);
+  const [newTemplateName, setNewTemplateName] = useState('');
 
   useEffect(() => {
     fetchCategories();
@@ -62,6 +92,7 @@ const FormFieldsConfig = () => {
   useEffect(() => {
     if (selectedCategory) {
       fetchFormFieldConfig();
+      loadTemplatesForCategory(selectedCategory);
     }
   }, [selectedCategory]);
 
@@ -105,18 +136,16 @@ const FormFieldsConfig = () => {
         const config = response.data.data;
         setRequiredFields(config.requiredFields || []);
         setOptionalFields(config.optionalFields || []);
-        
-        // Handle conditional fields
+
         if (config.conditionalFields) {
           setConditionalFields(
-            typeof config.conditionalFields === 'object' ? 
+            typeof config.conditionalFields === 'object' ?
             config.conditionalFields : {}
           );
         } else {
           setConditionalFields({});
         }
-        
-        // Handle proof configuration
+
         if (config.proofConfig) {
           setProofConfig(config.proofConfig);
         } else {
@@ -128,8 +157,7 @@ const FormFieldsConfig = () => {
             allowMultipleCertificates: false
           });
         }
-        
-        // Handle custom questions
+
         if (config.customQuestions) {
           setCustomQuestions(config.customQuestions);
         } else {
@@ -142,6 +170,11 @@ const FormFieldsConfig = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const loadTemplatesForCategory = async (category) => {
+    const categoryTemplates = await fetchTemplatesForCategory(category);
+    setTemplates(categoryTemplates);
   };
 
   const handleCategoryChange = (event) => {
@@ -176,7 +209,7 @@ const FormFieldsConfig = () => {
 
   const addConditionalField = () => {
     if (!newConditionalField || !dependsOn || showWhen.length === 0) return;
-    
+
     setConditionalFields({
       ...conditionalFields,
       [newConditionalField]: {
@@ -184,8 +217,7 @@ const FormFieldsConfig = () => {
         showWhen
       }
     });
-    
-    // Clear form
+
     setNewConditionalField('');
     setDependsOn('');
     setShowWhen([]);
@@ -199,17 +231,15 @@ const FormFieldsConfig = () => {
 
   const handleAddCustomQuestion = () => {
     if (!newQuestion.text) return;
-    
-    // Ensure each question has a unique ID
+
     const questionWithId = {
       ...newQuestion,
       id: `question_${Date.now()}`,
       options: newQuestion.type !== 'text' ? newQuestion.options.filter(opt => opt.trim() !== '') : []
     };
-    
+
     setCustomQuestions([...customQuestions, questionWithId]);
-    
-    // Reset form
+
     setNewQuestion({
       text: '',
       type: 'text',
@@ -217,43 +247,65 @@ const FormFieldsConfig = () => {
       options: ['']
     });
   };
-  
+
   const handleQuestionOptionChange = (index, value) => {
     const updatedOptions = [...newQuestion.options];
     updatedOptions[index] = value;
-    
-    // Always keep one empty option at the end for adding new ones
+
     if (index === updatedOptions.length - 1 && value.trim() !== '') {
       updatedOptions.push('');
     }
-    
+
     setNewQuestion({
       ...newQuestion,
       options: updatedOptions
     });
   };
-  
+
   const removeQuestionOption = (index) => {
     if (newQuestion.options.length <= 1) return;
-    
+
     const updatedOptions = [...newQuestion.options];
     updatedOptions.splice(index, 1);
-    
+
     setNewQuestion({
       ...newQuestion,
       options: updatedOptions
     });
   };
-  
+
   const removeCustomQuestion = (questionId) => {
     setCustomQuestions(customQuestions.filter(q => q.id !== questionId));
+  };
+
+  const handleEditQuestion = (question) => {
+    setEditingQuestion({
+      ...question,
+      options: question.type !== 'text' ? [...question.options, ''] : []
+    });
+  };
+
+  const saveEditedQuestion = () => {
+    if (!editingQuestion.text) return;
+
+    const updatedQuestions = customQuestions.map(q => 
+      q.id === editingQuestion.id ? {
+        ...editingQuestion,
+        options: editingQuestion.type !== 'text' ? 
+          editingQuestion.options.filter(opt => opt.trim() !== '') : []
+      } : q
+    );
+
+    setCustomQuestions(updatedQuestions);
+    setEditingQuestion(null);
+    toast.success('Question updated successfully');
   };
 
   const saveConfig = async () => {
     setIsSaving(true);
     setError(null);
     setSuccess(null);
-    
+
     try {
       const configData = {
         requiredFields,
@@ -261,7 +313,6 @@ const FormFieldsConfig = () => {
         conditionalFields,
         proofConfig: {
           ...proofConfig,
-          // Ensure boolean values are explicitly set
           requireCertificateImage: Boolean(proofConfig.requireCertificateImage),
           requirePdfProof: Boolean(proofConfig.requirePdfProof),
           allowMultipleCertificates: Boolean(proofConfig.allowMultipleCertificates)
@@ -272,8 +323,6 @@ const FormFieldsConfig = () => {
           options: q.options?.filter(opt => opt.trim() !== '') || []
         }))
       };
-
-      console.log('Saving config:', configData);
 
       const token = localStorage.getItem("admin-token");
       const response = await axios.put(
@@ -288,17 +337,13 @@ const FormFieldsConfig = () => {
       );
 
       if (response.data.success) {
-        console.log('Save response:', response.data);
         setSuccess('Form field configuration updated successfully');
         toast.success('Form field configuration updated successfully');
-        
-        // Immediately fetch the updated configuration to verify
         fetchCategoryConfig(selectedCategory);
       } else {
         throw new Error(response.data.message || 'Failed to update configuration');
       }
     } catch (err) {
-      console.error('Error saving config:', err);
       const errorMsg = err.response?.data?.message || 'Failed to update configuration';
       setError(errorMsg);
       toast.error(errorMsg);
@@ -321,9 +366,7 @@ const FormFieldsConfig = () => {
 
       if (response.data.success && response.data.data) {
         const config = response.data.data;
-        console.log('Fetched config:', config);
-        
-        // Update state with fetched values
+
         setRequiredFields(config.requiredFields || []);
         setOptionalFields(config.optionalFields || []);
         setConditionalFields(config.conditionalFields || {});
@@ -337,7 +380,6 @@ const FormFieldsConfig = () => {
         setCustomQuestions(config.customQuestions || []);
       }
     } catch (error) {
-      console.error('Error fetching category config:', error);
       toast.error('Failed to fetch updated configuration');
     }
   };
@@ -346,7 +388,230 @@ const FormFieldsConfig = () => {
     setActiveTab(newValue);
   };
 
-  // Preview component to show how the form will appear to users
+  const applyTemplate = (templateName) => {
+    const template = templates[templateName];
+    if (!template) {
+      toast.error('Template not found');
+      return;
+    }
+
+    setRequiredFields(template.requiredFields || []);
+    setOptionalFields(template.optionalFields || []);
+    setConditionalFields(template.conditionalFields || {});
+    setProofConfig(template.proofConfig || {
+      requireCertificateImage: false,
+      requirePdfProof: true,
+      maxCertificateSize: 5,
+      maxPdfSize: 10,
+      allowMultipleCertificates: false
+    });
+    setCustomQuestions(template.customQuestions || []);
+
+    toast.success(`Applied template: ${templateName}`);
+    setShowTemplateDialog(false);
+  };
+
+  const saveAsTemplate = () => {
+    if (!newTemplateName.trim()) {
+      toast.error('Please enter a template name');
+      return;
+    }
+
+    const currentTemplate = {
+      requiredFields,
+      optionalFields,
+      conditionalFields,
+      proofConfig,
+      customQuestions
+    };
+
+    const updatedTemplates = {
+      ...templates,
+      [newTemplateName]: currentTemplate
+    };
+
+    setTemplates(updatedTemplates);
+
+    const allTemplates = JSON.parse(localStorage.getItem('formFieldTemplates') || '{}');
+    allTemplates[selectedCategory] = updatedTemplates;
+    localStorage.setItem('formFieldTemplates', JSON.stringify(allTemplates));
+
+    toast.success(`Template "${newTemplateName}" saved`);
+    setNewTemplateName('');
+  };
+
+  const previewTemplate = (templateName) => {
+    setSelectedTemplateName(templateName);
+    setTemplatePreview(templates[templateName]);
+  };
+
+  const TemplateDialog = () => {
+    return (
+      <Dialog
+        open={showTemplateDialog}
+        onClose={() => setShowTemplateDialog(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          <div className="flex justify-between items-center">
+            <span>Form Field Templates for {selectedCategory}</span>
+            <IconButton onClick={() => setShowTemplateDialog(false)}>
+              <X size={18} />
+            </IconButton>
+          </div>
+        </DialogTitle>
+
+        <DialogContent>
+          <div className="mb-6">
+            <Typography variant="subtitle1" className="font-medium mb-2">
+              Available Templates
+            </Typography>
+
+            {Object.keys(templates).length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {Object.keys(templates).map(templateName => (
+                  <Paper
+                    key={templateName}
+                    className={`p-3 hover:bg-blue-50 cursor-pointer ${
+                      selectedTemplateName === templateName ? 'border-2 border-blue-500' : ''
+                    }`}
+                    onClick={() => previewTemplate(templateName)}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <Typography variant="body1" className="font-medium">
+                        {templateName}
+                      </Typography>
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const updatedTemplates = { ...templates };
+                          delete updatedTemplates[templateName];
+                          setTemplates(updatedTemplates);
+
+                          const allTemplates = JSON.parse(localStorage.getItem('formFieldTemplates') || '{}');
+                          if (allTemplates[selectedCategory]) {
+                            delete allTemplates[selectedCategory][templateName];
+                            localStorage.setItem('formFieldTemplates', JSON.stringify(allTemplates));
+                          }
+                        }}
+                      >
+                        <Trash2 size={16} />
+                      </IconButton>
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {templates[templateName].requiredFields?.length || 0} required,
+                      {templates[templateName].optionalFields?.length || 0} optional fields
+                    </div>
+                  </Paper>
+                ))}
+              </div>
+            ) : (
+              <Alert severity="info" className="mb-4">
+                No templates available for this category yet.
+              </Alert>
+            )}
+          </div>
+
+          {templatePreview && (
+            <div className="mb-4">
+              <Typography variant="subtitle1" className="font-medium mb-2">
+                Template Preview: {selectedTemplateName}
+              </Typography>
+
+              <Paper elevation={0} variant="outlined" className="p-4 bg-gray-50">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Typography variant="subtitle2" className="mb-1">Required Fields:</Typography>
+                    <div className="flex flex-wrap gap-1 mb-3">
+                      {templatePreview.requiredFields?.map(field => (
+                        <Chip key={field} size="small" label={field} />
+                      )) || 'None'}
+                    </div>
+
+                    <Typography variant="subtitle2" className="mb-1">Optional Fields:</Typography>
+                    <div className="flex flex-wrap gap-1 mb-3">
+                      {templatePreview.optionalFields?.map(field => (
+                        <Chip key={field} size="small" label={field} color="info" variant="outlined" />
+                      )) || 'None'}
+                    </div>
+                  </div>
+
+                  <div>
+                    <Typography variant="subtitle2" className="mb-1">Proof Requirements:</Typography>
+                    <ul className="text-sm mb-3">
+                      <li>Certificate: {templatePreview.proofConfig?.requireCertificateImage ? 'Required' : 'Optional'}</li>
+                      <li>PDF: {templatePreview.proofConfig?.requirePdfProof ? 'Required' : 'Optional'}</li>
+                      <li>Multiple Images: {templatePreview.proofConfig?.allowMultipleCertificates ? 'Allowed' : 'Not Allowed'}</li>
+                    </ul>
+
+                    <Typography variant="subtitle2" className="mb-1">Custom Questions:</Typography>
+                    <div className="text-sm">
+                      {templatePreview.customQuestions?.length || 0} questions configured
+                    </div>
+                  </div>
+                </div>
+
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => applyTemplate(selectedTemplateName)}
+                  className="mt-3"
+                  fullWidth
+                  startIcon={<Check size={16} />}
+                >
+                  Apply This Template
+                </Button>
+              </Paper>
+            </div>
+          )}
+
+          <Divider className="my-4" />
+
+          <div>
+            <Typography variant="subtitle1" className="font-medium mb-2">
+              Save Current Configuration as Template
+            </Typography>
+
+            <div className="flex items-center gap-2">
+              <TextField
+                label="Template Name"
+                value={newTemplateName}
+                onChange={(e) => setNewTemplateName(e.target.value)}
+                size="small"
+                className="flex-grow"
+              />
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={saveAsTemplate}
+                disabled={!newTemplateName.trim()}
+                startIcon={<Save size={16} />}
+              >
+                Save
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
+  const renderTemplateButtons = () => {
+    return (
+      <div className="mb-4 flex gap-2">
+        <Button
+          variant="outlined"
+          startIcon={<FileCode size={16} />}
+          onClick={() => setShowTemplateDialog(true)}
+        >
+          Templates
+        </Button>
+      </div>
+    );
+  };
+
   const FormPreview = () => {
     return (
       <Paper elevation={0} variant="outlined" className="p-5 bg-gray-50">
@@ -354,9 +619,8 @@ const FormFieldsConfig = () => {
           Form Preview for {selectedCategory}
         </Typography>
         <Divider className="mb-4" />
-        
+
         <div className="space-y-4">
-          {/* Required fields */}
           {requiredFields.map(field => (
             <div key={field} className="mb-3">
               <Typography variant="body2" className="font-medium mb-1">
@@ -365,8 +629,7 @@ const FormFieldsConfig = () => {
               <div className="h-10 bg-white border border-gray-300 rounded-md"></div>
             </div>
           ))}
-          
-          {/* Optional fields */}
+
           {optionalFields.map(field => (
             <div key={field} className="mb-3">
               <Typography variant="body2" className="font-medium mb-1 text-gray-700">
@@ -375,18 +638,17 @@ const FormFieldsConfig = () => {
               <div className="h-10 bg-white border border-gray-300 rounded-md"></div>
             </div>
           ))}
-          
-          {/* Custom questions */}
+
           {customQuestions.map(question => (
             <div key={question.id} className="mb-3">
               <Typography variant="body2" className="font-medium mb-1">
                 {question.text} {question.required && <span className="text-red-500">*</span>}
               </Typography>
-              
+
               {question.type === 'text' && (
                 <div className="h-10 bg-white border border-gray-300 rounded-md"></div>
               )}
-              
+
               {question.type === 'singleChoice' && (
                 <div className="pl-3">
                   {question.options.filter(o => o.trim() !== '').map((opt, idx) => (
@@ -397,7 +659,7 @@ const FormFieldsConfig = () => {
                   ))}
                 </div>
               )}
-              
+
               {question.type === 'multipleChoice' && (
                 <div className="pl-3">
                   {question.options.filter(o => o.trim() !== '').map((opt, idx) => (
@@ -410,8 +672,7 @@ const FormFieldsConfig = () => {
               )}
             </div>
           ))}
-          
-          {/* Proof uploads */}
+
           {proofConfig.requireCertificateImage && (
             <div className="mb-3">
               <Typography variant="body2" className="font-medium mb-1">
@@ -428,7 +689,7 @@ const FormFieldsConfig = () => {
               </Typography>
             </div>
           )}
-          
+
           {proofConfig.requirePdfProof && (
             <div className="mb-3">
               <Typography variant="body2" className="font-medium mb-1">
@@ -452,6 +713,8 @@ const FormFieldsConfig = () => {
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
+      {showTemplateDialog && <TemplateDialog />}
+
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold">Category Form Fields Configuration</h2>
         <Button
@@ -464,13 +727,13 @@ const FormFieldsConfig = () => {
           {isSaving ? 'Saving...' : 'Save Configuration'}
         </Button>
       </div>
-      
+
       {error && (
         <Alert severity="error" className="mb-4" onClose={() => setError(null)}>
           {error}
         </Alert>
       )}
-      
+
       {success && (
         <Alert severity="success" className="mb-4" onClose={() => setSuccess(null)}>
           {success}
@@ -489,7 +752,7 @@ const FormFieldsConfig = () => {
           </div>
         </div>
       </div>
-      
+
       <FormControl fullWidth className="mb-6">
         <InputLabel id="category-select-label">Event Category</InputLabel>
         <Select
@@ -507,6 +770,8 @@ const FormFieldsConfig = () => {
         </Select>
       </FormControl>
 
+      {selectedCategory && renderTemplateButtons()}
+
       {selectedCategory && (
         isLoading ? (
           <div className="flex justify-center my-8">
@@ -523,13 +788,12 @@ const FormFieldsConfig = () => {
               </Tabs>
             </Box>
 
-            {/* Basic Fields Tab */}
             {activeTab === 0 && (
               <div>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                   <Card elevation={0} variant="outlined" className="border-green-200">
-                    <CardHeader 
-                      title="Required Fields" 
+                    <CardHeader
+                      title="Required Fields"
                       titleTypographyProps={{ variant: 'h6' }}
                       className="bg-green-50 pb-2"
                     />
@@ -537,7 +801,7 @@ const FormFieldsConfig = () => {
                       <div className="flex flex-wrap gap-2 mb-4 min-h-[100px]">
                         {requiredFields.length > 0 ? (
                           requiredFields.map(field => (
-                            <Chip 
+                            <Chip
                               key={field}
                               label={field}
                               onDelete={() => removeField(field, 'required')}
@@ -561,8 +825,8 @@ const FormFieldsConfig = () => {
                           onChange={(e) => addFieldToRequired(e.target.value)}
                         >
                           {availableFields.map(field => (
-                            <MenuItem 
-                              key={field} 
+                            <MenuItem
+                              key={field}
                               value={field}
                               disabled={requiredFields.includes(field) || optionalFields.includes(field)}
                             >
@@ -575,8 +839,8 @@ const FormFieldsConfig = () => {
                   </Card>
 
                   <Card elevation={0} variant="outlined" className="border-blue-200">
-                    <CardHeader 
-                      title="Optional Fields" 
+                    <CardHeader
+                      title="Optional Fields"
                       titleTypographyProps={{ variant: 'h6' }}
                       className="bg-blue-50 pb-2"
                     />
@@ -584,7 +848,7 @@ const FormFieldsConfig = () => {
                       <div className="flex flex-wrap gap-2 mb-4 min-h-[100px]">
                         {optionalFields.length > 0 ? (
                           optionalFields.map(field => (
-                            <Chip 
+                            <Chip
                               key={field}
                               label={field}
                               onDelete={() => removeField(field, 'optional')}
@@ -608,8 +872,8 @@ const FormFieldsConfig = () => {
                           onChange={(e) => addFieldToOptional(e.target.value)}
                         >
                           {availableFields.map(field => (
-                            <MenuItem 
-                              key={field} 
+                            <MenuItem
+                              key={field}
                               value={field}
                               disabled={requiredFields.includes(field) || optionalFields.includes(field)}
                             >
@@ -623,8 +887,8 @@ const FormFieldsConfig = () => {
                 </div>
 
                 <Card elevation={0} variant="outlined" className="mb-6 border-purple-200">
-                  <CardHeader 
-                    title="Conditional Fields" 
+                  <CardHeader
+                    title="Conditional Fields"
                     titleTypographyProps={{ variant: 'h6' }}
                     className="bg-purple-50 pb-2"
                   />
@@ -633,13 +897,13 @@ const FormFieldsConfig = () => {
                       <List>
                         {Object.entries(conditionalFields).map(([field, condition]) => (
                           <ListItem key={field} divider className="bg-white rounded-lg mb-2 shadow-sm">
-                            <ListItemText 
+                            <ListItemText
                               primary={
                                 <span className="font-medium">{field}</span>
                               }
                               secondary={
                                 <span>
-                                  Show when <b>{condition.dependsOn}</b> is {condition.showWhen.map(sw => 
+                                  Show when <b>{condition.dependsOn}</b> is {condition.showWhen.map(sw =>
                                     <Chip key={sw} label={sw} size="small" variant="outlined" className="ml-1 mr-1" />
                                   )}
                                 </span>
@@ -658,13 +922,13 @@ const FormFieldsConfig = () => {
                         No conditional fields configured.
                       </Typography>
                     )}
-                    
+
                     <Divider className="my-4" />
-                    
+
                     <Typography variant="subtitle1" className="mb-2 font-medium">
                       Add Conditional Field
                     </Typography>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                       <FormControl fullWidth size="small">
                         <InputLabel id="field-label">Field</InputLabel>
@@ -675,8 +939,8 @@ const FormFieldsConfig = () => {
                           onChange={(e) => setNewConditionalField(e.target.value)}
                         >
                           {availableFields.map(field => (
-                            <MenuItem 
-                              key={field} 
+                            <MenuItem
+                              key={field}
                               value={field}
                               disabled={Object.keys(conditionalFields).includes(field)}
                             >
@@ -685,7 +949,7 @@ const FormFieldsConfig = () => {
                           ))}
                         </Select>
                       </FormControl>
-                      
+
                       <FormControl fullWidth size="small">
                         <InputLabel id="depends-on-label">Depends On</InputLabel>
                         <Select
@@ -700,14 +964,14 @@ const FormFieldsConfig = () => {
                         </Select>
                       </FormControl>
                     </div>
-                    
+
                     <div className="mb-4">
                       <Typography variant="body2" className="mb-2">
                         Show When (select values):
                       </Typography>
                       <div className="flex flex-wrap gap-2 p-3 border border-gray-200 rounded-lg bg-gray-50">
                         {["First", "Second", "Third", "Participated", "Team", "Individual", "International", "National"].map(value => (
-                          <Chip 
+                          <Chip
                             key={value}
                             label={value}
                             onClick={() => {
@@ -724,7 +988,7 @@ const FormFieldsConfig = () => {
                         ))}
                       </div>
                     </div>
-                    
+
                     <Button
                       variant="outlined"
                       color="primary"
@@ -739,11 +1003,10 @@ const FormFieldsConfig = () => {
               </div>
             )}
 
-            {/* Proof Requirements Tab */}
             {activeTab === 1 && (
               <Card elevation={0} variant="outlined" className="mb-6 border-amber-200">
-                <CardHeader 
-                  title="Proof Requirements" 
+                <CardHeader
+                  title="Proof Requirements"
                   titleTypographyProps={{ variant: 'h6' }}
                   className="bg-amber-50 pb-2"
                 />
@@ -765,11 +1028,10 @@ const FormFieldsConfig = () => {
                       <FormGroup>
                         <FormControlLabel
                           control={
-                            <Switch 
+                            <Switch
                               checked={Boolean(proofConfig.requireCertificateImage)}
                               onChange={(e) => {
                                 const newValue = e.target.checked;
-                                console.log('Setting requireCertificateImage to:', newValue);
                                 setProofConfig(prev => ({
                                   ...prev,
                                   requireCertificateImage: newValue
@@ -779,12 +1041,12 @@ const FormFieldsConfig = () => {
                           }
                           label="Require Certificate Image"
                         />
-                        
+
                         {proofConfig.requireCertificateImage && (
                           <>
                             <FormControlLabel
                               control={
-                                <Switch 
+                                <Switch
                                   checked={proofConfig.allowMultipleCertificates}
                                   onChange={(e) => setProofConfig({
                                     ...proofConfig,
@@ -794,7 +1056,7 @@ const FormFieldsConfig = () => {
                               }
                               label="Allow Multiple Images"
                             />
-                            
+
                             <div className="mt-3">
                               <Typography variant="body2" gutterBottom>
                                 Maximum File Size (MB):
@@ -831,11 +1093,10 @@ const FormFieldsConfig = () => {
                       <FormGroup>
                         <FormControlLabel
                           control={
-                            <Switch 
+                            <Switch
                               checked={Boolean(proofConfig.requirePdfProof)}
                               onChange={(e) => {
                                 const newValue = e.target.checked;
-                                console.log('Setting requirePdfProof to:', newValue);
                                 setProofConfig(prev => ({
                                   ...prev,
                                   requirePdfProof: newValue
@@ -845,7 +1106,7 @@ const FormFieldsConfig = () => {
                           }
                           label="Require PDF Proof"
                         />
-                        
+
                         {proofConfig.requirePdfProof && (
                           <div className="mt-3">
                             <Typography variant="body2" gutterBottom>
@@ -870,11 +1131,10 @@ const FormFieldsConfig = () => {
               </Card>
             )}
 
-            {/* Custom Questions Tab */}
             {activeTab === 2 && (
               <Card elevation={0} variant="outlined" className="mb-6 border-indigo-200">
-                <CardHeader 
-                  title="Custom Questions" 
+                <CardHeader
+                  title="Custom Questions"
                   titleTypographyProps={{ variant: 'h6' }}
                   className="bg-indigo-50 pb-2"
                 />
@@ -883,48 +1143,170 @@ const FormFieldsConfig = () => {
                     Add custom questions that will be shown on the event submission form for this category.
                   </Typography>
 
-                  {/* Current Questions List */}
                   {customQuestions.length > 0 ? (
                     <div className="mb-5">
                       <Typography variant="subtitle2" className="mb-2 font-medium">
                         Current Questions:
                       </Typography>
                       <List>
-                        {customQuestions.map((question, index) => (
-                          <ListItem key={question.id} divider className="bg-white rounded-lg mb-2 shadow-sm">
-                            <ListItemText 
-                              primary={
-                                <div className="flex items-center">
-                                  <span className="font-medium">{question.text}</span>
-                                  {question.required && 
-                                    <Chip size="small" color="error" label="Required" className="ml-2" />
+                        {customQuestions.map((question) => (
+                          <ListItem 
+                            key={question.id} 
+                            divider 
+                            className="bg-white rounded-lg mb-2 shadow-sm"
+                          >
+                            {editingQuestion?.id === question.id ? (
+                              <div className="w-full space-y-4">
+                                <TextField
+                                  fullWidth
+                                  label="Question Text"
+                                  value={editingQuestion.text}
+                                  onChange={(e) => setEditingQuestion({
+                                    ...editingQuestion,
+                                    text: e.target.value
+                                  })}
+                                  required
+                                />
+                                
+                                <FormControl fullWidth size="small">
+                                  <InputLabel>Question Type</InputLabel>
+                                  <Select
+                                    value={editingQuestion.type}
+                                    label="Question Type"
+                                    onChange={(e) => setEditingQuestion({
+                                      ...editingQuestion,
+                                      type: e.target.value,
+                                      options: e.target.value !== 'text' ? [''] : []
+                                    })}
+                                  >
+                                    <MenuItem value="text">Text Answer</MenuItem>
+                                    <MenuItem value="singleChoice">Single Choice</MenuItem>
+                                    <MenuItem value="multipleChoice">Multiple Choice</MenuItem>
+                                  </Select>
+                                </FormControl>
+
+                                <FormControlLabel
+                                  control={
+                                    <Switch
+                                      checked={editingQuestion.required}
+                                      onChange={(e) => setEditingQuestion({
+                                        ...editingQuestion,
+                                        required: e.target.checked
+                                      })}
+                                    />
                                   }
+                                  label="Required Question"
+                                />
+
+                                {(editingQuestion.type === 'singleChoice' || editingQuestion.type === 'multipleChoice') && (
+                                  <div>
+                                    <Typography variant="body2" className="mb-2">Options:</Typography>
+                                    {editingQuestion.options.map((option, index) => (
+                                      <div key={index} className="flex items-center gap-2 mb-2">
+                                        <TextField
+                                          size="small"
+                                          value={option}
+                                          onChange={(e) => {
+                                            const newOptions = [...editingQuestion.options];
+                                            newOptions[index] = e.target.value;
+                                            if (index === newOptions.length - 1 && e.target.value.trim() !== '') {
+                                              newOptions.push('');
+                                            }
+                                            setEditingQuestion({
+                                              ...editingQuestion,
+                                              options: newOptions
+                                            });
+                                          }}
+                                          placeholder={`Option ${index + 1}`}
+                                          className="flex-grow"
+                                        />
+                                        {index !== editingQuestion.options.length - 1 && (
+                                          <IconButton
+                                            size="small"
+                                            onClick={() => {
+                                              const newOptions = editingQuestion.options.filter((_, i) => i !== index);
+                                              setEditingQuestion({
+                                                ...editingQuestion,
+                                                options: newOptions
+                                              });
+                                            }}
+                                          >
+                                            <X size={16} />
+                                          </IconButton>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
+                                <div className="flex justify-end gap-2">
+                                  <Button
+                                    variant="outlined"
+                                    color="secondary"
+                                    onClick={() => setEditingQuestion(null)}
+                                  >
+                                    Cancel
+                                  </Button>
+                                  <Button
+                                    variant="contained"
+                                    color="primary"
+                                    onClick={saveEditedQuestion}
+                                    disabled={!editingQuestion.text || (
+                                      (editingQuestion.type !== 'text') &&
+                                      editingQuestion.options.filter(opt => opt.trim() !== '').length === 0
+                                    )}
+                                  >
+                                    Save Changes
+                                  </Button>
                                 </div>
-                              }
-                              secondary={
-                                <div className="mt-1">
-                                  <Chip 
-                                    size="small" 
-                                    label={
-                                      question.type === 'text' ? 'Text Answer' : 
-                                      question.type === 'singleChoice' ? 'Single Choice' : 
-                                      'Multiple Choice'
-                                    } 
-                                    variant="outlined" 
-                                  />
-                                  {question.type !== 'text' && (
-                                    <div className="mt-1 pl-2 text-xs">
-                                      Options: {question.options.filter(o => o.trim() !== '').join(', ')}
+                              </div>
+                            ) : (
+                              <>
+                                <ListItemText
+                                  primary={
+                                    <div className="flex items-center">
+                                      <span className="font-medium">{question.text}</span>
+                                      {question.required &&
+                                        <Chip size="small" color="error" label="Required" className="ml-2" />
+                                      }
                                     </div>
-                                  )}
-                                </div>
-                              }
-                            />
-                            <ListItemSecondaryAction>
-                              <IconButton edge="end" onClick={() => removeCustomQuestion(question.id)}>
-                                <Trash2 size={18} />
-                              </IconButton>
-                            </ListItemSecondaryAction>
+                                  }
+                                  secondary={
+                                    <div className="mt-1">
+                                      <Chip
+                                        size="small"
+                                        label={
+                                          question.type === 'text' ? 'Text Answer' :
+                                          question.type === 'singleChoice' ? 'Single Choice' :
+                                          'Multiple Choice'
+                                        }
+                                        variant="outlined"
+                                      />
+                                      {question.type !== 'text' && (
+                                        <div className="mt-1 pl-2 text-xs">
+                                          Options: {question.options.filter(o => o.trim() !== '').join(', ')}
+                                        </div>
+                                      )}
+                                    </div>
+                                  }
+                                />
+                                <ListItemSecondaryAction>
+                                  <IconButton 
+                                    edge="end" 
+                                    onClick={() => handleEditQuestion(question)}
+                                    className="mr-1"
+                                  >
+                                    <Edit size={18} />
+                                  </IconButton>
+                                  <IconButton 
+                                    edge="end" 
+                                    onClick={() => removeCustomQuestion(question.id)}
+                                  >
+                                    <Trash2 size={18} />
+                                  </IconButton>
+                                </ListItemSecondaryAction>
+                              </>
+                            )}
                           </ListItem>
                         ))}
                       </List>
@@ -935,21 +1317,20 @@ const FormFieldsConfig = () => {
                     </Alert>
                   )}
 
-                  {/* Add New Question Form */}
                   <Paper variant="outlined" className="p-4">
                     <Typography variant="subtitle2" className="mb-3 font-medium">
                       Add New Question
                     </Typography>
-                    
+
                     <div className="grid grid-cols-1 gap-4">
                       <TextField
                         label="Question Text"
                         fullWidth
                         value={newQuestion.text}
-                        onChange={(e) => setNewQuestion({...newQuestion, text: e.target.value})}
+                        onChange={(e) => setNewQuestion({ ...newQuestion, text: e.target.value })}
                         placeholder="e.g., What did you learn from this experience?"
                       />
-                      
+
                       <div className="grid grid-cols-2 gap-4">
                         <FormControl fullWidth size="small">
                           <InputLabel>Question Type</InputLabel>
@@ -957,7 +1338,7 @@ const FormFieldsConfig = () => {
                             value={newQuestion.type}
                             label="Question Type"
                             onChange={(e) => setNewQuestion({
-                              ...newQuestion, 
+                              ...newQuestion,
                               type: e.target.value,
                               options: e.target.value !== 'text' ? [''] : []
                             })}
@@ -967,10 +1348,10 @@ const FormFieldsConfig = () => {
                             <MenuItem value="multipleChoice">Multiple Choice</MenuItem>
                           </Select>
                         </FormControl>
-                        
+
                         <FormControlLabel
                           control={
-                            <Switch 
+                            <Switch
                               checked={newQuestion.required}
                               onChange={(e) => setNewQuestion({
                                 ...newQuestion,
@@ -981,8 +1362,7 @@ const FormFieldsConfig = () => {
                           label="Required Question"
                         />
                       </div>
-                      
-                      {/* Options for choice questions */}
+
                       {(newQuestion.type === 'singleChoice' || newQuestion.type === 'multipleChoice') && (
                         <div className="mt-2">
                           <FormLabel component="legend" className="text-sm mb-2">Options:</FormLabel>
@@ -1005,13 +1385,13 @@ const FormFieldsConfig = () => {
                         </div>
                       )}
                     </div>
-                    
+
                     <Button
                       variant="contained"
                       color="primary"
                       onClick={handleAddCustomQuestion}
                       disabled={!newQuestion.text || (
-                        (newQuestion.type !== 'text') && 
+                        (newQuestion.type !== 'text') &&
                         newQuestion.options.filter(opt => opt.trim() !== '').length === 0
                       )}
                       className="mt-4"
@@ -1024,7 +1404,6 @@ const FormFieldsConfig = () => {
               </Card>
             )}
 
-            {/* Preview Tab */}
             {activeTab === 3 && <FormPreview />}
 
             <div className="flex justify-end mt-6">

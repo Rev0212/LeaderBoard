@@ -87,57 +87,25 @@ router.get('/feedback', async (req, res) => {
 
 router.post('/points/impact-analysis', requireSuperAdmin, impactAnalysisController.analyzePointsChange);
 
-router.put('/config/form-fields/:category', authAdmin, async (req, res) => {
+router.put('/form-config/:category', authAdmin, async (req, res) => {
     try {
         const { category } = req.params;
-        const {
-            requiredFields,
-            optionalFields,
-            conditionalFields,
-            proofConfig,
-            customQuestions
-        } = req.body;
-
-        // Validate proofConfig
-        const validatedProofConfig = {
-            requireCertificateImage: Boolean(proofConfig?.requireCertificateImage),
-            requirePdfProof: Boolean(proofConfig?.requirePdfProof),
-            maxCertificateSize: Number(proofConfig?.maxCertificateSize) || 5,
-            maxPdfSize: Number(proofConfig?.maxPdfSize) || 10,
-            allowMultipleCertificates: Boolean(proofConfig?.allowMultipleCertificates)
-        };
-
-        // Validate customQuestions
-        const validatedCustomQuestions = (customQuestions || []).map(q => ({
-            id: q.id,
-            text: q.text,
-            type: q.type,
-            required: Boolean(q.required),
-            options: Array.isArray(q.options) ? q.options.filter(opt => opt.trim() !== '') : []
-        }));
-
-        const formFieldConfig = await FormFieldConfig.findOneAndUpdate(
+        const updatedConfig = await FormFieldConfig.findOneAndUpdate(
             { category },
-            {
-                requiredFields,
-                optionalFields,
-                conditionalFields,
-                proofConfig: validatedProofConfig,
-                customQuestions: validatedCustomQuestions
-            },
+            req.body,
             { new: true, upsert: true }
         );
 
-        res.json({
+        res.status(200).json({
             success: true,
-            data: formFieldConfig,
-            message: 'Configuration updated successfully'
+            message: 'Form configuration updated successfully',
+            config: updatedConfig
         });
     } catch (error) {
-        console.error('Error updating form fields:', error);
         res.status(500).json({
             success: false,
-            message: error.message || 'Failed to update form fields configuration'
+            message: 'Failed to update form configuration',
+            error: error.message
         });
     }
 });
