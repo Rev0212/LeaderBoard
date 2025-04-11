@@ -53,6 +53,7 @@ const roleBasedEventReportsRoutes = require('./routes/roleBasedEventReports.rout
 const feedbackRoutes = require('./routes/feedback.routes');
 const facultyReportRoutes = require('./routes/facultyReport.routes');
 const enumConfigRoutes = require('./routes/enumConfig.routes');
+const templateRoutes = require('./routes/templates.routes');
 
 // Mount routes
 app.use('/student', studentRoutes);
@@ -68,4 +69,6 @@ app.use('/feedback', feedbackRoutes);
 app.use('/faculty-reports', facultyReportRoutes);
 app.use('/admin/config', enumConfigRoutes);
 app.use('/admin/enums', enumConfigRoutes);  // This should match the path you're accessing
+app.use('/admin/config', templateRoutes);
+
 module.exports = app;
