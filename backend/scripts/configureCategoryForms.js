@@ -1,13 +1,14 @@
 const axios = require('axios');
-require('dotenv').config({ path: '../.env' });
+require('dotenv').config({ path: '.env' });
 
-const BASE_URL = process.env.VITE_BASE_URL || 'http://localhost:5000/api';
-let adminToken = '';
+const BASE_URL = process.env.VITE_BASE_URL || 'http://localhost:4000';
+// Using a predefined admin token instead of logging in
+const adminToken = process.env.ADMIN_TOKEN || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2N2Y3NmRmOWY4NGE1ZWMxYzBkYjVlN2EiLCJpYXQiOjE3NDQzNzg4MDksImV4cCI6MTc0NDQ2NTIwOX0.aShsCrNa6wgBlwLBmwwYjKAF0sdxvQyrnAvNYRsp1Qg';
 
 // Category-specific form configurations based on marking scheme
 const categoryConfigs = {
   'Hackathon': {
-    requiredFields: ['title', 'date', 'description', 'positionSecured', 'eventScope', 'eventOrganizer', 'participationType'],
+    requiredFields: ['eventName', 'date', 'description', 'positionSecured', 'eventScope', 'eventOrganizer', 'participationType'],
     optionalFields: ['teamName', 'teamSize', 'priceMoney', 'eventLocation'],
     proofConfig: {
       requireCertificateImage: true,
@@ -18,7 +19,7 @@ const categoryConfigs = {
   },
   
   'Coding': {
-    requiredFields: ['title', 'date', 'description', 'positionSecured', 'platform', 'resultPercentile'],
+    requiredFields: ['eventName', 'date', 'description', 'positionSecured', 'platform', 'resultPercentile'],
     optionalFields: ['eventScope', 'eventType'],
     proofConfig: {
       requireCertificateImage: true,
@@ -45,7 +46,7 @@ const categoryConfigs = {
   },
   
   'Open Source': {
-    requiredFields: ['title', 'date', 'description', 'githubRepoUrl'],
+    requiredFields: ['eventName', 'date', 'description', 'githubRepoUrl'],
     optionalFields: ['contributionType'],
     proofConfig: {
       requireCertificateImage: false,
@@ -91,7 +92,7 @@ const categoryConfigs = {
   },
   
   'Research': {
-    requiredFields: ['title', 'date', 'description'],
+    requiredFields: ['eventName', 'date', 'description'],
     optionalFields: ['eventScope'],
     proofConfig: {
       requireCertificateImage: false,
@@ -139,7 +140,7 @@ const categoryConfigs = {
   },
   
   'Global-Certificates': {
-    requiredFields: ['title', 'date', 'description', 'issuer'],
+    requiredFields: ['eventName', 'date', 'description', 'issuer'],
     optionalFields: [],
     proofConfig: {
       requireCertificateImage: true,
@@ -180,7 +181,7 @@ const categoryConfigs = {
   },
   
   'NCC-NSS': {
-    requiredFields: ['title', 'date', 'description'],
+    requiredFields: ['eventName', 'date', 'description'],
     optionalFields: [],
     proofConfig: {
       requireCertificateImage: true,
@@ -214,7 +215,7 @@ const categoryConfigs = {
   },
   
   'Sports': {
-    requiredFields: ['title', 'date', 'description', 'positionSecured', 'eventScope'],
+    requiredFields: ['eventName', 'date', 'description', 'positionSecured', 'eventScope'],
     optionalFields: ['eventLocation'],
     proofConfig: {
       requireCertificateImage: true,
@@ -234,7 +235,7 @@ const categoryConfigs = {
   },
   
   'Workshop': {
-    requiredFields: ['title', 'date', 'description'],
+    requiredFields: ['eventName', 'date', 'description'],
     optionalFields: ['eventLocation', 'eventOrganizer'],
     proofConfig: {
       requireCertificateImage: true,
@@ -268,7 +269,7 @@ const categoryConfigs = {
   },
   
   'Leadership': {
-    requiredFields: ['title', 'date', 'description'],
+    requiredFields: ['eventName', 'date', 'description'],
     optionalFields: ['eventLocation'],
     proofConfig: {
       requireCertificateImage: true,
@@ -308,7 +309,7 @@ const categoryConfigs = {
   },
   
   'Social Work': {
-    requiredFields: ['title', 'date', 'description'],
+    requiredFields: ['eventName', 'date', 'description'],
     optionalFields: ['eventLocation'],
     proofConfig: {
       requireCertificateImage: true,
@@ -334,28 +335,6 @@ const categoryConfigs = {
     ]
   }
 };
-
-async function login() {
-  console.log('🔑 Logging in as admin...');
-  try {
-    const response = await axios.post(`${BASE_URL}/admin/login`, {
-      username: process.env.ADMIN_USERNAME || 'admin',
-      password: process.env.ADMIN_PASSWORD || 'adminpassword'
-    });
-    
-    if (response.data.success) {
-      adminToken = response.data.token;
-      console.log('✅ Admin login successful');
-      return true;
-    } else {
-      console.error('❌ Admin login failed:', response.data.message);
-      return false;
-    }
-  } catch (error) {
-    console.error('❌ Admin login error:', error.message);
-    return false;
-  }
-}
 
 async function getCategories() {
   console.log('📋 Fetching categories...');
@@ -407,12 +386,8 @@ async function updateCategoryConfig(category, config) {
 async function main() {
   console.log('🚀 Starting category form configuration');
   
-  // Login as admin
-  const loginSuccess = await login();
-  if (!loginSuccess) {
-    console.error('Cannot proceed without admin login');
-    process.exit(1);
-  }
+  // No need to login, using predefined token
+  console.log('🔑 Using predefined admin token');
   
   // Get all categories from database
   const categories = await getCategories();

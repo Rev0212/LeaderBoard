@@ -62,6 +62,8 @@ const FormFieldsConfig = () => {
     options: ['']
   });
 
+  const [editingQuestion, setEditingQuestion] = useState(null);
+
   const [activeTab, setActiveTab] = useState(0);
   const [availableFields, setAvailableFields] = useState([
     'title', 'date', 'eventLocation', 'eventScope', 'eventOrganizer',
@@ -274,6 +276,29 @@ const FormFieldsConfig = () => {
 
   const removeCustomQuestion = (questionId) => {
     setCustomQuestions(customQuestions.filter(q => q.id !== questionId));
+  };
+
+  const handleEditQuestion = (question) => {
+    setEditingQuestion({
+      ...question,
+      options: question.type !== 'text' ? [...question.options, ''] : []
+    });
+  };
+
+  const saveEditedQuestion = () => {
+    if (!editingQuestion.text) return;
+
+    const updatedQuestions = customQuestions.map(q => 
+      q.id === editingQuestion.id ? {
+        ...editingQuestion,
+        options: editingQuestion.type !== 'text' ? 
+          editingQuestion.options.filter(opt => opt.trim() !== '') : []
+      } : q
+    );
+
+    setCustomQuestions(updatedQuestions);
+    setEditingQuestion(null);
+    toast.success('Question updated successfully');
   };
 
   const saveConfig = async () => {
@@ -1124,41 +1149,164 @@ const FormFieldsConfig = () => {
                         Current Questions:
                       </Typography>
                       <List>
-                        {customQuestions.map((question, index) => (
-                          <ListItem key={question.id} divider className="bg-white rounded-lg mb-2 shadow-sm">
-                            <ListItemText
-                              primary={
-                                <div className="flex items-center">
-                                  <span className="font-medium">{question.text}</span>
-                                  {question.required &&
-                                    <Chip size="small" color="error" label="Required" className="ml-2" />
+                        {customQuestions.map((question) => (
+                          <ListItem 
+                            key={question.id} 
+                            divider 
+                            className="bg-white rounded-lg mb-2 shadow-sm"
+                          >
+                            {editingQuestion?.id === question.id ? (
+                              <div className="w-full space-y-4">
+                                <TextField
+                                  fullWidth
+                                  label="Question Text"
+                                  value={editingQuestion.text}
+                                  onChange={(e) => setEditingQuestion({
+                                    ...editingQuestion,
+                                    text: e.target.value
+                                  })}
+                                  required
+                                />
+                                
+                                <FormControl fullWidth size="small">
+                                  <InputLabel>Question Type</InputLabel>
+                                  <Select
+                                    value={editingQuestion.type}
+                                    label="Question Type"
+                                    onChange={(e) => setEditingQuestion({
+                                      ...editingQuestion,
+                                      type: e.target.value,
+                                      options: e.target.value !== 'text' ? [''] : []
+                                    })}
+                                  >
+                                    <MenuItem value="text">Text Answer</MenuItem>
+                                    <MenuItem value="singleChoice">Single Choice</MenuItem>
+                                    <MenuItem value="multipleChoice">Multiple Choice</MenuItem>
+                                  </Select>
+                                </FormControl>
+
+                                <FormControlLabel
+                                  control={
+                                    <Switch
+                                      checked={editingQuestion.required}
+                                      onChange={(e) => setEditingQuestion({
+                                        ...editingQuestion,
+                                        required: e.target.checked
+                                      })}
+                                    />
                                   }
-                                </div>
-                              }
-                              secondary={
-                                <div className="mt-1">
-                                  <Chip
-                                    size="small"
-                                    label={
-                                      question.type === 'text' ? 'Text Answer' :
-                                      question.type === 'singleChoice' ? 'Single Choice' :
-                                      'Multiple Choice'
-                                    }
+                                  label="Required Question"
+                                />
+
+                                {(editingQuestion.type === 'singleChoice' || editingQuestion.type === 'multipleChoice') && (
+                                  <div>
+                                    <Typography variant="body2" className="mb-2">Options:</Typography>
+                                    {editingQuestion.options.map((option, index) => (
+                                      <div key={index} className="flex items-center gap-2 mb-2">
+                                        <TextField
+                                          size="small"
+                                          value={option}
+                                          onChange={(e) => {
+                                            const newOptions = [...editingQuestion.options];
+                                            newOptions[index] = e.target.value;
+                                            if (index === newOptions.length - 1 && e.target.value.trim() !== '') {
+                                              newOptions.push('');
+                                            }
+                                            setEditingQuestion({
+                                              ...editingQuestion,
+                                              options: newOptions
+                                            });
+                                          }}
+                                          placeholder={`Option ${index + 1}`}
+                                          className="flex-grow"
+                                        />
+                                        {index !== editingQuestion.options.length - 1 && (
+                                          <IconButton
+                                            size="small"
+                                            onClick={() => {
+                                              const newOptions = editingQuestion.options.filter((_, i) => i !== index);
+                                              setEditingQuestion({
+                                                ...editingQuestion,
+                                                options: newOptions
+                                              });
+                                            }}
+                                          >
+                                            <X size={16} />
+                                          </IconButton>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
+                                <div className="flex justify-end gap-2">
+                                  <Button
                                     variant="outlined"
-                                  />
-                                  {question.type !== 'text' && (
-                                    <div className="mt-1 pl-2 text-xs">
-                                      Options: {question.options.filter(o => o.trim() !== '').join(', ')}
-                                    </div>
-                                  )}
+                                    color="secondary"
+                                    onClick={() => setEditingQuestion(null)}
+                                  >
+                                    Cancel
+                                  </Button>
+                                  <Button
+                                    variant="contained"
+                                    color="primary"
+                                    onClick={saveEditedQuestion}
+                                    disabled={!editingQuestion.text || (
+                                      (editingQuestion.type !== 'text') &&
+                                      editingQuestion.options.filter(opt => opt.trim() !== '').length === 0
+                                    )}
+                                  >
+                                    Save Changes
+                                  </Button>
                                 </div>
-                              }
-                            />
-                            <ListItemSecondaryAction>
-                              <IconButton edge="end" onClick={() => removeCustomQuestion(question.id)}>
-                                <Trash2 size={18} />
-                              </IconButton>
-                            </ListItemSecondaryAction>
+                              </div>
+                            ) : (
+                              <>
+                                <ListItemText
+                                  primary={
+                                    <div className="flex items-center">
+                                      <span className="font-medium">{question.text}</span>
+                                      {question.required &&
+                                        <Chip size="small" color="error" label="Required" className="ml-2" />
+                                      }
+                                    </div>
+                                  }
+                                  secondary={
+                                    <div className="mt-1">
+                                      <Chip
+                                        size="small"
+                                        label={
+                                          question.type === 'text' ? 'Text Answer' :
+                                          question.type === 'singleChoice' ? 'Single Choice' :
+                                          'Multiple Choice'
+                                        }
+                                        variant="outlined"
+                                      />
+                                      {question.type !== 'text' && (
+                                        <div className="mt-1 pl-2 text-xs">
+                                          Options: {question.options.filter(o => o.trim() !== '').join(', ')}
+                                        </div>
+                                      )}
+                                    </div>
+                                  }
+                                />
+                                <ListItemSecondaryAction>
+                                  <IconButton 
+                                    edge="end" 
+                                    onClick={() => handleEditQuestion(question)}
+                                    className="mr-1"
+                                  >
+                                    <Edit size={18} />
+                                  </IconButton>
+                                  <IconButton 
+                                    edge="end" 
+                                    onClick={() => removeCustomQuestion(question.id)}
+                                  >
+                                    <Trash2 size={18} />
+                                  </IconButton>
+                                </ListItemSecondaryAction>
+                              </>
+                            )}
                           </ListItem>
                         ))}
                       </List>

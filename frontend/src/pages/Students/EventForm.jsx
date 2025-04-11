@@ -27,7 +27,7 @@ const EventForm = () => {
   });
 
   const [formData, setFormData] = useState({
-    title: '',
+    eventName: '',
     date: '',
     category: '',
     positionSecured: '',
@@ -313,10 +313,19 @@ const EventForm = () => {
     setIsSubmitting(true);
     
     const submitData = new FormData();
+    console.log("1.Submitting form data:", formData);
     
+    // Always include the category field
+    if (formData.category) {
+      submitData.append('category', formData.category);
+      console.log(`Appending category: ${formData.category}`);
+    }
+    
+    // Append other visible fields
     Object.keys(formData).forEach(key => {
-      if (visibleFields.includes(key) && formData[key]) {
+      if (key !== 'category' && visibleFields.includes(key) && formData[key]) {
         submitData.append(key, formData[key]);
+        console.log(`Appending ${key}: ${formData[key]}`);
       }
     });
     
@@ -408,7 +417,7 @@ const EventForm = () => {
 
   const resetForm = () => {
     setFormData({
-      title: '',
+      eventName: '',
       date: '',
       category: '',
       positionSecured: '',
@@ -463,13 +472,13 @@ const EventForm = () => {
     );
     
     switch (fieldName) {
-      case 'title':
+      case 'eventName':
         return (
           <FieldWrapper>
             <TextField
-              name="title"
-              label="Event Title"
-              value={formData.title}
+              name="eventName"
+              label="Event Name"
+              value={formData.eventName}
               onChange={handleInputChange}
               fullWidth
               margin="normal"

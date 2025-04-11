@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const { ObjectId } = mongoose.Schema.Types;
-const EnumConfig = require('./enumConfig.model');
+const FormFieldConfig = require('./formFieldConfig.model');
 
 const eventSchema = new mongoose.Schema({
     eventName: {
@@ -18,122 +18,106 @@ const eventSchema = new mongoose.Schema({
         required: true
     },
     proofUrl: {
-        type: String,
-        required: true
+        type: [String], // Changed to array of strings
+        required: true,
+        validate: {
+            validator: async function(urls) {
+                const category = this.category;
+                if (!category) return false;
+                
+                // Get form configuration for this category
+                const config = await FormFieldConfig.findOne({ category });
+                if (!config) return true; // If no config, don't validate
+                
+                const { proofConfig } = config;
+                
+                // Validate based on proof configuration
+                if (proofConfig?.requireCertificateImage) {
+                    return urls && urls.length > 0;
+                }
+                return true;
+            },
+            message: 'Certificate proof is required'
+        }
     },
     pdfDocument: {
         type: String,
-        required: true
+        required: function() {
+            return this.validatePdfRequired();
+        }
     },
     category: {
         type: String,
         required: true
     },
-    eventLocation: {
-        type: String,
-        required: function() {
-            return ['Hackathon', 'Ideathon', 'Coding', 'Workshop', 'Conference'].includes(this.category);
-        }
+    customAnswers: {
+        type: Map,
+        of: mongoose.Schema.Types.Mixed
     },
-    otherCollegeName: {
-        type: String,
-        required: function() {
-            return this.eventLocation === 'Outside College';
-        }
-    },
-    eventScope: {
-        type: String,
-        enum: ['International', 'National', 'State'],
-        required: function() {
-            return ['Hackathon', 'Ideathon', 'Coding', 'Workshop', 'Conference'].includes(this.category);
-        }
-    },
-    eventOrganizer: {
-        type: String,
-        enum: ['Industry Based', 'College Based'],
-        required: function() {
-            return ['Hackathon', 'Ideathon', 'Coding', 'Workshop', 'Conference'].includes(this.category);
-        }
-    },
-    participationType: {
-        type: String,
-        enum: ['Individual', 'Team'],
-        required: function() {
-            return ['Hackathon', 'Ideathon', 'Coding', 'Workshop', 'Conference'].includes(this.category);
-        }
-    },
-    positionSecured: {
-        type: String,
-        required: true
-    },
-    priceMoney: {
-        type: Number,
-        required: function() {
-            return ['First', 'Second', 'Third'].includes(this.positionSecured);
-        }
-    },
-    status: {
-        type: String,
-        enum: ['Pending', 'Approved', 'Rejected'],
-        default: 'Pending'
-    },
-    pointsEarned: {
-        type: Number,
-        default: 0
-    },
-    submittedBy: {
-        type: ObjectId,
-        ref: 'student',
-        required: true
-    },
-    approvedBy: {
-        type: ObjectId,
-        ref: 'teacher'
+    dynamicFields: {
+        type: Map,
+        of: mongoose.Schema.Types.Mixed,
+        default: () => new Map()
     }
-}, {
-    timestamps: true
-});
+}, { timestamps: true });
 
-// Add pre-validation middleware to check dynamic enums
+// Add method to validate PDF requirement
+eventSchema.methods.validatePdfRequired = async function() {
+    if (!this.category) return false;
+    
+    const config = await FormFieldConfig.findOne({ category: this.category });
+    if (!config) return false;
+    
+    return config.proofConfig?.requirePdfProof || false;
+};
+
+// Pre-save middleware to validate required fields
 eventSchema.pre('validate', async function(next) {
     try {
-        // Validate category
-        if (this.category) {
-            const categoryConfig = await EnumConfig.findOne({ type: 'category' });
-            if (categoryConfig && !categoryConfig.values.includes(this.category)) {
-                this.invalidate('category', `${this.category} is not a valid category`);
+        const config = await FormFieldConfig.findOne({ category: this.category });
+        if (!config) return next();
+
+        // Validate static required fields (excluding proofUrl and pdfDocument)
+        for (const field of config.requiredFields) {
+            if (!['proofUrl', 'pdfDocument'].includes(field)) {
+                // Check both root level and inside dynamicFields Map
+                const valueExists = 
+                    this[field] !== undefined || 
+                    (this.dynamicFields && this.dynamicFields.get(field) !== undefined);
+                
+                if (!valueExists) {
+                    this.invalidate(field, `${field} is required`);
+                }
             }
         }
-        
-        // Validate eventLocation
-        if (this.eventLocation) {
-            const locationConfig = await EnumConfig.findOne({ type: 'eventLocation' });
-            if (locationConfig && !locationConfig.values.includes(this.eventLocation)) {
-                this.invalidate('eventLocation', `${this.eventLocation} is not a valid event location`);
+
+        // Validate custom questions (inside customAnswers)
+        if (config.customQuestions) {
+            const requiredQuestions = config.customQuestions.filter(q => q.required);
+            for (const question of requiredQuestions) {
+                const answer = this.customAnswers?.get(question.id);
+                if (answer === undefined || answer === null || answer === '') {
+                    this.invalidate(`customAnswers.${question.id}`, `Answer for "${question.text}" is required`);
+                }
             }
         }
-        
-        // Validate positionSecured
-        if (this.positionSecured) {
-            const positionConfig = await EnumConfig.findOne({ type: 'positionSecured' });
-            if (positionConfig && !positionConfig.values.includes(this.positionSecured)) {
-                this.invalidate('positionSecured', `${this.positionSecured} is not a valid position`);
+
+        // ✅ Validate dynamic fields
+        if (config.dynamicFields) {
+            const requiredDynamicFields = config.dynamicFields.filter(field => field.required);
+            for (const field of requiredDynamicFields) {
+                const value = this.dynamicFields?.get(field.name);
+                if (value === undefined || value === null || value === '') {
+                    this.invalidate(`dynamicFields.${field.name}`, `Dynamic field "${field.label || field.name}" is required`);
+                }
             }
         }
-        
-        // Add similar validations for other enum fields
-        
+
         next();
-    } catch (err) {
-        next(err);
+    } catch (error) {
+        next(error);
     }
 });
 
-// Add indexes for frequent queries
-eventSchema.index({ submittedBy: 1 });
-eventSchema.index({ approvedBy: 1 });
-eventSchema.index({ status: 1 });
-
 const Event = mongoose.model('Event', eventSchema);
-
 module.exports = Event;

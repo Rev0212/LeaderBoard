@@ -6,6 +6,8 @@ const PointsCalculationService = require('../services/pointsCalculation.service'
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const FormFieldConfig = require('../models/formFieldConfig.model');
+const { title } = require('process');
 
 // Configure multer storage for file uploads
 const storage = multer.diskStorage({
@@ -65,85 +67,65 @@ const uploadMiddleware = upload.fields([
 // Student submits a new event
 const submitEvent = async (req, res) => {
     try {
-        // Extract the files from the request
         const certificateImages = req.files?.['certificateImages'] || [];
+        console.log(req.body)
         const pdfDocument = req.files?.['pdfDocument']?.[0];
-        
-        const {
-            eventName,
-            description,
-            date,
-            category,
-            eventLocation,
-            otherCollegeName,
-            eventScope,
-            eventOrganizer,
-            participationType,
-            positionSecured,
-            priceMoney
-        } = req.body;
-        
-        const studentId = req.student._id;
+        console.log(req.body.category)
+        // Get form configuration for validation
+        const formConfig = await FormFieldConfig.findOne({ category: req.body.category });
+        console.log('Form configuration:', formConfig);
+        if (!formConfig) {
+            return res.status(400).json({
+                success: false,
+                message: 'No form configuration found for this category'
+            });
+        }
 
-        // Create event data object with conditional fields
+        // Create event data object
         const eventData = {
-            eventName,
-            description,
-            date,
-            category,
-            positionSecured,
-            // Use file paths from uploaded files
+            eventName: req.body.eventName, // Changed from req.body.title
+            description: req.body.description,
+            date: req.body.date,
+            category: req.body.category,
             proofUrl: certificateImages.map(file => file.path),
-            pdfDocument: pdfDocument ? pdfDocument.path : null,
-            submittedBy: studentId,
-            // Initialize custom answers object
-            customAnswers: {}
+            pdfDocument: pdfDocument?.path || null,
+            submittedBy: req.student._id,
+            customAnswers: new Map()
         };
 
-        // Process custom question answers
+        // Add all other fields from the body
+        // This will include positionSecured, eventScope, etc.
         Object.keys(req.body).forEach(key => {
-            if (key.startsWith('customAnswer_')) {
-                const questionId = key.replace('customAnswer_', '');
-                if (key.endsWith('[]')) {
-                    // This is an array for multiple choice questions
-                    eventData.customAnswers[questionId] = Array.isArray(req.body[key]) ? 
-                        req.body[key] : [req.body[key]];
-                } else {
-                    eventData.customAnswers[questionId] = req.body[key];
-                }
+            if (!['eventName', 'description', 'date', 'category'].includes(key)) {
+                eventData[key] = req.body[key];
             }
         });
 
-        // Add conditional fields based on category
-        if (['Hackathon', 'Ideathon', 'Coding', 'Workshop', 'Conference'].includes(category)) {
-            eventData.eventLocation = eventLocation;
-            eventData.eventScope = eventScope;
-            eventData.eventOrganizer = eventOrganizer;
-            eventData.participationType = participationType;
-
-            if (eventLocation === 'Outside College') {
-                eventData.otherCollegeName = otherCollegeName;
-            }
+        // Process custom answers
+        if (formConfig.customQuestions) {
+            formConfig.customQuestions.forEach(question => {
+                const answerId = `customAnswer_${question.id}`;
+                if (req.body[answerId]) {
+                    eventData.customAnswers.set(question.id, req.body[answerId]);
+                }
+            });
         }
 
-        // Add prize money if position is top 3
-        if (['First', 'Second', 'Third'].includes(positionSecured)) {
-            eventData.priceMoney = priceMoney;
-        }
+        console.log('Event data before saving:', eventData);
 
         const newEvent = await eventService.createEvent(eventData);
 
         res.status(201).json({
             success: true,
-            message: 'Event submitted successfully', 
-            event: newEvent 
+            message: 'Event submitted successfully',
+            event: newEvent
         });
     } catch (error) {
         console.error('Error submitting event:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             success: false,
-            message: 'Failed to submit event', 
-            error: error.message 
+            message: 'Failed to submit event',
+            error: error.message
         });
     }
 };

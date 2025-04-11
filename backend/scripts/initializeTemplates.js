@@ -27,7 +27,7 @@ const allCategories = [
 const templates = {
   'Hackathon': {
     'Standard Template': {
-      requiredFields: ['title', 'date', 'description', 'positionSecured', 'eventScope'],
+      requiredFields: ['eventName', 'date', 'description', 'positionSecured', 'eventScope'], // Changed from 'title'
       optionalFields: ['participationType', 'teamName', 'teamSize', 'eventOrganizer'],
       conditionalFields: {
         'teamName': { dependsOn: 'participationType', showWhen: ['Team'] },
@@ -59,7 +59,7 @@ const templates = {
   },
   'Coding': {
     'Standard Template': {
-      requiredFields: ['title', 'date', 'description', 'positionSecured'],
+      requiredFields: ['eventName', 'date', 'description', 'positionSecured'], // Changed from 'title'
       optionalFields: ['eventScope'],
       proofConfig: {
         requireCertificateImage: true,
@@ -100,7 +100,7 @@ const templates = {
   },
   'Open Source': {
     'GitHub Contribution': {
-      requiredFields: ['title', 'date', 'description', 'githubRepoUrl'],
+      requiredFields: ['eventName', 'date', 'description', 'githubRepoUrl'], // Changed from 'title'
       optionalFields: [],
       proofConfig: {
         requireCertificateImage: false,
@@ -149,7 +149,7 @@ const templates = {
   },
   'Research': {
     'Paper Publication': {
-      requiredFields: ['title', 'date', 'description'],
+      requiredFields: ['eventName', 'date', 'description'], // Changed from 'title'
       optionalFields: ['publicationLink'],
       proofConfig: {
         requireCertificateImage: false,
@@ -198,7 +198,7 @@ const templates = {
   },
   'Certifications': {
     'Course Certification': {
-      requiredFields: ['title', 'date', 'description', 'issuer'],
+      requiredFields: ['eventName', 'date', 'description', 'issuer'], // Changed from 'title'
       optionalFields: ['certificateLink'],
       proofConfig: {
         requireCertificateImage: true,
@@ -240,7 +240,7 @@ const templates = {
   },
   'NCC-NSS': {
     'Volunteer Activity': {
-      requiredFields: ['title', 'date', 'description'],
+      requiredFields: ['eventName', 'date', 'description'], // Changed from 'title'
       optionalFields: ['eventLocation'],
       proofConfig: {
         requireCertificateImage: true,
@@ -282,7 +282,7 @@ const templates = {
   },
   'Sports': {
     'Sports Achievement': {
-      requiredFields: ['title', 'date', 'description', 'positionSecured', 'eventScope'],
+      requiredFields: ['eventName', 'date', 'description', 'positionSecured', 'eventScope'], // Changed from 'title'
       optionalFields: ['sportName', 'eventLocation'],
       proofConfig: {
         requireCertificateImage: true,
@@ -310,7 +310,7 @@ const templates = {
   },
   'Workshop': {
     'Workshop Participation': {
-      requiredFields: ['title', 'date', 'description'],
+      requiredFields: ['eventName', 'date', 'description'], // Changed from 'title'
       optionalFields: ['eventLocation', 'eventOrganizer'],
       proofConfig: {
         requireCertificateImage: true,
@@ -345,7 +345,7 @@ const templates = {
   },
   'Leadership': {
     'Leadership Role': {
-      requiredFields: ['title', 'date', 'description'],
+      requiredFields: ['eventName', 'date', 'description'], // Changed from 'title'
       optionalFields: ['eventLocation', 'role'],
       proofConfig: {
         requireCertificateImage: true,
@@ -386,7 +386,7 @@ const templates = {
   },
   'Social Work': {
     'Community Service': {
-      requiredFields: ['title', 'date', 'description'],
+      requiredFields: ['eventName', 'date', 'description'], // Changed from 'title'
       optionalFields: ['eventLocation', 'organizationName'],
       proofConfig: {
         requireCertificateImage: true,
