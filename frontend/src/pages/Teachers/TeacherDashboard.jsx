@@ -53,6 +53,8 @@ const TeacherDashboard = () => {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [selectedPDF, setSelectedPDF] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null); // New state for image viewing
+  const [showCertificateModal, setShowCertificateModal] = useState(false); // State for certificate gallery modal
+  const [certificateGallery, setCertificateGallery] = useState([]); // State for certificate gallery
   const [loading, setLoading] = useState(false);
   const [upcomingEvents, setUpcomingEvents] = useState([]);
   const location = useLocation();
@@ -289,20 +291,53 @@ const TeacherDashboard = () => {
     setSelectedPDF(null);
   };
 
-  // New handler for showing certificate image
-  const handleShowImage = (event) => {
-    // Ensure the image exists before opening it in the modal
-    if (event.proofUrl) {
-      const imageUrl = `${VITE_BASE_URL}${event.proofUrl}`;
-      setSelectedImage(imageUrl);  // Set the image URL to the state
-    } else {
+  // Improve the handleShowCertificates function to better validate certificate data
+  const handleShowCertificates = (event) => {
+    if (!event.proofUrl) {
       console.error('No certificate proof available for this event');
+      return;
     }
+    
+    // Handle both string and array formats
+    let certificates = [];
+    
+    if (Array.isArray(event.proofUrl)) {
+      certificates = event.proofUrl.filter(url => url && url.trim() !== '');
+    } else if (typeof event.proofUrl === 'string') {
+      // Handle comma-separated URLs in a string
+      if (event.proofUrl.includes(',')) {
+        certificates = event.proofUrl.split(',').filter(url => url && url.trim() !== '');
+      } else if (event.proofUrl.trim() !== '') {
+        certificates = [event.proofUrl];
+      }
+    }
+    
+    if (certificates.length === 0) {
+      console.error('No valid certificate proof available for this event');
+      return;
+    }
+    
+    // Format URLs properly based on their format
+    const formattedUrls = certificates.map(url => {
+      const trimmedUrl = url.trim();
+      // Handle full URLs
+      if (trimmedUrl.startsWith('http')) {
+        return trimmedUrl;
+      }
+      // Handle relative paths
+      return trimmedUrl.startsWith('/uploads') 
+        ? `${VITE_BASE_URL}${trimmedUrl}` 
+        : `${VITE_BASE_URL}/uploads/certificates/${trimmedUrl}`;
+    });
+    
+    setCertificateGallery(formattedUrls);
+    setShowCertificateModal(true);
   };
 
-  // New handler for closing image modal
-  const handleCloseImageModal = () => {
-    setSelectedImage(null);
+  // New handler for closing certificate modal
+  const handleCloseCertificateModal = () => {
+    setShowCertificateModal(false);
+    setCertificateGallery([]);
   };
 
   const handleViewAllUpcomingEvents = () => {
@@ -477,21 +512,38 @@ const getInactiveStudentCount = () => {
                       </p>
                     </div>
                     <div className="ml-4 flex gap-4 items-center">
-                      {/* Add Certificate Proof button */}
-                      <button
-                        onClick={() => handleShowImage(event)}
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors"
-                      >
-                        Show Certificate Proof
-                      </button>
+                      {/* Only show certificate button if valid proof exists */}
+                      {event.proofUrl && (() => {
+                        // Check if there's valid certificate data
+                        let hasValidCertificates = false;
+                        
+                        if (Array.isArray(event.proofUrl)) {
+                          hasValidCertificates = event.proofUrl.some(url => url && url.trim() !== '');
+                        } else if (typeof event.proofUrl === 'string') {
+                          hasValidCertificates = event.proofUrl.trim() !== '';
+                        }
+                        
+                        return hasValidCertificates ? (
+                          <button
+                            onClick={() => handleShowCertificates(event)}
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors"
+                          >
+                            {Array.isArray(event.proofUrl) && event.proofUrl.filter(url => url?.trim()).length > 1 
+                              ? `View Certificates (${event.proofUrl.filter(url => url?.trim()).length})` 
+                              : "Show Certificate"}
+                          </button>
+                        ) : null;
+                      })()}
                       
-                      <button
-                        onClick={() => handleShowPDF(event)}
-                        className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
-                      >
-                        Show PDF Proof
-                      </button>
-  
+                      {event.pdfDocument && (
+                        <button
+                          onClick={() => handleShowPDF(event)}
+                          className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
+                        >
+                          Show PDF Proof
+                        </button>
+                      )}
+
                       {event.status === "Pending" ? (
                         <button
                           onClick={() => handleCheckNow(event)}
@@ -615,7 +667,7 @@ const getInactiveStudentCount = () => {
                 {Object.entries(selectedEvent).map(([key, value]) => {
                   // Skip certain properties we don't want to display
                   const excludedProps = ['_id', '__v', 'submittedBy', 'proofUrl', 'pdfDocument', 
-                                        'customAnswers', 'dynamicFields', 'createdAt', 'updatedAt'];
+                                        'customAnswers', 'dynamicFields', 'createdAt', 'updatedAt','approvedBy'];
                   
                   // Skip empty values, functions, and excluded properties
                   if (excludedProps.includes(key) || value === null || value === undefined || 
@@ -652,7 +704,7 @@ const getInactiveStudentCount = () => {
                 {Object.entries(selectedEvent).map(([key, value]) => {
                   // Only process objects that aren't arrays and aren't null
                   if (typeof value !== 'object' || value === null || Array.isArray(value) || 
-                      ['submittedBy', 'customAnswers', 'dynamicFields'].includes(key)) {
+                      ['submittedBy', 'customAnswers', 'dynamicFields', 'approvedBy'].includes(key)) {
                     return null;
                   }
                   
@@ -770,25 +822,47 @@ const getInactiveStudentCount = () => {
         </div>
       )}
 
-      {/* New modal for viewing certificate image */}
-      {selectedImage && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg max-w-4xl w-full">
+      {/* Replace the image modal with this certificate gallery modal */}
+      {showCertificateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg max-w-5xl w-full max-h-[90vh] overflow-y-auto p-6">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold">Certificate Image</h3>
+              <h3 className="text-xl font-bold text-gray-800">
+                {certificateGallery.length > 1 ? 'All Certificates' : 'Certificate'}
+              </h3>
               <button 
-                onClick={handleCloseImageModal}
+                onClick={handleCloseCertificateModal}
                 className="text-gray-500 hover:text-gray-700"
               >
                 Close
               </button>
             </div>
-            <div className="overflow-auto">
-              <img 
-                src={selectedImage} 
-                className="w-full object-contain" 
-                alt="Certificate" 
-              />
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {certificateGallery.map((url, index) => (
+                <div key={index} className="border rounded-lg overflow-hidden flex flex-col h-full">
+                  <div className="p-2 bg-gray-50 border-b">
+                    <p className="font-medium">Certificate {index + 1}</p>
+                  </div>
+                  <div className="flex-grow flex items-center justify-center p-2 bg-gray-50 h-[300px]">
+                    <img 
+                      src={url}
+                      alt={`Certificate ${index + 1}`}
+                      className="max-h-[280px] max-w-full object-contain"
+                    />
+                  </div>
+                  <div className="p-2 flex justify-end">
+                    <a 
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-500 hover:text-blue-700 text-sm"
+                    >
+                      Open in new tab
+                    </a>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
