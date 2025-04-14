@@ -396,7 +396,13 @@ const getFormFieldConfig = async (req, res) => {
 const updateFormFieldConfig = async (req, res) => {
   try {
     const { category } = req.params;
-    const { requiredFields, optionalFields, conditionalFields } = req.body;
+    const { 
+      requiredFields, 
+      optionalFields, 
+      conditionalFields,
+      proofConfig,        // Added
+      customQuestions     // Added
+    } = req.body;
     
     if (!category) {
       return res.status(400).json({
@@ -407,7 +413,13 @@ const updateFormFieldConfig = async (req, res) => {
     
     const updatedConfig = await FormFieldService.updateFieldsForCategory(
       category,
-      { requiredFields, optionalFields, conditionalFields },
+      { 
+        requiredFields, 
+        optionalFields, 
+        conditionalFields,
+        proofConfig,       // Added
+        customQuestions    // Added  
+      },
       req.admin._id
     );
     

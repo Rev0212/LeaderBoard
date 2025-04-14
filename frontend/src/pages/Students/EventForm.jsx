@@ -234,13 +234,13 @@ const EventForm = () => {
     
     setFormData(updatedFormData);
     
-    // Debounce point calculation to avoid excessive calculations
-    if (pointsCalculationTimeout.current) {
-      clearTimeout(pointsCalculationTimeout.current);
-    }
-    pointsCalculationTimeout.current = setTimeout(() => {
-      calculatePointsPreview(updatedFormData);
-    }, 300);
+    // Remove the automatic point calculation on every keystroke
+    // The calculation will happen only on submission
+  };
+
+  // Add a separate function to calculate points that will be called only when needed
+  const calculatePointsOnSubmit = () => {
+    calculatePointsPreview(formData, customAnswers);
   };
 
   const handleFileChange = (e) => {
@@ -262,14 +262,6 @@ const EventForm = () => {
       [questionId]: value
     };
     setCustomAnswers(updatedAnswers);
-    
-    // Trigger points calculation
-    if (pointsCalculationTimeout.current) {
-      clearTimeout(pointsCalculationTimeout.current);
-    }
-    pointsCalculationTimeout.current = setTimeout(() => {
-      calculatePointsPreview({...formData}, updatedAnswers);
-    }, 300);
   };
 
   const calculatePointsPreview = async (formData, customAnswers = null) => {
@@ -309,6 +301,9 @@ const EventForm = () => {
     if (!validateForm()) {
       return;
     }
+    
+    // Calculate points only once before submission
+    calculatePointsOnSubmit();
     
     setIsSubmitting(true);
     
