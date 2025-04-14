@@ -189,8 +189,6 @@ const EventForm = () => {
           setCustomAnswers({});
         }
         
-        // Calculate initial points once form fields are set
-        calculatePointsPreview({...formData, category});
       } else {
         throw new Error('Invalid response format from server');
       }
@@ -234,13 +232,8 @@ const EventForm = () => {
     
     setFormData(updatedFormData);
     
-    // Debounce point calculation to avoid excessive calculations
-    if (pointsCalculationTimeout.current) {
-      clearTimeout(pointsCalculationTimeout.current);
-    }
-    pointsCalculationTimeout.current = setTimeout(() => {
-      calculatePointsPreview(updatedFormData);
-    }, 300);
+    // Remove the automatic point calculation on every keystroke
+    // The calculation will happen only on submission
   };
 
   const handleFileChange = (e) => {
@@ -262,45 +255,6 @@ const EventForm = () => {
       [questionId]: value
     };
     setCustomAnswers(updatedAnswers);
-    
-    // Trigger points calculation
-    if (pointsCalculationTimeout.current) {
-      clearTimeout(pointsCalculationTimeout.current);
-    }
-    pointsCalculationTimeout.current = setTimeout(() => {
-      calculatePointsPreview({...formData}, updatedAnswers);
-    }, 300);
-  };
-
-  const calculatePointsPreview = async (formData, customAnswers = null) => {
-    // Only calculate points if category is selected
-    if (!formData.category) return;
-    
-    try {
-      const token = localStorage.getItem("student-token");
-      // Use current customAnswers state if not provided
-      const answersToSend = customAnswers || customAnswers;
-      
-      const response = await axios.post(
-        `${VITE_BASE_URL}/event/calculate-points-preview`, 
-        { 
-          formData, 
-          customAnswers: answersToSend 
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      
-      if (response.data.success) {
-        setPointsPreview({
-          total: response.data.data.totalPoints,
-          breakdown: response.data.data.breakdown,
-          scoringFields: response.data.data.scoringFields || []
-        });
-      }
-    } catch (error) {
-      console.error("Failed to calculate points preview:", error);
-      // Don't show error toast to user as this is a background calculation
-    }
   };
 
   const handleSubmit = async (e) => {
@@ -309,6 +263,8 @@ const EventForm = () => {
     if (!validateForm()) {
       return;
     }
+    
+    // Calculate points only once before submission
     
     setIsSubmitting(true);
     
@@ -717,33 +673,6 @@ const EventForm = () => {
     }
   };
 
-  const PointsPreviewComponent = () => {
-    if (pointsPreview.total === 0) return null;
-    
-    return (
-      <div className="mt-6 bg-gray-50 border border-gray-200 rounded-lg p-4">
-        <Typography variant="h6" className="flex items-center mb-2">
-          <Award size={20} className="mr-2 text-yellow-500" />
-          Estimated Points: <span className="ml-2 font-bold text-yellow-600">{pointsPreview.total}</span>
-        </Typography>
-        
-        {Object.keys(pointsPreview.breakdown).length > 0 && (
-          <div className="mt-2">
-            <Typography variant="subtitle2" className="mb-1">Point Breakdown:</Typography>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {Object.entries(pointsPreview.breakdown).map(([key, value]) => (
-                <div key={key} className="flex justify-between">
-                  <Typography variant="body2">{key}:</Typography>
-                  <Typography variant="body2" className="font-medium">+{value} points</Typography>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
   return (
     <div className="p-6">
       <Paper className="p-6 shadow-md">
@@ -967,9 +896,7 @@ const EventForm = () => {
                 </div>
               </div>
             )}
-            
-            {formData.category && <PointsPreviewComponent />}
-            
+                        
             <Box className="mt-8 flex justify-end border-t pt-4">
               <Button
                 type="button"

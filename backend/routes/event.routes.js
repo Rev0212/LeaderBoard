@@ -88,9 +88,6 @@ router.get('/form-fields/:category', authMiddleware.authStudent, async (req, res
   }
 });
 
-// Add this route
-router.post('/calculate-points-preview', authMiddleware.authStudent, eventController.calculatePointsPreview);
-
 // Expose the get scoring rules endpoint
 router.get('/scoring-rules', authMiddleware.authStudent, eventController.getScoringRules);
 

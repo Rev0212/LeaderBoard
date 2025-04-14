@@ -29,7 +29,17 @@ const storage = multer.diskStorage({
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     const ext = path.extname(file.originalname);
-    cb(null, file.fieldname + '-' + uniqueSuffix + ext);
+    const filename = file.fieldname + '-' + uniqueSuffix + ext;
+    
+    // Only store the relative path in the database
+    if (file.fieldname === 'pdfDocument') {
+      req.pdfPath = '/uploads/documents/' + filename;
+    } else if (file.fieldname === 'certificateImages') {
+      if (!req.certificatePaths) req.certificatePaths = [];
+      req.certificatePaths.push('/uploads/certificates/' + filename);
+    }
+    
+    cb(null, filename);
   }
 });
 
@@ -87,8 +97,8 @@ const submitEvent = async (req, res) => {
             description: req.body.description,
             date: req.body.date,
             category: req.body.category,
-            proofUrl: certificateImages.map(file => file.path),
-            pdfDocument: pdfDocument?.path || null,
+            proofUrl: req.certificatePaths || [],
+            pdfDocument: req.pdfPath || null,
             submittedBy: req.student._id,
             customAnswers: new Map()
         };
@@ -308,40 +318,6 @@ const getAllStudentEvents = async (req, res) => {
     }
 };
 
-const calculatePointsPreview = async (req, res) => {
-  try {
-    const { formData, customAnswers } = req.body;
-    
-    // Get category from the form data
-    const category = formData.category;
-    if (!category) {
-      return res.status(400).json({
-        success: false,
-        message: 'Category is required for point calculation'
-      });
-    }
-    
-    // Get a preview of points calculation
-    // This doesn't affect actual points which are calculated on verification
-    const pointsPreview = await PointsCalculationService.previewCalculation(
-      category, 
-      formData, 
-      customAnswers
-    );
-    
-    return res.status(200).json({
-      success: true,
-      message: 'Points preview calculation complete',
-      data: pointsPreview
-    });
-  } catch (error) {
-    console.error('Error calculating points preview:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to calculate points preview'
-    });
-  }
-};
 
 const verifyAndCalculatePoints = async (req, res) => {
   try {
@@ -611,7 +587,6 @@ module.exports = {
     getEvents, 
     editEvent, 
     getAllStudentEvents,
-    calculatePointsPreview,
     verifyAndCalculatePoints,
     getScoringRules
 };
