@@ -13,6 +13,7 @@ import {
   Calendar,
   ExternalLink,
   BarChart3,
+  FileText,
 } from "lucide-react";
 import TeacherProfile from "../../components/TeacherProfile";
 import ClassDetails from "../../components/ClassList";
@@ -275,10 +276,10 @@ const TeacherDashboard = () => {
   };
 
   const handleShowPDF = (event) => {
-    // Ensure the PDF document exists before opening it in the modal
     if (event.pdfDocument) {
-      const pdfUrl = `${VITE_BASE_URL}/uploads/pdf/${event.pdfDocument}`;
-      setSelectedPDF(pdfUrl);  // Set the PDF URL to the state
+      // Use the path directly from the event object
+      const pdfUrl = `${VITE_BASE_URL}${event.pdfDocument}`;
+      setSelectedPDF(pdfUrl);
     } else {
       console.error('No PDF document available for this event');
     }
@@ -596,18 +597,133 @@ const getInactiveStudentCount = () => {
       {/* Main Content */}
       <div className="flex-1 lg:ml-64">{renderContent()}</div>
 
-      {/* Add this modal JSX at the end of your renderContent function's return statement */}
+      {/* Replace the current hardcoded event modal with this dynamic version */}
       {selectedEvent && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg max-w-lg w-full">
-            <h3 className="text-lg font-bold mb-4">Review Event</h3>
-            <div className="mb-4">
-              <p><strong>Student:</strong> {selectedEvent.submittedBy.name}</p>
-              <p><strong>Event:</strong> {selectedEvent.eventName}</p>
-              <p><strong>Description:</strong> {selectedEvent.description}</p>
-              <p><strong>Category:</strong> {selectedEvent.category}</p>
-              <p><strong>Date:</strong> {new Date(selectedEvent.date).toLocaleDateString()}</p>
+          <div className="bg-white p-6 rounded-lg shadow-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl font-bold mb-4 border-b pb-2">Review Event</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              {/* Dynamic rendering of all event details */}
+              <div>
+                <h4 className="font-semibold text-lg mb-3 text-blue-700">Basic Information</h4>
+                {selectedEvent.submittedBy && (
+                  <p><strong>Student:</strong> {selectedEvent.submittedBy.name}</p>
+                )}
+                
+                {/* Dynamically render all non-excluded properties */}
+                {Object.entries(selectedEvent).map(([key, value]) => {
+                  // Skip certain properties we don't want to display
+                  const excludedProps = ['_id', '__v', 'submittedBy', 'proofUrl', 'pdfDocument', 
+                                        'customAnswers', 'dynamicFields', 'createdAt', 'updatedAt'];
+                  
+                  // Skip empty values, functions, and excluded properties
+                  if (excludedProps.includes(key) || value === null || value === undefined || 
+                      typeof value === 'function' || typeof value === 'object') {
+                    return null;
+                  }
+                  
+                  // Format the key for display (camelCase to Title Case)
+                  const formattedKey = key.replace(/([A-Z])/g, ' $1')
+                                          .replace(/^./, str => str.toUpperCase());
+                  
+                  return (
+                    <p key={key}><strong>{formattedKey}:</strong> {value.toString()}</p>
+                  );
+                })}
+              </div>
+              
+              {/* Show nested objects separately */}
+              <div>
+                <h4 className="font-semibold text-lg mb-3 text-blue-700">Additional Details</h4>
+                
+                {/* Handle date fields specially */}
+                {selectedEvent.date && (
+                  <p><strong>Date:</strong> {new Date(selectedEvent.date).toLocaleDateString()}</p>
+                )}
+                {selectedEvent.createdAt && (
+                  <p><strong>Created:</strong> {new Date(selectedEvent.createdAt).toLocaleString()}</p>
+                )}
+                {selectedEvent.updatedAt && (
+                  <p><strong>Updated:</strong> {new Date(selectedEvent.updatedAt).toLocaleString()}</p>
+                )}
+                
+                {/* Display nested objects */}
+                {Object.entries(selectedEvent).map(([key, value]) => {
+                  // Only process objects that aren't arrays and aren't null
+                  if (typeof value !== 'object' || value === null || Array.isArray(value) || 
+                      ['submittedBy', 'customAnswers', 'dynamicFields'].includes(key)) {
+                    return null;
+                  }
+                  
+                  // Format the key for display
+                  const formattedKey = key.replace(/([A-Z])/g, ' $1')
+                                          .replace(/^./, str => str.toUpperCase());
+                  
+                  return (
+                    <div key={key} className="mb-2">
+                      <strong>{formattedKey}:</strong>
+                      <ul className="pl-5 mt-1">
+                        {Object.entries(value).map(([nestedKey, nestedValue]) => {
+                          if (nestedKey === '_id' || typeof nestedValue === 'function') return null;
+                          
+                          const formattedNestedKey = nestedKey.replace(/([A-Z])/g, ' $1')
+                                                            .replace(/^./, str => str.toUpperCase());
+                          
+                          return (
+                            <li key={nestedKey}>{formattedNestedKey}: {nestedValue.toString()}</li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
+            
+            {/* Only show one of the fields sections to avoid duplication */}
+            {selectedEvent.dynamicFields && Object.keys(selectedEvent.dynamicFields).length > 0 ? (
+              <div className="mb-6">
+                <h4 className="font-semibold text-lg mb-3 text-blue-700">Event Details</h4>
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  {Object.entries(selectedEvent.dynamicFields).map(([key, value]) => {
+                    // Remove the customAnswer_ prefix
+                    const cleanKey = key.replace('customAnswer_', '');
+                    
+                    // Format to Title Case (first letter of each word capitalized)
+                    const formattedKey = cleanKey
+                      .replace(/([A-Z])/g, ' $1') // Add space before capital letters
+                      .replace(/_/g, ' ') // Replace underscores with spaces
+                      .replace(/^./, str => str.toUpperCase()); // Capitalize first letter
+                    
+                    return (
+                      <p key={key}><strong>{formattedKey}:</strong> {value.toString()}</p>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              // Fallback to customAnswers if dynamicFields is not available
+              selectedEvent.customAnswers && Object.keys(selectedEvent.customAnswers).length > 0 && (
+                <div className="mb-6">
+                  <h4 className="font-semibold text-lg mb-3 text-blue-700">Event Details</h4>
+                  <div className="bg-gray-50 p-3 rounded-lg">
+                    {Object.entries(selectedEvent.customAnswers).map(([key, value]) => {
+                      // Format the key to Title Case
+                      const formattedKey = key
+                        .replace(/([A-Z])/g, ' $1')
+                        .replace(/_/g, ' ')
+                        .replace(/^./, str => str.toUpperCase());
+                      
+                      return (
+                        <p key={key}><strong>{formattedKey}:</strong> {value.toString()}</p>
+                      );
+                    })}
+                  </div>
+                </div>
+              )
+            )}
+            
             <div className="flex justify-end gap-3">
               <button 
                 onClick={handleCloseModal}
@@ -659,7 +775,7 @@ const getInactiveStudentCount = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg max-w-4xl w-full">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold">Certificate Proof</h3>
+              <h3 className="text-lg font-bold">Certificate Image</h3>
               <button 
                 onClick={handleCloseImageModal}
                 className="text-gray-500 hover:text-gray-700"
@@ -667,18 +783,16 @@ const getInactiveStudentCount = () => {
                 Close
               </button>
             </div>
-            <div className="flex justify-center items-center h-[500px] overflow-auto">
+            <div className="overflow-auto">
               <img 
                 src={selectedImage} 
-                alt="Certificate Proof" 
-                className="max-h-full max-w-full object-contain" 
+                className="w-full object-contain" 
+                alt="Certificate" 
               />
             </div>
           </div>
         </div>
       )}
-      
-      {/* Remove the redundant image modal */}
     </div>
   );
 };
