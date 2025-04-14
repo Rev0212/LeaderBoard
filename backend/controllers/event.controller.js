@@ -29,7 +29,17 @@ const storage = multer.diskStorage({
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     const ext = path.extname(file.originalname);
-    cb(null, file.fieldname + '-' + uniqueSuffix + ext);
+    const filename = file.fieldname + '-' + uniqueSuffix + ext;
+    
+    // Only store the relative path in the database
+    if (file.fieldname === 'pdfDocument') {
+      req.pdfPath = '/uploads/documents/' + filename;
+    } else if (file.fieldname === 'certificateImages') {
+      if (!req.certificatePaths) req.certificatePaths = [];
+      req.certificatePaths.push('/uploads/certificates/' + filename);
+    }
+    
+    cb(null, filename);
   }
 });
 
@@ -87,8 +97,8 @@ const submitEvent = async (req, res) => {
             description: req.body.description,
             date: req.body.date,
             category: req.body.category,
-            proofUrl: certificateImages.map(file => file.path),
-            pdfDocument: pdfDocument?.path || null,
+            proofUrl: req.certificatePaths || [],
+            pdfDocument: req.pdfPath || null,
             submittedBy: req.student._id,
             customAnswers: new Map()
         };

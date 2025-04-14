@@ -42,9 +42,12 @@ const eventSchema = new mongoose.Schema({
     },
     pdfDocument: {
         type: String,
-        required: function() {
-            return this.validatePdfRequired();
-        }
+        required: false // Default to not required
+    },
+    status: {
+        type: String,
+        enum: ['Pending', 'Approved', 'Rejected'],
+        default: 'Pending'
     },
     category: {
         type: String,
@@ -58,6 +61,16 @@ const eventSchema = new mongoose.Schema({
         type: Map,
         of: mongoose.Schema.Types.Mixed,
         default: () => new Map()
+    },
+    submittedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'student',
+        required: true
+    },
+    approvedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'teacher',
+        required: false // Not required because it's only set when a teacher approves
     }
 }, { timestamps: true });
 
@@ -89,6 +102,11 @@ eventSchema.pre('validate', async function(next) {
                     this.invalidate(field, `${field} is required`);
                 }
             }
+        }
+
+        // Add PDF document validation here - this is the key fix
+        if (config.proofConfig?.requirePdfProof && !this.pdfDocument) {
+            this.invalidate('pdfDocument', 'PDF document is required for this category');
         }
 
         // Validate custom questions (inside customAnswers)
