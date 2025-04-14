@@ -62,6 +62,10 @@ const eventSchema = new mongoose.Schema({
         of: mongoose.Schema.Types.Mixed,
         default: () => new Map()
     },
+    pointsEarned: {
+        type: Number,
+        default: 0
+    },
     submittedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'student',
