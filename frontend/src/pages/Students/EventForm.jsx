@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { toast } from 'react-toastify';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import {
   TextField, FormControl, InputLabel, Select, MenuItem,
   Button, Typography, Paper, Box, CircularProgress,
@@ -24,6 +26,7 @@ const FieldWrapper = React.memo(({ children, affectsScore }) => (
 const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const EventForm = () => {
+  const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
   const [positions, setPositions] = useState([]);
   const [eventScopes, setEventScopes] = useState([]);
@@ -277,8 +280,6 @@ const EventForm = () => {
       return;
     }
     
-    // Calculate points only once before submission
-    
     setIsSubmitting(true);
     
     const submitData = new FormData();
@@ -328,14 +329,39 @@ const EventForm = () => {
       );
       
       if (response.data.success) {
-        toast.success('Event submitted successfully!');
+        toast.success('🎉 Event submitted successfully!', {
+          position: "top-right",
+          autoClose: 3000, // Reduced to 3 seconds for faster navigation
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          onClose: () => {
+            // Navigate to dashboard after toast closes
+            navigate('/student-dashboard');
+          }
+        });
         resetForm();
       } else {
-        toast.error(response.data.message || 'Failed to submit event');
+        toast.error(`❌ ${response.data.message || 'Failed to submit event'}`, {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
       }
     } catch (error) {
       console.error('Error submitting event:', error);
-      toast.error(error.response?.data?.message || 'Error submitting event');
+      toast.error(`❌ ${error.response?.data?.message || 'Failed to submit event. Please try again.'}`, {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -922,6 +948,7 @@ const EventForm = () => {
           </form>
         )}
       </Paper>
+      <ToastContainer />
     </div>
   );
 };
