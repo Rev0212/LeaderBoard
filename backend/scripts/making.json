@@ -1,0 +1,178 @@
+{
+    "Hackathon": {
+      "Level": {
+        "Intra-College": 10,
+        "Inter-College": 20,
+        "National": 30,
+        "International": 50
+      },
+      "Organizer": {
+        "Industry": 5,
+        "Academic Institution": 3
+      },
+      "Mode": {
+        "Solo Participation": 5,
+        "Team Participation": 3
+      },
+      "Outcome": {
+        "Winner (1st)": 25,
+        "Runner-up (2nd)": 20,
+        "3rd Place": 15,
+        "Finalist": 10,
+        "Participant": 5
+      }
+    },
+    "Coding Competitions": {
+      "Platform": {
+        "Top-tier": 10,
+        "Unknown": 3
+      },
+      "Result Percentile": {
+        "Top 1%": 25,
+        "Top 5%": 20,
+        "Top 10%": 10,
+        "Participant": 5
+      },
+      "Region": {
+        "International": 10,
+        "National": 5
+      }
+    },
+    "Open Source Contribution": {
+      "Repo Forks": {
+        ">1000": 30,
+        "500–1000": 15
+      },
+      "PR Status": {
+        "Merged": 10
+      },
+      "Type of Work": {
+        "Feature": 15,
+        "Bug Fix": 10,
+        "Documentation": 5
+      },
+      "Lines of Code": {
+        ">500 lines": 10
+      },
+      "PR Count": {
+        "Every 5 PRs": 5
+      },
+      "Contributor Badge": {
+        "Hacktoberfest finisher": 20,
+        "GSoC Contributor": 40
+      }
+    },
+    "Research Paper": {
+      "Publisher": {
+        "IEEE/Springer/Elsevier(q1)": 25,
+        "q2": 15,
+        "Others": 5
+      },
+      "Authorship": {
+        "1st Author": 20,
+        "2nd Author": 15,
+        "Co-author": 10
+      },
+      "Paper Type": {
+        "Research": 10,
+        "Review/Survey": 5
+      },
+      "Event Type": {
+        "Conference Presentation": 5,
+        "Poster Presentation": 3
+      },
+      "Level": {
+        "National": 5,
+        "International": 10
+      }
+    },
+    "Certifications": {
+      "Provider": {
+        "Stanford/MIT/AWS/Google/Top 500": 20,
+        "NPTEL": 10,
+        "Coursera/Udemy": 2
+      },
+      "Final Project Required": {
+        "Yes": 10
+      },
+      "Certification Level": {
+        "Beginner": 5,
+        "Intermediate": 10,
+        "Advanced": 15
+      }
+    },
+    "NCC_NSS_YRC": {
+      "Camps Attended": {
+        "RDC/TSC": 15,
+        "NIC": 10,
+        "CATC/ATC": 5
+      },
+      "Rank": {
+        "SUO": 15,
+        "JUO": 5
+      },
+      "Award": {
+        "Best Cadet/Parade": 20
+      },
+      "Volunteer Hours": {
+        "50+": 5,
+        "100+": 10,
+        "200+": 20
+      }
+    },
+    "Sports": {
+      "Level": {
+        "College": 10,
+        "Inter-College": 20,
+        "State": 30,
+        "National/International": 50
+      },
+      "Position": {
+        "Winner": 30,
+        "Runner-Up": 20,
+        "Participant": 10
+      },
+      "Type": {
+        "Individual Sport": 10,
+        "Team Sport": 5
+      }
+    },
+    "Workshops": {
+      "Attendee": {
+        "1 day": 5,
+        "3 day": 15,
+        ">5 full day": 20
+      },
+      "Organizer": {
+        "Industry (Top 500)": 10
+      }
+    },
+    "Student Leadership": {
+      "Role": {
+        "Club President": 20,
+        "Secretary/Core Team Heads": 10,
+        "Member": 5
+      },
+      "Events Managed": {
+        "<100 participants": 10,
+        "100–500": 15,
+        "500+": 20
+      },
+      "Organized Series": {
+        "Webinars/Tech Talks/etc": 10
+      }
+    },
+    "Social Work & Community Impact": {
+      "Type of Activity": {
+        "Plantation/Cleanup Drive": 10,
+        "Education/NGO Teaching": 15,
+        "Health/Disaster Relief": 20
+      },
+      "Hours Invested": {
+        "20–50 hrs": 10,
+        "50–100 hrs": 20,
+        "100+ hrs": 30
+      }
+    }
+  }
+  

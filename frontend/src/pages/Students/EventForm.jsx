@@ -8,6 +8,19 @@ import {
 } from '@mui/material';
 import { X, FileText, Info, Image, HelpCircle, Award } from 'react-feather';
 
+const FieldWrapper = React.memo(({ children, affectsScore }) => (
+  <div className={`relative ${affectsScore ? 'score-affecting-field' : ''}`}>
+    {affectsScore && (
+      <Tooltip title="This field affects your score" placement="top">
+        <span className="absolute right-2 top-2">
+          <Award size={16} className="text-yellow-500" />
+        </span>
+      </Tooltip>
+    )}
+    {children}
+  </div>
+));
+
 const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const EventForm = () => {
@@ -414,23 +427,10 @@ const EventForm = () => {
     const isRequired = formFields.requiredFields.includes(fieldName);
     const affectsScore = isScoreAffectingField(fieldName);
     
-    const FieldWrapper = ({ children }) => (
-      <div className={`relative ${affectsScore ? 'score-affecting-field' : ''}`}>
-        {affectsScore && (
-          <Tooltip title="This field affects your score" placement="top">
-            <span className="absolute right-2 top-2">
-              <Award size={16} className="text-yellow-500" />
-            </span>
-          </Tooltip>
-        )}
-        {children}
-      </div>
-    );
-    
     switch (fieldName) {
       case 'eventName':
         return (
-          <FieldWrapper>
+          <FieldWrapper affectsScore={affectsScore}>
             <TextField
               name="eventName"
               label="Event Name"
@@ -445,7 +445,7 @@ const EventForm = () => {
         
       case 'date':
         return (
-          <FieldWrapper>
+          <FieldWrapper affectsScore={affectsScore}>
             <TextField
               name="date"
               label="Event Date"
@@ -462,7 +462,7 @@ const EventForm = () => {
         
       case 'category':
         return (
-          <FieldWrapper>
+          <FieldWrapper affectsScore={affectsScore}>
             <FormControl fullWidth margin="normal" required={isRequired}>
               <InputLabel>Category</InputLabel>
               <Select
@@ -492,7 +492,7 @@ const EventForm = () => {
         
       case 'positionSecured':
         return (
-          <FieldWrapper>
+          <FieldWrapper affectsScore={affectsScore}>
             <FormControl fullWidth margin="normal" required={isRequired}>
               <InputLabel>Position Secured</InputLabel>
               <Select
@@ -511,7 +511,7 @@ const EventForm = () => {
         
       case 'eventLocation':
         return (
-          <FieldWrapper>
+          <FieldWrapper affectsScore={affectsScore}>
             <FormControl fullWidth margin="normal" required={isRequired}>
               <InputLabel>Event Location</InputLabel>
               <Select
@@ -530,7 +530,7 @@ const EventForm = () => {
         
       case 'eventScope':
         return (
-          <FieldWrapper>
+          <FieldWrapper affectsScore={affectsScore}>
             <FormControl fullWidth margin="normal" required={isRequired}>
               <InputLabel>Event Scope</InputLabel>
               <Select
@@ -549,7 +549,7 @@ const EventForm = () => {
         
       case 'eventOrganizer':
         return (
-          <FieldWrapper>
+          <FieldWrapper affectsScore={affectsScore}>
             <FormControl fullWidth margin="normal" required={isRequired}>
               <InputLabel>Event Organizer</InputLabel>
               <Select
@@ -568,7 +568,7 @@ const EventForm = () => {
         
       case 'participationType':
         return (
-          <FieldWrapper>
+          <FieldWrapper affectsScore={affectsScore}>
             <FormControl fullWidth margin="normal" required={isRequired}>
               <InputLabel>Participation Type</InputLabel>
               <Select
@@ -587,7 +587,7 @@ const EventForm = () => {
         
       case 'priceMoney':
         return (
-          <FieldWrapper>
+          <FieldWrapper affectsScore={affectsScore}>
             <TextField
               name="priceMoney"
               label="Prize Money"
@@ -603,7 +603,7 @@ const EventForm = () => {
         
       case 'teamSize':
         return (
-          <FieldWrapper>
+          <FieldWrapper affectsScore={affectsScore}>
             <TextField
               name="teamSize"
               label="Team Size"
@@ -619,7 +619,7 @@ const EventForm = () => {
         
       case 'teamName':
         return (
-          <FieldWrapper>
+          <FieldWrapper affectsScore={affectsScore}>
             <TextField
               name="teamName"
               label="Team Name"
@@ -634,7 +634,7 @@ const EventForm = () => {
         
       case 'publicationType':
         return (
-          <FieldWrapper>
+          <FieldWrapper affectsScore={affectsScore}>
             <FormControl fullWidth margin="normal" required={isRequired}>
               <InputLabel>Publication Type</InputLabel>
               <Select
@@ -653,7 +653,7 @@ const EventForm = () => {
         
       case 'description':
         return (
-          <FieldWrapper>
+          <FieldWrapper affectsScore={affectsScore}>
             <TextField
               name="description"
               label="Description"

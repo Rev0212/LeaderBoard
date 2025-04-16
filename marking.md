@@ -27,8 +27,7 @@
 
 | Attribute        | Value                            | Points |
 |------------------|----------------------------------|--------|
-| Platform         | Top-tier (Codeforces, AtCoder)   | +10    |//workout
-|                  | Mid-tier (LeetCode, GFG, etc.)   | +5     |
+| Platform         | Top-tier (Codeforces, AtCoder)   | +10    |
 |                  | Unknown                          | +3     |
 | Result Percentile| Top 1%                           | +25    |
 |                  | Top 5%                           | +20    |
@@ -57,13 +56,13 @@
 ---
 
 ### 🔹 **4. RESEARCH PAPER**
-based on author reduce 5 mark
 | Attribute             | Value                        | Points |
 |-----------------------|------------------------------|--------|
 | Publisher             | IEEE/Springer/Elsevier(q1)   | +25    |
 |                       | q2                           | +15    |
-|                       | Others                       | +5,3,2 |
+|                       | Others                       | +5     |
 | Authorship            | 1st Author                   | +20    |
+|                       | 2nd Author                   | +15    |
 |                       | Co-author                    | +10    |
 | Paper Type            | Research                     | +10    |
 |                       | Review/Survey                | +5     |
