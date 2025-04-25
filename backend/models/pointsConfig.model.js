@@ -10,16 +10,6 @@ const pointsConfigSchema = new mongoose.Schema({
   configuration: {
     type: mongoose.Schema.Types.Mixed, // Changed from Map to Mixed to support nested structures
     required: true
-    // Now supports hierarchical structures like:
-    // {
-    //   "Hackathon": {
-    //     "Team": {
-    //       "International": {
-    //         "Industry Based": { "First": 200, "Second": 150 }
-    //       }
-    //     }
-    //   }
-    // }
   },
   effectiveDate: {
     type: Date,

@@ -3,6 +3,7 @@ const router = express.Router();
 const enumConfigController = require('../controllers/enumConfig.controller');
 const { authAdmin, requireSuperAdmin, oka } = require('../middlewares/auth.middlewares');
 const impactAnalysisController = require('../controllers/impactAnalysis.controller');
+const categoryPointsConfigController = require('../controllers/categoryPointsConfig.controller');
 
 // Apply authentication middleware to all routes
 router.use(authAdmin);
@@ -30,5 +31,10 @@ router.put('/form-fields/:category', requireSuperAdmin, enumConfigController.upd
 
 // Points impact analysis
 router.post('/points/impact-analysis', requireSuperAdmin, impactAnalysisController.analyzePointsChange);
+
+// Then your routes can use the controller
+router.get('/points/category/:categoryName', authAdmin, categoryPointsConfigController.getCategoryPointsConfig);
+router.put('/points/category/:categoryName', requireSuperAdmin, categoryPointsConfigController.updateCategoryPointsConfig);
+router.post('/points/impact-analysis', requireSuperAdmin, categoryPointsConfigController.analyzeImpact);
 
 module.exports = router;

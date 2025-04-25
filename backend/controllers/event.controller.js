@@ -158,23 +158,42 @@ const reviewEvent = async (req, res) => {
         event.approvedBy = req.teacher._id;
         
         if (status === 'Approved') {
-            // Use new points calculation service
-            event.pointsEarned = await PointsCalculationService.calculatePoints(event);
-            
-            // Update student total points
-            await studentModel.findByIdAndUpdate(
-                event.submittedBy,
-                { $inc: { totalPoints: event.pointsEarned } }
-            );
+          // Use the points calculation service to calculate points based on category rules
+          const calculatedPoints = await PointsCalculationService.calculatePoints(event);
+          
+          // Update the event and student points
+          await PointsCalculationService.updatePointsForEvent(event, calculatedPoints);
+          
+          console.log(`Event ${event._id} approved with ${calculatedPoints} points`);
         } else {
-            // If event was previously approved, subtract points
-            if (event.status === 'Approved' && event.pointsEarned > 0) {
-                await studentModel.findByIdAndUpdate(
-                    event.submittedBy,
-                    { $inc: { totalPoints: -event.pointsEarned } }
-                );
+          // Handle rejection
+          // If event was previously approved, deduct points
+          if (event.status === 'Approved' && event.pointsEarned > 0) {
+            // Create a session to ensure both operations succeed or fail together
+            const session = await mongoose.startSession();
+            session.startTransaction();
+            
+            try {
+              event.pointsEarned = 0;
+              await event.save({ session });
+              
+              await Student.findByIdAndUpdate(
+                event.submittedBy,
+                { $inc: { totalPoints: -event.pointsEarned } },
+                { session }
+              );
+              
+              await session.commitTransaction();
+            } catch (error) {
+              await session.abortTransaction();
+              throw error;
+            } finally {
+              session.endSession();
             }
+          } else {
             event.pointsEarned = 0;
+            await event.save();
+          }
         }
         
         await event.save();
@@ -258,6 +277,15 @@ const editEvent = async (req, res) => {
 
         const teacherId = req.teacher._id;
 
+        // Get the original event to track point changes
+        const originalEvent = await eventModel.findById(id);
+        if (!originalEvent) {
+            return res.status(404).json({ error: 'Event not found' });
+        }
+        
+        const oldPoints = originalEvent.pointsEarned || 0;
+        const oldStatus = originalEvent.status;
+
         // Call service to update event status
         const result = await eventService.editEventStatus(id, newStatus, teacherId);
 
@@ -267,24 +295,30 @@ const editEvent = async (req, res) => {
         }
 
         const updatedEvent = result.data;
+        const newPoints = updatedEvent.pointsEarned || 0;
 
-        // Update student points based on the new status
+        // Update student points based on the point difference
         const student = await studentModel.findById(updatedEvent.submittedBy);
         if (!student) {
             return res.status(404).json({ error: 'Student not found' });
         }
 
-        if (newStatus === 'Approved') {
-            student.totalPoints += updatedEvent.pointsEarned;
-        } else if (newStatus === 'Rejected') {
-            student.totalPoints -= updatedEvent.pointsEarned;
+        // Calculate the points difference and update student total
+        const pointsDiff = newPoints - oldPoints;
+        
+        console.log(`Points change: ${oldPoints} -> ${newPoints}, Difference: ${pointsDiff}`);
+        
+        // Only update if there's a difference
+        if (pointsDiff !== 0) {
+            student.totalPoints += pointsDiff;
+            await student.save();
+            console.log(`Updated student ${student._id} total points by ${pointsDiff}`);
         }
-
-        await student.save();
 
         res.status(200).json({
             message: 'Event status updated successfully',
             event: updatedEvent,
+            pointsChange: pointsDiff
         });
     } catch (error) {
         console.error('Error:', error);

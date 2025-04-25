@@ -10,15 +10,15 @@ const updateCategoryEnum = async () => {
     // Set categories to match exactly what's in your configuration
     const configuredCategories = [
       'Hackathon', 
-      'Coding', 
+      'Coding Competitions', 
       'Open Source', 
       'Research', 
-      'Global-Certificates', 
-      'NCC-NSS', 
-      'Sports', 
-      'Workshop', 
-      'Leadership', 
-      'Social Work'
+      'Certifications', 
+      'NCC_NSS_YRC', 
+      'Sports',
+      'Workshops', 
+      'Student Leadership', 
+      'Social Work & Community Impact'
     ];
     
     // Update the category enum values
