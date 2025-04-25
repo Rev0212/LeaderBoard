@@ -1,9 +1,11 @@
 const PointsConfig = require('../models/pointsConfig.model');
 const mongoose = require('mongoose');
+const Student = require('../models/student.model');
 
 class PointsCalculationService {
   /**
    * Calculate points for an event based on category-specific rules
+   * This fetches the configuration from the database
    * @param {Object} event - The event document
    * @returns {Number} - Total points calculated
    */
@@ -12,30 +14,45 @@ class PointsCalculationService {
       // Get category rules configuration
       const categoryConfig = await PointsConfig.getCurrentConfig('categoryRules');
       
-      // If no config exists, return 0 points
+      // If no config exists, return 0 points (no default values)
       if (!categoryConfig || !categoryConfig.configuration) {
         console.log('No category rules configuration found');
         return 0;
       }
       
+      return this.calculatePointsWithConfig(event, categoryConfig.configuration);
+    } catch (error) {
+      console.error('Error calculating points:', error);
+      return 0; // Return 0 on error instead of falling back to defaults
+    }
+  }
+  
+  /**
+   * Calculate points using a provided configuration
+   * This avoids transaction visibility issues
+   * @param {Object} event - The event document
+   * @param {Object} configuration - The points configuration
+   * @returns {Number} - Total points calculated
+   */
+  static async calculatePointsWithConfig(event, configuration) {
+    try {
       const category = event.category;
-      const config = categoryConfig.configuration;
       
       // If no rules for this category, return 0 points
-      if (!config[category]) {
+      if (!configuration[category]) {
         console.log(`No rules found for category: ${category}`);
         return 0;
       }
       
       // Debug log
-      console.log(`Found points configuration for ${category}:`, JSON.stringify(config[category]));
-      console.log(`Event custom answers:`, Array.from(event.customAnswers.entries()));
+      console.log(`Found points configuration for ${category}:`, JSON.stringify(configuration[category]));
+      console.log(`Event custom answers:`, Array.from(event.customAnswers ? event.customAnswers.entries() : []));
       
       // Calculate total points based on event attributes
       let totalPoints = 0;
       
       // Process each field in the category configuration
-      for (const field in config[category]) {
+      for (const field in configuration[category]) {
         // First try standard field
         let fieldValue = event[field];
         
@@ -67,9 +84,9 @@ class PointsCalculationService {
           }
         }
         
-        // If we found a value, check if it exists in the configuration
-        if (fieldValue && config[category][field][fieldValue]) {
-          const points = config[category][field][fieldValue];
+        // Check if the field value has a defined points value in the configuration
+        if (fieldValue && configuration[category][field][fieldValue]) {
+          const points = configuration[category][field][fieldValue];
           totalPoints += points;
           console.log(`Added ${points} points for ${field}=${fieldValue}`);
         }
@@ -78,8 +95,8 @@ class PointsCalculationService {
       console.log(`Total points calculated for event ${event._id}: ${totalPoints}`);
       return totalPoints;
     } catch (error) {
-      console.error('Error calculating points:', error);
-      return 0;
+      console.error('Error calculating points with config:', error);
+      return 0; // Return 0 on error instead of falling back to defaults
     }
   }
   
@@ -87,10 +104,16 @@ class PointsCalculationService {
    * Update event points and student total points
    * @param {Object} event - The event document
    * @param {Number} newPoints - Newly calculated points
+   * @param {mongoose.ClientSession} [session] - Optional MongoDB session for transactions
+   * @returns {Boolean} - Success status
    */
-  static async updatePointsForEvent(event, newPoints) {
-    const session = await mongoose.startSession();
-    session.startTransaction();
+  static async updatePointsForEvent(event, newPoints, session = null) {
+    // If no session is provided, start a new one
+    const useExistingSession = !!session;
+    if (!session) {
+      session = await mongoose.startSession();
+      session.startTransaction();
+    }
     
     try {
       const oldPoints = event.pointsEarned || 0;
@@ -102,21 +125,32 @@ class PointsCalculationService {
       
       // Update student total points if there's a difference
       if (pointsDiff !== 0) {
-        await mongoose.model('Student').findByIdAndUpdate(
+        await Student.findByIdAndUpdate(
           event.submittedBy,
           { $inc: { totalPoints: pointsDiff } },
           { session }
         );
+        
+        console.log(`Updated student ${event.submittedBy} points by ${pointsDiff}`);
       }
       
-      await session.commitTransaction();
+      // Only commit if we started the transaction here
+      if (!useExistingSession) {
+        await session.commitTransaction();
+      }
       return true;
     } catch (error) {
-      await session.abortTransaction();
+      // Only abort if we started the transaction here
+      if (!useExistingSession) {
+        await session.abortTransaction();
+      }
       console.error('Error updating points:', error);
       return false;
     } finally {
-      session.endSession();
+      // Only end the session if we started it here
+      if (!useExistingSession) {
+        session.endSession();
+      }
     }
   }
 }

@@ -101,8 +101,13 @@ exports.updateCategoryPointsConfig = async (req, res) => {
     console.log(`Recalculating points for ${eventsToUpdate.length} events in category ${categoryName}`);
     
     for (const event of eventsToUpdate) {
-      const newPoints = await PointsCalculationService.calculatePoints(event);
-      await PointsCalculationService.updatePointsForEvent(event, newPoints);
+      // Use the direct configuration instead of fetching again 
+      const newPoints = await PointsCalculationService.calculatePointsWithConfig(
+        event, 
+        newConfiguration
+      );
+      
+      await PointsCalculationService.updatePointsForEvent(event, newPoints, session);
     }
     
     await session.commitTransaction();

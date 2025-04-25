@@ -161,27 +161,39 @@ const reviewEvent = async (req, res) => {
           // Use the points calculation service to calculate points based on category rules
           const calculatedPoints = await PointsCalculationService.calculatePoints(event);
           
-          // Update the event points
-          event.pointsEarned = calculatedPoints;
-          
-          // Update student total points
-          await studentModel.findByIdAndUpdate(
-            event.submittedBy, 
-            { $inc: { totalPoints: calculatedPoints } }
-          );
+          // Update the event and student points
+          await PointsCalculationService.updatePointsForEvent(event, calculatedPoints);
           
           console.log(`Event ${event._id} approved with ${calculatedPoints} points`);
         } else {
           // Handle rejection
           // If event was previously approved, deduct points
           if (event.status === 'Approved' && event.pointsEarned > 0) {
-            await studentModel.findByIdAndUpdate(
-              event.submittedBy,
-              { $inc: { totalPoints: -event.pointsEarned } }
-            );
+            // Create a session to ensure both operations succeed or fail together
+            const session = await mongoose.startSession();
+            session.startTransaction();
+            
+            try {
+              event.pointsEarned = 0;
+              await event.save({ session });
+              
+              await Student.findByIdAndUpdate(
+                event.submittedBy,
+                { $inc: { totalPoints: -event.pointsEarned } },
+                { session }
+              );
+              
+              await session.commitTransaction();
+            } catch (error) {
+              await session.abortTransaction();
+              throw error;
+            } finally {
+              session.endSession();
+            }
+          } else {
+            event.pointsEarned = 0;
+            await event.save();
           }
-          
-          event.pointsEarned = 0;
         }
         
         await event.save();
