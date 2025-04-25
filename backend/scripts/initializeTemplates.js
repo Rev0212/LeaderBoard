@@ -9,25 +9,25 @@ mongoose.connect(process.env.DB_CONNECT)
   .then(() => console.log('Connected to MongoDB'))
   .catch(err => console.error('Failed to connect to MongoDB', err));
 
-// All categories from marking scheme
+// All categories from new marking scheme
 const allCategories = [
   'Hackathon', 
-  'Coding', 
+  'Coding Competitions', 
   'Open Source', 
   'Research', 
   'Certifications', 
-  'NCC-NSS', 
+  'NCC_NSS_YRC', 
   'Sports',
-  'Workshop', 
-  'Leadership', 
-  'Social Work'
+  'Workshops', 
+  'Student Leadership', 
+  'Social Work & Community Impact'
 ];
 
 // Template definitions for each category
 const templates = {
   'Hackathon': {
     'Standard Template': {
-      requiredFields: ['eventName', 'date', 'description', 'positionSecured', 'eventScope'], // Changed from 'title'
+      requiredFields: ['eventName', 'date', 'description', 'positionSecured', 'eventScope'],
       optionalFields: ['participationType', 'teamName', 'teamSize', 'eventOrganizer'],
       conditionalFields: {
         'teamName': { dependsOn: 'participationType', showWhen: ['Team'] },
@@ -41,6 +41,13 @@ const templates = {
       },
       customQuestions: [
         {
+          id: 'level',
+          text: 'What was the level of the hackathon?',
+          type: 'singleChoice',
+          required: true,
+          options: ['Intra-College', 'Inter-College', 'National', 'International']
+        },
+        {
           id: 'organizer_type',
           text: 'Who organized the hackathon?',
           type: 'singleChoice',
@@ -52,14 +59,21 @@ const templates = {
           text: 'How did you participate?',
           type: 'singleChoice',
           required: true,
-          options: ['Solo', 'Team']
+          options: ['Solo Participation', 'Team Participation']
+        },
+        {
+          id: 'outcome',
+          text: 'What was your outcome in the hackathon?',
+          type: 'singleChoice',
+          required: true,
+          options: ['Winner (1st)', 'Runner-up (2nd)', '3rd Place', 'Finalist', 'Participant']
         }
       ]
     }
   },
-  'Coding': {
+  'Coding Competitions': {
     'Standard Template': {
-      requiredFields: ['eventName', 'date', 'description', 'positionSecured'], // Changed from 'title'
+      requiredFields: ['eventName', 'date', 'description', 'positionSecured'],
       optionalFields: ['eventScope'],
       proofConfig: {
         requireCertificateImage: true,
@@ -69,17 +83,10 @@ const templates = {
       customQuestions: [
         {
           id: 'platform',
-          text: 'Which platform was the competition hosted on?',
+          text: 'What type of platform hosted the competition?',
           type: 'singleChoice',
           required: true,
-          options: ['CodeForces', 'AtCoder', 'LeetCode', 'GeeksForGeeks', 'HackerRank', 'Other']
-        },
-        {
-          id: 'contest_type',
-          text: 'What type of contest was it?',
-          type: 'singleChoice',
-          required: false,
-          options: ['Timed Contest (e.g., ICPC, Turing Cup)', 'Regular Contest', 'Other']
+          options: ['Top-tier (CodeForces, LeetCode, etc.)', 'Unknown']
         },
         {
           id: 'percentile',
@@ -93,14 +100,14 @@ const templates = {
           text: 'What was the scope of the competition?',
           type: 'singleChoice',
           required: true,
-          options: ['International', 'National', 'Regional']
+          options: ['International', 'National']
         }
       ]
     }
   },
   'Open Source': {
     'GitHub Contribution': {
-      requiredFields: ['eventName', 'date', 'description', 'githubRepoUrl'], // Changed from 'title'
+      requiredFields: ['eventName', 'date', 'description', 'githubRepoUrl'],
       optionalFields: [],
       proofConfig: {
         requireCertificateImage: false,
@@ -114,7 +121,7 @@ const templates = {
           text: 'How many forks does the repository have?',
           type: 'singleChoice',
           required: true,
-          options: ['More than 1000 forks', '500-1000 forks', 'Less than 500 forks']
+          options: ['>1000 forks', '500–1000 forks', 'Less than 500 forks']
         },
         {
           id: 'pr_status',
@@ -125,7 +132,7 @@ const templates = {
         },
         {
           id: 'contribution_type',
-          text: 'What type of contribution did you make?',
+          text: 'What type of work did you contribute?',
           type: 'singleChoice',
           required: true,
           options: ['Feature', 'Bug Fix', 'Documentation']
@@ -135,7 +142,13 @@ const templates = {
           text: 'Approximately how many lines of code did you contribute?',
           type: 'singleChoice',
           required: false,
-          options: ['More than 500 lines', '100-500 lines', 'Less than 100 lines']
+          options: ['>500 lines', '100-500 lines', 'Less than 100 lines']
+        },
+        {
+          id: 'pr_count',
+          text: 'How many PRs have you contributed to this project?',
+          type: 'text',
+          required: false
         },
         {
           id: 'contribution_badge',
@@ -149,7 +162,7 @@ const templates = {
   },
   'Research': {
     'Paper Publication': {
-      requiredFields: ['eventName', 'date', 'description'], // Changed from 'title'
+      requiredFields: ['eventName', 'date', 'description'],
       optionalFields: ['publicationLink'],
       proofConfig: {
         requireCertificateImage: false,
@@ -163,14 +176,14 @@ const templates = {
           text: 'Who published your paper?',
           type: 'singleChoice',
           required: true,
-          options: ['IEEE/Springer/Elsevier', 'UGC Listed', 'Others']
+          options: ['IEEE/Springer/Elsevier(q1)', 'q2', 'Others']
         },
         {
           id: 'authorship',
           text: 'What was your authorship position?',
           type: 'singleChoice',
           required: true,
-          options: ['1st Author', 'Co-author']
+          options: ['1st Author', '2nd Author', 'Co-author']
         },
         {
           id: 'paper_type',
@@ -180,7 +193,7 @@ const templates = {
           options: ['Research', 'Review/Survey']
         },
         {
-          id: 'presentation_type',
+          id: 'event_type',
           text: 'How was the paper presented?',
           type: 'singleChoice',
           required: true,
@@ -198,7 +211,7 @@ const templates = {
   },
   'Certifications': {
     'Course Certification': {
-      requiredFields: ['eventName', 'date', 'description', 'issuer'], // Changed from 'title'
+      requiredFields: ['eventName', 'date', 'description', 'issuer'],
       optionalFields: ['certificateLink'],
       proofConfig: {
         requireCertificateImage: true,
@@ -212,14 +225,7 @@ const templates = {
           text: 'Who is the certification provider?',
           type: 'singleChoice',
           required: true,
-          options: ['Stanford/MIT/AWS/Google/Top 500 company', 'NPTEL', 'Coursera/Udemy', 'Other']
-        },
-        {
-          id: 'duration',
-          text: 'What was the duration of the certification?',
-          type: 'singleChoice',
-          required: true,
-          options: ['Less than 4 weeks', '4-8 weeks', 'More than 8 weeks']
+          options: ['Stanford/MIT/AWS/Google/Top 500', 'NPTEL', 'Coursera/Udemy', 'Other']
         },
         {
           id: 'project_required',
@@ -238,9 +244,9 @@ const templates = {
       ]
     }
   },
-  'NCC-NSS': {
+  'NCC_NSS_YRC': {
     'Volunteer Activity': {
-      requiredFields: ['eventName', 'date', 'description'], // Changed from 'title'
+      requiredFields: ['eventName', 'date', 'description'],
       optionalFields: ['eventLocation'],
       proofConfig: {
         requireCertificateImage: true,
@@ -254,7 +260,7 @@ const templates = {
           text: 'Which camps have you attended?',
           type: 'singleChoice',
           required: true,
-          options: ['RDC/TSC', 'NIC', 'CATC, ATC', 'None']
+          options: ['RDC/TSC', 'NIC', 'CATC/ATC', 'None']
         },
         {
           id: 'rank',
@@ -268,21 +274,21 @@ const templates = {
           text: 'Did you receive any special recognition?',
           type: 'singleChoice',
           required: false,
-          options: ['Best Cadet', 'Best Parade', 'Other Award', 'None']
+          options: ['Best Cadet/Parade', 'Other Award', 'None']
         },
         {
           id: 'volunteer_hours',
           text: 'How many volunteer hours have you completed?',
           type: 'singleChoice',
           required: true,
-          options: ['50+ hours', '100+ hours', '200+ hours', 'Less than 50 hours']
+          options: ['50+', '100+', '200+', 'Less than 50 hours']
         }
       ]
     }
   },
   'Sports': {
     'Sports Achievement': {
-      requiredFields: ['eventName', 'date', 'description', 'positionSecured', 'eventScope'], // Changed from 'title'
+      requiredFields: ['eventName', 'date', 'description', 'positionSecured', 'eventScope'],
       optionalFields: ['sportName', 'eventLocation'],
       proofConfig: {
         requireCertificateImage: true,
@@ -299,6 +305,13 @@ const templates = {
           options: ['College', 'Inter-College', 'State', 'National/International']
         },
         {
+          id: 'position',
+          text: 'What position did you achieve?',
+          type: 'singleChoice',
+          required: true,
+          options: ['Winner', 'Runner-Up', 'Participant']
+        },
+        {
           id: 'sport_type',
           text: 'Is this an individual or team sport?',
           type: 'singleChoice',
@@ -308,9 +321,9 @@ const templates = {
       ]
     }
   },
-  'Workshop': {
+  'Workshops': {
     'Workshop Participation': {
-      requiredFields: ['eventName', 'date', 'description'], // Changed from 'title'
+      requiredFields: ['eventName', 'date', 'description'],
       optionalFields: ['eventLocation', 'eventOrganizer'],
       proofConfig: {
         requireCertificateImage: true,
@@ -324,28 +337,28 @@ const templates = {
           text: 'What was the duration of the workshop?',
           type: 'singleChoice',
           required: true,
-          options: ['Less than 1 day', '1 full day', '2+ days']
+          options: ['1 day', '3 day', '>5 full day']
         },
         {
           id: 'role',
           text: 'What was your role in the workshop?',
           type: 'singleChoice',
           required: true,
-          options: ['Attendee', 'Conducted Workshop']
+          options: ['Attendee', 'Organizer']
         },
         {
           id: 'industry_organizer',
           text: 'Was the workshop organized by an industry partner?',
           type: 'singleChoice',
           required: false,
-          options: ['Yes (e.g., Google, Microsoft)', 'No']
+          options: ['Industry (Top 500)', 'No']
         }
       ]
     }
   },
-  'Leadership': {
+  'Student Leadership': {
     'Leadership Role': {
-      requiredFields: ['eventName', 'date', 'description'], // Changed from 'title'
+      requiredFields: ['eventName', 'date', 'description'],
       optionalFields: ['eventLocation', 'role'],
       proofConfig: {
         requireCertificateImage: true,
@@ -359,21 +372,21 @@ const templates = {
           text: 'What leadership position did you hold?',
           type: 'singleChoice',
           required: true,
-          options: ['Club President', 'Secretary / Event Lead', 'Member / Core Team']
+          options: ['Club President', 'Secretary/Core Team Heads', 'Member']
         },
         {
           id: 'event_size',
           text: 'How many participants were involved?',
           type: 'singleChoice',
           required: true,
-          options: ['Less than 50 participants', '50-100 participants', 'More than 100 participants']
+          options: ['<100 participants', '100–500', '500+']
         },
         {
           id: 'series_organized',
           text: 'Did you organize a series of events?',
           type: 'singleChoice',
           required: true,
-          options: ['Yes', 'No']
+          options: ['Yes (Webinars/Tech Talks/etc)', 'No']
         },
         {
           id: 'event_count',
@@ -384,9 +397,9 @@ const templates = {
       ]
     }
   },
-  'Social Work': {
+  'Social Work & Community Impact': {
     'Community Service': {
-      requiredFields: ['eventName', 'date', 'description'], // Changed from 'title'
+      requiredFields: ['eventName', 'date', 'description'],
       optionalFields: ['eventLocation', 'organizationName'],
       proofConfig: {
         requireCertificateImage: true,
@@ -400,20 +413,21 @@ const templates = {
           text: 'What type of social work activity was this?',
           type: 'singleChoice',
           required: true,
-          options: ['Plantation / Cleanup Drive', 'Education / NGO Teaching', 'Health / Disaster Relief']
+          options: ['Plantation/Cleanup Drive', 'Education/NGO Teaching', 'Health/Disaster Relief']
         },
         {
           id: 'hours_invested',
           text: 'How many hours did you invest in this activity?',
           type: 'singleChoice',
           required: true,
-          options: ['20-50 hours', '50-100 hours', '100+ hours']
+          options: ['20–50 hrs', '50–100 hrs', '100+ hrs']
         }
       ]
     }
   }
 };
 
+// The rest of the function remains unchanged
 async function initializeTemplates() {
   try {
     // Find an admin user to set as creator

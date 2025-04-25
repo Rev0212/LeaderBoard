@@ -4,6 +4,7 @@ import EnumConfigPage from './EnumConfigPage';
 import PointsConfigPage from './PointsConfigPage';
 import CategoryRulesConfig from '../../components/admin/CategoryRulesConfig';
 import FormFieldsConfig from '../../components/admin/FormFieldsConfig';
+import CategoryPointsConfig from '../../components/admin/CategoryPointsConfig'; // Add this import
 
 const ConfigManagement = () => {
   const [activeTab, setActiveTab] = useState(0);
@@ -22,6 +23,7 @@ const ConfigManagement = () => {
           <Tab label="Position Points" id="tab-1" />
           <Tab label="Category Rules" id="tab-2" />
           <Tab label="Form Fields" id="tab-3" />
+          <Tab label="Category Points" id="tab-4" /> {/* Add the new tab */}
         </Tabs>
       </Box>
 
@@ -30,6 +32,7 @@ const ConfigManagement = () => {
         {activeTab === 1 && <PointsConfigPage />}
         {activeTab === 2 && <CategoryRulesConfig />}
         {activeTab === 3 && <FormFieldsConfig />}
+        {activeTab === 4 && <CategoryPointsConfig />} {/* Render the component */}
       </div>
     </div>
   );

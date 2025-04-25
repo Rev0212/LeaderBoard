@@ -158,23 +158,30 @@ const reviewEvent = async (req, res) => {
         event.approvedBy = req.teacher._id;
         
         if (status === 'Approved') {
-            // Use new points calculation service
-            event.pointsEarned = await PointsCalculationService.calculatePoints(event);
-            
-            // Update student total points
-            await studentModel.findByIdAndUpdate(
-                event.submittedBy,
-                { $inc: { totalPoints: event.pointsEarned } }
-            );
+          // Use the points calculation service to calculate points based on category rules
+          const calculatedPoints = await PointsCalculationService.calculatePoints(event);
+          
+          // Update the event points
+          event.pointsEarned = calculatedPoints;
+          
+          // Update student total points
+          await studentModel.findByIdAndUpdate(
+            event.submittedBy, 
+            { $inc: { totalPoints: calculatedPoints } }
+          );
+          
+          console.log(`Event ${event._id} approved with ${calculatedPoints} points`);
         } else {
-            // If event was previously approved, subtract points
-            if (event.status === 'Approved' && event.pointsEarned > 0) {
-                await studentModel.findByIdAndUpdate(
-                    event.submittedBy,
-                    { $inc: { totalPoints: -event.pointsEarned } }
-                );
-            }
-            event.pointsEarned = 0;
+          // Handle rejection
+          // If event was previously approved, deduct points
+          if (event.status === 'Approved' && event.pointsEarned > 0) {
+            await studentModel.findByIdAndUpdate(
+              event.submittedBy,
+              { $inc: { totalPoints: -event.pointsEarned } }
+            );
+          }
+          
+          event.pointsEarned = 0;
         }
         
         await event.save();
