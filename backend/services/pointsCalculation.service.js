@@ -30,11 +30,7 @@ class PointsCalculationService {
       // Debug log
       console.log(`Found points configuration for ${category}:`, JSON.stringify(config[category]));
       console.log(`Event custom answers:`, Array.from(event.customAnswers.entries()));
-      GET
-	http://localhost:4000/event/form-fields/Research
-
-    
-{"success":true,"data":{"requiredFields":[],"optionalFields":[],"conditionalFields":{},"proofConfig":{"requireCertificateImage":false,"requirePdfProof":true,"maxCertificateSize":5,"maxPdfSize":10,"allowMultipleCertificates":false},"customQuestions":[]}}
+      
       // Calculate total points based on event attributes
       let totalPoints = 0;
       
