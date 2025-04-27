@@ -139,4 +139,99 @@ const getEventById = async (eventId) => {
     }
 };
 
-module.exports = { createEvent, reviewEvent, editEventStatus, getEventById };
+const updatePendingEvent = async (eventId, studentId, eventData) => {
+    try {
+        // Find the event and verify ownership and status
+        const event = await Event.findById(eventId);
+        
+        if (!event) {
+            return { success: false, error: 'Event not found' };
+        }
+        
+        if (event.submittedBy.toString() !== studentId.toString()) {
+            return { success: false, error: 'You can only edit your own events' };
+        }
+        
+        if (event.status !== 'Pending') {
+            return { success: false, error: 'Only pending events can be edited' };
+        }
+        
+        // Get form configuration
+        const config = await FormFieldConfig.findOne({ category: eventData.category });
+        if (!config) {
+            return { success: false, error: 'No form configuration found for this category' };
+        }
+        
+        // Define fields that shouldn't be updated directly
+        const protectedFields = ['_id', 'submittedBy', 'status', 'approvedBy', 'pointsEarned'];
+        
+        // Define control fields that should be processed but not saved to the model
+        const controlFields = ['keepExistingCertificates', 'keepExistingPdf'];
+        
+        // Update event fields dynamically
+        Object.keys(eventData).forEach(key => {
+            // Skip protected and control fields
+            if (!protectedFields.includes(key) && !controlFields.includes(key)) {
+                event[key] = eventData[key];
+            }
+        });
+        
+        // Also update dynamicFields when customAnswers are updated
+        if (eventData.customAnswers) {
+            // Log the incoming custom answers for debugging
+            console.log('Updating dynamicFields with customAnswers:', eventData.customAnswers);
+            
+            // Create a new Map instead of a plain object
+            const newDynamicFields = new Map();
+            
+            // Preserve any existing non-customAnswer fields
+            if (event.dynamicFields instanceof Map) {
+                for (const [key, value] of event.dynamicFields.entries()) {
+                    if (!key.startsWith('customAnswer_')) {
+                        newDynamicFields.set(key, value);
+                    }
+                }
+            } else if (event.dynamicFields) {
+                // Handle if dynamicFields is already an object
+                Object.entries(event.dynamicFields).forEach(([key, value]) => {
+                    if (!key.startsWith('customAnswer_')) {
+                        newDynamicFields.set(key, value);
+                    }
+                });
+            }
+            
+            // Add the new custom answer values
+            if (eventData.customAnswers instanceof Map) {
+                for (const [key, value] of eventData.customAnswers.entries()) {
+                    newDynamicFields.set(`customAnswer_${key}`, value);
+                }
+            } else {
+                // Handle if customAnswers is a regular object
+                Object.entries(eventData.customAnswers).forEach(([key, value]) => {
+                    newDynamicFields.set(`customAnswer_${key}`, value);
+                });
+            }
+            
+            // Set the dynamicFields to the new Map
+            event.dynamicFields = newDynamicFields;
+            
+            // Log the updated dynamicFields
+            console.log('Updated dynamicFields:', event.dynamicFields);
+        }
+        
+        // Save the updated event
+        const updatedEvent = await event.save();
+        return { success: true, data: updatedEvent };
+    } catch (error) {
+        console.error(`Failed to update pending event: ${error.message}`);
+        return { success: false, error: error.message };
+    }
+};
+
+module.exports = { 
+    createEvent, 
+    reviewEvent, 
+    editEventStatus, 
+    getEventById,
+    updatePendingEvent // Export the new method
+};

@@ -24,8 +24,9 @@ import StudentEventHistory from './components/StudentEventHistory';
 import AdminFeedbackReview from './pages/Admin/AdminFeedbackReview';
 import ConfigManagement from './pages/Admin/ConfigManagement';
 import ProtectedRoute from './components/ProtectedRoute';
+import EditEventForm from './pages/Students/EditEventForm';
 
-const App = () => {
+function App() {
   return (
     <Routes>
       {/* Public routes */}
@@ -47,6 +48,7 @@ const App = () => {
         <Route path="event-submit" element={<EventForm />} />
         <Route path="student-events" element={<StudentEventHistory />} />
         <Route path="upcoming-events" element={<UpcomingEvents />} />
+        <Route path="edit-event" element={<EditEventForm />} /> {/* Add this line */}
       </Route>
       
       {/* Other routes */}
@@ -59,8 +61,8 @@ const App = () => {
           <ConfigManagement />
         </ProtectedRoute>
       } />
-    </Routes>
+      </Routes>
   );
-};
+}
 
 export default App;
