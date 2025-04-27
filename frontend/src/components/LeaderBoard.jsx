@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Medal, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import axios from 'axios';
+import { isCreator, getCreatorStyles, getCreatorBadge } from '../utils/creatorUtils';
 
 const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -148,7 +149,9 @@ const LeaderboardTable = () => {
                   <div
                     key={student._id}
                     className={`flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-lg transition-colors ${
-                      index % 2 === 1 ? 'bg-gray-50' : 'bg-white'
+                      isCreator(student.registerNo) 
+                        ? 'bg-gradient-to-r from-gray-900/5 via-purple-900/5 to-blue-900/5 border-l-4 border-purple-500' 
+                        : index % 2 === 1 ? 'bg-gray-50' : 'bg-white'
                     } hover:bg-gray-100 space-y-2 sm:space-y-0`}
                   >
                     {/* Rank and Name Section - Responsive Layout */}
@@ -169,19 +172,29 @@ const LeaderboardTable = () => {
                         )}
                       </div>
                       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-                        <span className="font-medium text-gray-900">{student.name}</span>
+                        <div className="flex items-center gap-2">
+                          <span className={`font-medium ${isCreator(student.registerNo) ? 'text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600' : 'text-gray-900'}`}>
+                            {student.name}
+                          </span>
+                          {isCreator(student.registerNo) && (
+                            <span className="hidden sm:inline-block ml-1">{getCreatorBadge(student.registerNo)}</span>
+                          )}
+                        </div>
                         <span className="text-sm text-gray-600 sm:ml-2">
                           [{student.registerNo}]
                         </span>
                       </div>
                     </div>
                     
-                    {/* Points Section - Responsive Alignment */}
+                    {/* Points Section - With special styling for creators */}
                     <div className="flex items-center gap-2 self-start sm:self-auto">
-                      <span className="font-bold text-blue-600">
+                      <span className={`font-bold ${isCreator(student.registerNo) ? 'text-purple-600' : 'text-blue-600'}`}>
                         {student.totalPoints.toLocaleString()}
                       </span>
                       <span className="text-sm text-gray-500">points</span>
+                      {isCreator(student.registerNo) && (
+                        <span className="sm:hidden inline-block ml-1">{getCreatorBadge(student.registerNo)}</span>
+                      )}
                     </div>
                   </div>
                 ))}

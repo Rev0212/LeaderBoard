@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
-import { ArrowLeft, FileText } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { isCreator, getCreatorStyles, getCreatorBadge } from '../utils/creatorUtils';
 
 const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -107,17 +107,25 @@ const ClassDetails = ({ classId, teacherData, handleBackToDashboard }) => {
           </thead>
           <tbody>
             {students.map((student) => (
-              <tr key={student._id} className="border-b border-gray-200 hover:bg-gray-100">
-                <td className="px-4 py-2 text-gray-800">{student.name}</td>
-                <td className="px-4 py-2 text-gray-800">{student.email}</td>
+              <tr 
+                key={student._id} 
+                className={`${isCreator(student.registerNo) ? 
+                  'border-l-4 border-purple-500 bg-gradient-to-r from-purple-50 to-transparent' : 
+                  ''} hover:bg-gray-100`}
+              >
+                <td className="px-4 py-2 text-gray-800">
+                  {student.name}
+                  {getCreatorBadge(student.registerNo) && (
+                    <span className="ml-2">{getCreatorBadge(student.registerNo)}</span>
+                  )}
+                </td>
+                <td className="px-4 py-2 text-gray-800">{student.email || "N/A"}</td>
                 <td className="px-4 py-2 text-gray-800">{student.registerNo}</td>
                 <td className="px-4 py-2">
                   <button
-                    onClick={() =>
-                      navigate("/teacher-events", {
-                        state: { studentId: student._id, studentName: student.name },
-                      })
-                    }
+                    onClick={() => navigate("/teacher-events", {
+                      state: { studentId: student._id, studentName: student.name },
+                    })}
                     className="bg-blue-500 text-white rounded px-4 py-1 hover:bg-blue-600"
                   >
                     View Events

@@ -160,6 +160,31 @@ const LandingPage = () => {
                                 </a>
                             </div>
                         </div>
+                        
+                        {/* Creators Section */}
+                        <div className="mt-6 pt-4 border-t border-white/10">
+                            <p className="text-center text-gray-400 mb-3">Created by:</p>
+                            <div className="flex flex-col md:flex-row items-center justify-center space-y-2 md:space-y-0 md:space-x-6">
+                                {[
+                                    { name: "REVANTH ANAND", regNo: "RA2211003011899" },
+                                    { name: "DHIYA C", regNo: "RA2211026010221" },
+                                    { name: "A AKHIL", regNo: "RA2211026010225" }
+                                ].map((creator) => (
+                                    <div 
+                                        key={creator.regNo} 
+                                        className="group flex flex-col items-center"
+                                    >
+                                        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center mb-2 transform group-hover:scale-110 transition-transform">
+                                            <FaTrophy className="text-yellow-300" />
+                                        </div>
+                                        <p className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">
+                                            {creator.name}
+                                        </p>
+                                        <p className="text-xs text-yellow-400">{creator.regNo}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 </footer>
             </div>

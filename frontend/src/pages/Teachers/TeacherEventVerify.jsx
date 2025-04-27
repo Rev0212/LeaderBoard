@@ -3,6 +3,7 @@ import { ArrowLeft, Pencil, FileText, Award, X } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import EventDetailsModal from '../../components/EventEditModel';
+import { isCreator, getCreatorBadge } from '../../utils/creatorUtils';
 
 const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -143,8 +144,11 @@ const TeacherEventsPage = () => {
         </div>
 
         <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-gray-800">
+          <h1 className="text-2xl font-semibold text-gray-800 flex items-center">
             Events for {studentName}
+            {isCreator(location.state?.studentId) && (
+              <span className="ml-2">{getCreatorBadge(location.state?.studentId)}</span>
+            )}
           </h1>
         </div>
 
