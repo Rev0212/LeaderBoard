@@ -98,6 +98,10 @@ only when clicked on that its coming
     reason first it pushes the assgined class report to report page so all reports come in report page need to change that behaviour
 
 
+Event form in student portal:
+1. date - year going till 6 digits limit to 4 (only working in global certificates)
+2. event type if individual limit team size to 1
+
 
 
 MongoDB server
