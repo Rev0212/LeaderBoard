@@ -6,6 +6,7 @@ import {
   Menu, X, LogOut, History, CalendarDays, Plus, Home, Phone
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { isCreator, getCreatorBadge } from '../../utils/creatorUtils';
 
 const StudentProfile = () => {
   const [student, setStudent] = useState(null);
@@ -341,7 +342,12 @@ const StudentProfile = () => {
           <div className="bg-white rounded-lg shadow-md">
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-800">Profile Information</h2>
+                <div className="flex items-center">
+                  <h2 className="text-xl font-bold text-gray-800">{student?.name}</h2>
+                  {isCreator(student?.registerNo) && (
+                    <span className="ml-2">{getCreatorBadge(student?.registerNo)}</span>
+                  )}
+                </div>
                 <button
                   onClick={() => setShowChangePasswordForm(!showChangePasswordForm)}
                   className="border border-blue-500 text-blue-500 hover:bg-blue-50 px-4 py-2 rounded transition-colors"
@@ -402,7 +408,14 @@ const StudentProfile = () => {
                     <InfoRow
                       icon={<Hash />}
                       label="Register Number"
-                      value={student?.registerNo}
+                      value={
+                        <div className="flex items-center">
+                          {student?.registerNo}
+                          {isCreator(student?.registerNo) && (
+                            <span className="ml-2">{getCreatorBadge(student?.registerNo)}</span>
+                          )}
+                        </div>
+                      }
                     />
                     <InfoRow
                       icon={<GraduationCap />}

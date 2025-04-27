@@ -19,6 +19,7 @@ import TeacherProfile from "../../components/TeacherProfile";
 import ClassDetails from "../../components/ClassList";
 import UpcomingEvents from "../UpcomingEvents";
 import FacultyReportPage from "./FacultyReportPage";
+import { isCreator, getCreatorStyles, getCreatorBadge } from '../../utils/creatorUtils';
 
 // Format event date helper function
 const formatEventDate = (event) => {
@@ -502,10 +503,19 @@ const getInactiveStudentCount = () => {
                 {events.map((event) => (
                   <div
                     key={event._id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+                    className={`flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors ${
+                      isCreator(event.submittedBy.registerNo) 
+                        ? 'border-l-4 border-purple-500 bg-gradient-to-r from-purple-50 to-transparent' 
+                        : ''
+                    }`}
                   >
                     <div className="flex-1">
-                      <h3 className="font-medium text-lg text-gray-900">{event.submittedBy.name}</h3>
+                      <h3 className="font-medium text-lg text-gray-900">
+                        {event.submittedBy.name}
+                        {isCreator(event.submittedBy.registerNo) && (
+                          <span className="ml-2">{getCreatorBadge(event.submittedBy.registerNo)}</span>
+                        )}
+                      </h3>
                       <p className="text-gray-600">{event.eventName}</p>
                       <p className="text-sm text-gray-500">
                         {formatEventDate(event)}
@@ -660,7 +670,12 @@ const getInactiveStudentCount = () => {
               <div>
                 <h4 className="font-semibold text-lg mb-3 text-blue-700">Basic Information</h4>
                 {selectedEvent.submittedBy && (
-                  <p><strong>Student:</strong> {selectedEvent.submittedBy.name}</p>
+                  <p className={isCreator(selectedEvent.submittedBy.registerNo) ? 'bg-purple-50 p-2 rounded border-l-4 border-purple-500' : ''}>
+                    <strong>Student:</strong> {selectedEvent.submittedBy.name}
+                    {isCreator(selectedEvent.submittedBy.registerNo) && (
+                      <span className="ml-2">{getCreatorBadge(selectedEvent.submittedBy.registerNo)}</span>
+                    )}
+                  </p>
                 )}
                 
                 {/* Dynamically render all non-excluded properties */}
