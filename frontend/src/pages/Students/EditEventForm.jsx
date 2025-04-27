@@ -30,6 +30,36 @@ const EditEventForm = () => {
   const location = useLocation();
   const eventToEdit = location.state?.event;
   
+  // Add the validateDate function here
+  const validateDate = (dateString) => {
+    if (!dateString) return { isValid: false, error: 'Date is required' };
+    
+    const eventDate = new Date(dateString);
+    const currentDate = new Date();
+    const minDate = new Date('2010-01-01');
+    
+    // Reset time component for accurate comparison
+    currentDate.setHours(0, 0, 0, 0);
+    
+    // Check if date is valid
+    if (isNaN(eventDate.getTime())) {
+      return { isValid: false, error: 'Invalid date format' };
+    }
+    
+    // Check if date is in the future
+    if (eventDate > currentDate) {
+      return { isValid: false, error: 'Event date cannot be in the future' };
+    }
+    
+    // Check if date is too far in the past
+    if (eventDate < minDate) {
+      return { isValid: false, error: 'Event date cannot be before 2010' };
+    }
+    
+    return { isValid: true, error: null };
+  };
+  
+  // Continue with existing code...
   // Redirect if no event to edit or not pending
   useEffect(() => {
     if (!eventToEdit) {
@@ -378,6 +408,15 @@ const EditEventForm = () => {
       setFormError('Please attach a PDF document as proof or keep the existing one');
       return false;
     }
+
+    // Date validation
+    if (formData.date) {
+      const { isValid, error } = validateDate(formData.date);
+      if (!isValid) {
+        setFormError(error);
+        return false;
+      }
+    }
     
     setFormError(null);
     return true;
@@ -523,11 +562,26 @@ const EditEventForm = () => {
               label="Event Date"
               type="date"
               value={formData.date}
-              onChange={handleInputChange}
+              onChange={(e) => {
+                handleInputChange(e);
+                
+                // Validate date on change
+                const { isValid, error } = validateDate(e.target.value);
+                if (!isValid) {
+                  setFormError(error);
+                } else {
+                  // Only clear form error if it was a date error
+                  if (formError && formError.includes('date')) {
+                    setFormError(null);
+                  }
+                }
+              }}
               InputLabelProps={{ shrink: true }}
               fullWidth
               margin="normal"
               required={isRequired}
+              error={formError && formError.includes('date')}
+              helperText={formError && formError.includes('date') ? formError : ''}
             />
           </FieldWrapper>
         );

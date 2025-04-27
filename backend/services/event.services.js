@@ -3,6 +3,31 @@ const studentModel = require('../models/student.model');
 const PointsCalculationService = require('./pointsCalculation.service');
 const FormFieldConfig = require('../models/formFieldConfig.model');
 
+// Add this date validation helper function
+const validateEventDate = (dateString) => {
+  const eventDate = new Date(dateString);
+  const currentDate = new Date();
+  const minDate = new Date('2010-01-01');
+  
+  // Check if this is a valid date
+  if (isNaN(eventDate.getTime())) {
+    throw new Error('Invalid date format');
+  }
+  
+  // Remove time component for accurate date comparison
+  currentDate.setHours(0, 0, 0, 0);
+  
+  if (eventDate > currentDate) {
+    throw new Error('Event date cannot be in the future');
+  }
+  
+  if (eventDate < minDate) {
+    throw new Error('Event date cannot be before 2010');
+  }
+  
+  return true;
+};
+
 const createEvent = async (eventData) => {
     console.log('Inside createEvent service');
     console.log('Event data:', eventData);
@@ -18,6 +43,9 @@ const createEvent = async (eventData) => {
         if (missingFields.length > 0) {
             throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
         }
+
+        // Add date validation here
+        validateEventDate(eventData.date);
 
         // Handle certificate images
         if (config.proofConfig.requireCertificateImage && (!eventData.proofUrl || eventData.proofUrl.length === 0)) {
@@ -154,6 +182,15 @@ const updatePendingEvent = async (eventId, studentId, eventData) => {
         
         if (event.status !== 'Pending') {
             return { success: false, error: 'Only pending events can be edited' };
+        }
+        
+        // Add date validation if date is being updated
+        if (eventData.date) {
+            try {
+                validateEventDate(eventData.date);
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
         }
         
         // Get form configuration
