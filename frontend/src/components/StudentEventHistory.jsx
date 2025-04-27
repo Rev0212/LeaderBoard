@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, FileText, Calendar, Trophy, CheckCircle, XCircle, Clock, Info } from 'lucide-react';
+import { ArrowLeft, FileText, Calendar, Trophy, CheckCircle, XCircle, Clock, Info, Edit } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const StudentEventHistory = ({ handleBackToDashboard }) => {
+  const navigate = useNavigate();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -74,6 +76,11 @@ const StudentEventHistory = ({ handleBackToDashboard }) => {
     }
   };
 
+  const handleEditEvent = (event) => {
+    // Navigate to edit form with event data
+    navigate('/edit-event', { state: { event } });
+  };
+
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
 
@@ -94,6 +101,7 @@ const StudentEventHistory = ({ handleBackToDashboard }) => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Position</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Points</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -118,6 +126,18 @@ const StudentEventHistory = ({ handleBackToDashboard }) => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">{event.pointsEarned || '0'}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {event.status?.toLowerCase() === 'pending' && (
+                      <button
+                        onClick={() => handleEditEvent(event)}
+                        className="flex items-center text-blue-600 hover:text-blue-800"
+                        title="Edit this event"
+                      >
+                        <Edit size={16} className="mr-1" />
+                        Edit
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

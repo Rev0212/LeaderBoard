@@ -139,4 +139,57 @@ const getEventById = async (eventId) => {
     }
 };
 
-module.exports = { createEvent, reviewEvent, editEventStatus, getEventById };
+const updatePendingEvent = async (eventId, studentId, eventData) => {
+    console.log('Inside updatePendingEvent service');
+    try {
+        // Find the event and verify ownership and status
+        const event = await Event.findById(eventId);
+        
+        if (!event) {
+            return { success: false, error: 'Event not found' };
+        }
+        
+        if (event.submittedBy.toString() !== studentId.toString()) {
+            return { success: false, error: 'You can only edit your own events' };
+        }
+        
+        if (event.status !== 'Pending') {
+            return { success: false, error: 'Only pending events can be edited' };
+        }
+        
+        // Get form configuration
+        const config = await FormFieldConfig.findOne({ category: eventData.category });
+        if (!config) {
+            return { success: false, error: 'No form configuration found for this category' };
+        }
+        
+        // Define fields that shouldn't be updated directly
+        const protectedFields = ['_id', 'submittedBy', 'status', 'approvedBy', 'pointsEarned'];
+        
+        // Define control fields that should be processed but not saved to the model
+        const controlFields = ['keepExistingCertificates', 'keepExistingPdf'];
+        
+        // Update event fields dynamically
+        Object.keys(eventData).forEach(key => {
+            // Skip protected and control fields
+            if (!protectedFields.includes(key) && !controlFields.includes(key)) {
+                event[key] = eventData[key];
+            }
+        });
+        
+        // Save the updated event
+        const updatedEvent = await event.save();
+        return { success: true, data: updatedEvent };
+    } catch (error) {
+        console.error(`Failed to update pending event: ${error.message}`);
+        return { success: false, error: error.message };
+    }
+};
+
+module.exports = { 
+    createEvent, 
+    reviewEvent, 
+    editEventStatus, 
+    getEventById,
+    updatePendingEvent // Export the new method
+};

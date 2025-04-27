@@ -611,6 +611,92 @@ const getScoringRules = async (req, res) => {
   }
 };
 
+const updatePendingEvent = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const studentId = req.student._id;
+        
+        // Get the existing event first
+        const existingEvent = await eventModel.findById(id);
+        if (!existingEvent) {
+            return res.status(404).json({
+                success: false,
+                message: 'Event not found'
+            });
+        }
+        
+        if (existingEvent.submittedBy.toString() !== studentId.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: 'You can only edit your own events'
+            });
+        }
+        
+        if (existingEvent.status !== 'Pending') {
+            return res.status(400).json({
+                success: false,
+                message: 'Only pending events can be edited'
+            });
+        }
+        
+        // Check flags for keeping existing files
+        const keepExistingCertificates = req.body.keepExistingCertificates === 'true';
+        const keepExistingPdf = req.body.keepExistingPdf === 'true';
+        
+        // Prepare event data from request body
+        const eventData = {
+            ...req.body,
+            // Handle certificates
+            proofUrl: keepExistingCertificates 
+                ? existingEvent.proofUrl 
+                : (req.certificatePaths || []),
+            
+            // Handle PDF document
+            pdfDocument: keepExistingPdf 
+                ? existingEvent.pdfDocument 
+                : (req.pdfPath || undefined)
+        };
+        
+        // Process custom answers
+        if (req.body.category) {
+            const formConfig = await FormFieldConfig.findOne({ category: req.body.category });
+            if (formConfig?.customQuestions) {
+                const customAnswers = new Map();
+                formConfig.customQuestions.forEach(question => {
+                    const answerId = `customAnswer_${question.id}`;
+                    if (req.body[answerId]) {
+                        customAnswers.set(question.id, req.body[answerId]);
+                    }
+                });
+                eventData.customAnswers = customAnswers;
+            }
+        }
+        
+        // Call service to update the event
+        const result = await eventService.updatePendingEvent(id, studentId, eventData);
+        
+        if (!result.success) {
+            return res.status(400).json({
+                success: false,
+                message: result.error
+            });
+        }
+        
+        res.status(200).json({
+            success: true,
+            message: 'Event updated successfully',
+            event: result.data
+        });
+    } catch (error) {
+        console.error('Error updating pending event:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update event',
+            error: error.message
+        });
+    }
+};
+
 // Export the middleware for use in routes
 module.exports.uploadEventFiles = uploadMiddleware;
 
@@ -622,5 +708,6 @@ module.exports = {
     editEvent, 
     getAllStudentEvents,
     verifyAndCalculatePoints,
-    getScoringRules
+    getScoringRules,
+    updatePendingEvent // Export the new controller method
 };
