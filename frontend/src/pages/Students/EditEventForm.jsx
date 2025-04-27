@@ -65,7 +65,7 @@ const EditEventForm = () => {
   const [formData, setFormData] = useState({
     eventName: eventToEdit?.eventName || '',
     date: eventToEdit?.date ? new Date(eventToEdit.date).toISOString().split('T')[0] : '',
-    category: '', // Start with empty category
+    category: eventToEdit?.category || '', // Use actual category from event
     positionSecured: eventToEdit?.positionSecured || '',
     eventLocation: eventToEdit?.eventLocation || '',
     eventScope: eventToEdit?.eventScope || '',
@@ -109,36 +109,49 @@ const EditEventForm = () => {
   const [existingCertificates, setExistingCertificates] = useState([]);
   const [existingPdfUrl, setExistingPdfUrl] = useState('');
 
-  // Add this effect to properly initialize custom answers from the event data
+  // Replace your current customAnswers initialization effect with this improved version
   useEffect(() => {
-    if (eventToEdit?.customAnswers) {
-      // MongoDB stores customAnswers as a map, so we need to convert it
+    if (eventToEdit) {
+      // Create a combined set of answers, prioritizing dynamicFields (they're more current)
       const answers = {};
-      // Handle if it's already an object
-      if (typeof eventToEdit.customAnswers === 'object' && !Array.isArray(eventToEdit.customAnswers)) {
-        if (eventToEdit.customAnswers instanceof Map) {
-          // If it's a Map
-          for (const [key, value] of eventToEdit.customAnswers.entries()) {
-            answers[key] = value;
+      
+      // First load from customAnswers
+      if (eventToEdit.customAnswers) {
+        if (typeof eventToEdit.customAnswers === 'object' && !Array.isArray(eventToEdit.customAnswers)) {
+          if (eventToEdit.customAnswers instanceof Map) {
+            for (const [key, value] of eventToEdit.customAnswers.entries()) {
+              answers[key] = value;
+            }
+          } else {
+            Object.entries(eventToEdit.customAnswers).forEach(([key, value]) => {
+              answers[key] = value;
+            });
           }
-        } else {
-          // If it's a regular object
-          Object.entries(eventToEdit.customAnswers).forEach(([key, value]) => {
-            answers[key] = value;
-          });
         }
       }
-      console.log("Initialized custom answers:", answers);
+      
+      // Then also check dynamicFields and override with their values if they exist
+      // This ensures we get the most up-to-date values
+      if (eventToEdit.dynamicFields) {
+        Object.entries(eventToEdit.dynamicFields).forEach(([key, value]) => {
+          if (key.startsWith('customAnswer_')) {
+            const actualKey = key.replace('customAnswer_', '');
+            answers[actualKey] = value;
+          }
+        });
+      }
+      
+      console.log("Initialized custom answers with combined data:", answers);
       setCustomAnswers(answers);
-    }
-
-    // Initialize existing certificates and PDF
-    if (eventToEdit?.proofUrl && eventToEdit.proofUrl.length > 0) {
-      setExistingCertificates(eventToEdit.proofUrl);
-    }
-    
-    if (eventToEdit?.pdfDocument) {
-      setExistingPdfUrl(eventToEdit.pdfDocument);
+      
+      // Initialize existing certificates and PDF
+      if (eventToEdit?.proofUrl && eventToEdit.proofUrl.length > 0) {
+        setExistingCertificates(eventToEdit.proofUrl);
+      }
+      
+      if (eventToEdit?.pdfDocument) {
+        setExistingPdfUrl(eventToEdit.pdfDocument);
+      }
     }
   }, [eventToEdit]);
 
@@ -252,15 +265,6 @@ const EditEventForm = () => {
         }
 
         setFormFields(formFieldsData);
-        
-        // Initialize custom answers (only if not already set from event)
-        if (formFieldsData.customQuestions?.length > 0 && Object.keys(customAnswers).length === 0) {
-          const initialAnswers = {};
-          formFieldsData.customQuestions.forEach(q => {
-            initialAnswers[q.id] = q.type === 'multipleChoice' ? [] : '';
-          });
-          setCustomAnswers(initialAnswers);
-        }
         
       } else {
         throw new Error('Invalid response format from server');
@@ -538,6 +542,7 @@ const EditEventForm = () => {
                 value={formData.category}
                 onChange={handleInputChange}
                 label="Category"
+                disabled={true} // Make it read-only
                 MenuProps={{
                   PaperProps: {
                     style: {
@@ -551,7 +556,7 @@ const EditEventForm = () => {
                     <MenuItem key={category} value={category}>{category}</MenuItem>
                   ))
                 ) : (
-                  <MenuItem disabled>Loading categories...</MenuItem>
+                  <MenuItem value={formData.category}>{formData.category}</MenuItem>
                 )}
               </Select>
             </FormControl>
@@ -741,6 +746,50 @@ const EditEventForm = () => {
     }
   };
 
+  const getFullImageUrl = (url) => {
+    if (!url) return '';
+    
+    // If it's already a full URL, return as is
+    if (url.startsWith('http')) {
+      return url;
+    }
+    
+    // Otherwise, prefix with backend URL
+    return `${VITE_BASE_URL}${url.startsWith('/') ? url : `/${url}`}`;
+  };
+
+  useEffect(() => {
+    if (formFields.customQuestions?.length > 0 && Object.keys(customAnswers).length > 0) {
+      console.log("Form questions:", formFields.customQuestions.map(q => q.id));
+      console.log("Custom answer keys:", Object.keys(customAnswers));
+      
+      // Create a debug log showing each question and its current answer
+      formFields.customQuestions.forEach(question => {
+        console.log(`Question (${question.id}): "${question.text}" has answer:`, 
+          customAnswers[question.id] || 'NO ANSWER FOUND');
+      });
+      
+      // Force re-render of answers for these specific questions
+      const updatedAnswers = { ...customAnswers };
+      let changed = false;
+      
+      // Check if answers need type correction (e.g., string vs array)
+      formFields.customQuestions.forEach(question => {
+        if (question.type === 'multipleChoice' && updatedAnswers[question.id] && 
+            !Array.isArray(updatedAnswers[question.id])) {
+          // Convert string to array if needed for multipleChoice
+          updatedAnswers[question.id] = [updatedAnswers[question.id]];
+          changed = true;
+        }
+      });
+      
+      if (changed) {
+        console.log("Updating answers with type corrections:", updatedAnswers);
+        setCustomAnswers(updatedAnswers);
+      }
+    }
+  }, [formFields.customQuestions, customAnswers]);
+
   return (
     <div className="p-6">
       <Paper className="p-6 shadow-md">
@@ -918,7 +967,7 @@ const EditEventForm = () => {
                               {existingCertificates.map((url, index) => (
                                 <div key={index} className="relative border rounded overflow-hidden">
                                   <img 
-                                    src={url}
+                                    src={getFullImageUrl(url)}
                                     alt={`Existing Certificate ${index + 1}`}
                                     className="w-full h-20 object-cover"
                                   />
@@ -1003,7 +1052,12 @@ const EditEventForm = () => {
                                 <FileText className="mr-2 text-blue-500" size={18} />
                                 <Typography variant="body2">
                                   Existing PDF document
-                                  <a href={existingPdfUrl} target="_blank" rel="noopener noreferrer" className="ml-2 text-blue-500 underline">
+                                  <a 
+                                    href={getFullImageUrl(existingPdfUrl)} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    className="ml-2 text-blue-500 underline"
+                                  >
                                     View
                                   </a>
                                 </Typography>

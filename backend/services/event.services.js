@@ -140,7 +140,6 @@ const getEventById = async (eventId) => {
 };
 
 const updatePendingEvent = async (eventId, studentId, eventData) => {
-    console.log('Inside updatePendingEvent service');
     try {
         // Find the event and verify ownership and status
         const event = await Event.findById(eventId);
@@ -176,6 +175,49 @@ const updatePendingEvent = async (eventId, studentId, eventData) => {
                 event[key] = eventData[key];
             }
         });
+        
+        // Also update dynamicFields when customAnswers are updated
+        if (eventData.customAnswers) {
+            // Log the incoming custom answers for debugging
+            console.log('Updating dynamicFields with customAnswers:', eventData.customAnswers);
+            
+            // Create a new Map instead of a plain object
+            const newDynamicFields = new Map();
+            
+            // Preserve any existing non-customAnswer fields
+            if (event.dynamicFields instanceof Map) {
+                for (const [key, value] of event.dynamicFields.entries()) {
+                    if (!key.startsWith('customAnswer_')) {
+                        newDynamicFields.set(key, value);
+                    }
+                }
+            } else if (event.dynamicFields) {
+                // Handle if dynamicFields is already an object
+                Object.entries(event.dynamicFields).forEach(([key, value]) => {
+                    if (!key.startsWith('customAnswer_')) {
+                        newDynamicFields.set(key, value);
+                    }
+                });
+            }
+            
+            // Add the new custom answer values
+            if (eventData.customAnswers instanceof Map) {
+                for (const [key, value] of eventData.customAnswers.entries()) {
+                    newDynamicFields.set(`customAnswer_${key}`, value);
+                }
+            } else {
+                // Handle if customAnswers is a regular object
+                Object.entries(eventData.customAnswers).forEach(([key, value]) => {
+                    newDynamicFields.set(`customAnswer_${key}`, value);
+                });
+            }
+            
+            // Set the dynamicFields to the new Map
+            event.dynamicFields = newDynamicFields;
+            
+            // Log the updated dynamicFields
+            console.log('Updated dynamicFields:', event.dynamicFields);
+        }
         
         // Save the updated event
         const updatedEvent = await event.save();
